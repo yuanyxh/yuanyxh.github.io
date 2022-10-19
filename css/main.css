@@ -2570,10 +2570,9 @@ hr {
   }
 }
 .menu {
+  margin: 16px 0;
   padding: 0;
-}
-.menu .menu-item {
-  margin: 0;
+  text-align: right;
 }
 @media (max-width: 767px) {
   .menu .menu-item {
@@ -2731,7 +2730,7 @@ hr {
   vertical-align: middle;
 }
 .links-of-author a::before {
-  background: #de4ac7;
+  background: #ffc7ff;
   display: inline-block;
   margin-right: 3px;
   transform: translateY(-2px);
