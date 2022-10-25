@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://yuanyxh.com/posts/0a521b20/</loc>
+    
+    <lastmod>2022-10-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://yuanyxh.com/posts/bfabaf49/</loc>
     
     <lastmod>2022-10-24</lastmod>
@@ -67,7 +76,7 @@
 
   <url>
     <loc>https://yuanyxh.com/</loc>
-    <lastmod>2022-10-24</lastmod>
+    <lastmod>2022-10-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -75,7 +84,14 @@
   
   <url>
     <loc>https://yuanyxh.com/tags/ES6-%E6%96%B0%E7%89%B9%E6%80%A7%E8%AF%A6%E8%A7%A3%E7%B3%BB%E5%88%97/</loc>
-    <lastmod>2022-10-24</lastmod>
+    <lastmod>2022-10-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://yuanyxh.com/tags/JavaScript-%E6%A6%82%E5%BF%B5%E7%B3%BB%E5%88%97/</loc>
+    <lastmod>2022-10-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
@@ -84,21 +100,21 @@
   
   <url>
     <loc>https://yuanyxh.com/categories/Web/</loc>
-    <lastmod>2022-10-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://yuanyxh.com/categories/%E7%AB%99%E7%82%B9%E5%BB%BA%E8%AE%BE/</loc>
-    <lastmod>2022-10-24</lastmod>
+    <lastmod>2022-10-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://yuanyxh.com/categories/Web/JavaScript/</loc>
-    <lastmod>2022-10-24</lastmod>
+    <lastmod>2022-10-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://yuanyxh.com/categories/%E7%AB%99%E7%82%B9%E5%BB%BA%E8%AE%BE/</loc>
+    <lastmod>2022-10-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
