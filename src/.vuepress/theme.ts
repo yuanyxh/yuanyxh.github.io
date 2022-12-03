@@ -45,7 +45,7 @@ export default hopeTheme({
       BiliBili: 'https://space.bilibili.com/29380273?spm_id_from=333.1007.0.0',
       Email: 'mailto:yang_xuheng@163.com',
       Gitee: 'https://gitee.com/xuhengyang',
-      GitHub: 'https://github/yuanyxh',
+      GitHub: 'https://github.com/yuanyxh',
       Gmail: 'mailto:yangxuheng218@gmail.com',
       QQ: 'http://wpa.qq.com/msgrd?v=3&uin=725441272&site=qq&menu=yes',
       Wechat: 'hxy3130gbs',
