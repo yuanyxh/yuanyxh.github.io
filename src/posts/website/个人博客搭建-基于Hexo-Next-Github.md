@@ -5,7 +5,6 @@ author: yuanyxh
 category:
   - 站点建设
 description: 基于 Hexo 框架，搭配 Next 主题搭建自己的第一个博客，并配合 Github Pages 免费服务，让别人也能访问你的博客！
-other: 0
 ---
 
 ## 准备工作
@@ -16,7 +15,7 @@ other: 0
 
 #### Node.js
 
-Node.js 是一个开源、跨平台的 JavaScript 运行时环境，基于 Google 的 V8 引擎；我们在接下来的操作中处处离不开 Node 与 NPM(Node Package Manager)，安装请看：[Node.js官方网站][Node]，NvPM 会与 Node.js 一起安装，安装后在 cmd 窗口键入以下命令验证
+Node.js 是一个开源、跨平台的 JavaScript 运行时环境，基于 Google 的 V8 引擎；我们在接下来的操作中处处离不开 Node 与 NPM(Node Package Manager)，安装请看：[Node.js官方网站][Node]，NPM 会与 Node.js 一起安装，安装后在 cmd 窗口键入以下命令验证
 
 ```shell
 node -v

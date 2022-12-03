@@ -8,6 +8,7 @@ export default hopeTheme({
   author: {
     name: 'yuanyxh',
     url: 'https://yuanyxh.com',
+    email: 'yang_xuheng@163.com',
   },
 
   iconAssets: 'iconfont',
