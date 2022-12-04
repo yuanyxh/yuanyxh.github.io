@@ -30,6 +30,32 @@ article: false
 
 ## 章节
 
+### 第 1 章 什么是 JavaScript
+
+通过本章知道了 JavaScript 的由来与发展，JavaScript 是 Brendan Eich 于 1995 年开发的一门脚本语言，一开始主要用于表单校验。
+
+由于浏览器厂商相互竞争，出现了多个版本的 JavaScript，它们的实现不尽相同，为了统一 JavaScript 的语法与特性，规范被制定出来，被称为 ECMAScript。
+
+JavaScript 并不完全等于 ECMAScript，JavaScript 包含三个部分
+
+- ECMAScript
+- BOM
+- DOM
+
+#### ECMAScript
+
+ECMAScript 只规定了不特定于平台的部分，像 `document`、`location` 这些 Api 就是特定于 Web 平台的，不特定于平台意味着只要引擎实现满足 ECMAScript 规范定义，那么只包含这部分的代码能够运行在任何平台下。
+
+ECMAScript 版本之前以发布次数作为版本号，最近几年由于前端蓬勃发展，ECMAScript 每年都会发布一个新版本，所以目前以年份作为版本号，当然，普遍会将 ES2015 以后的版本统称为 ES6 或 ES6+。
+
+#### BOM
+
+BOM，浏览器对象模型，顾名思义，这部分特定于浏览器，提供的 Api 主要用于操作浏览器窗口。
+
+#### DOM
+
+DOM，文档对象模型，提供了操作网页文档的 Api，通过 DOM 能够实现页面的动态改变而无需请求一份新的网页文件。
+
 待续...
 
 [^1]: Nicholas C. Zakas：独立软件开发者，曾在 Yahoo 和 Box 任职，创建了 `ESLint` 开源项目，同时也是 《JavaScript 高级程序设计》 1~3 版的作者
