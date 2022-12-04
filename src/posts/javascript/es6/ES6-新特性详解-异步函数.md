@@ -221,5 +221,5 @@ run(generator)
 > 《JavaScript 高级程序设计》  
 > 《你不知道的 JavaScript》  
 
-[Promise]: https://yuanyxh.com/posts/fa70ceda/
-[迭代与生成]: https://yuanyxh.com/posts/b441cfd9/
+[Promise]: ./ES6-%E6%96%B0%E7%89%B9%E6%80%A7%E8%AF%A6%E8%A7%A3-Promise.md
+[迭代与生成]: ./ES6-新特性详解-迭代器与生成器.md

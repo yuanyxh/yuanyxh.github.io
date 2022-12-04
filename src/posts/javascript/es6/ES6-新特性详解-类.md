@@ -254,6 +254,6 @@ class Worker extends Person {
 
 [MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/
 [Classes]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Classes
-[原型与继承]: https://yuanyxh.com/posts/5c22b54f/
-[let/const]: https://yuanyxh.com/posts/a8334698/
+[原型与继承]: ../概念/JavaScript-概念-原型与继承.md
+[let/const]: ./ES6-新特性详解%20-%20let与const.md
 [super]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/super

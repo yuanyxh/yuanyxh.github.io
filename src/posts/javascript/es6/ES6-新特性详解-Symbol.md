@@ -518,5 +518,5 @@ symbols.forEach(v => console.log(info[v])); // yuanyxh 22
 > _[MDN][MDN#JavaScript]
 
 [MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/
-[Promise]: https://yuanyxh.com/posts/fa70ceda/
+[Promise]: ./ES6-%E6%96%B0%E7%89%B9%E6%80%A7%E8%AF%A6%E8%A7%A3-Promise.md
 [with]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/with

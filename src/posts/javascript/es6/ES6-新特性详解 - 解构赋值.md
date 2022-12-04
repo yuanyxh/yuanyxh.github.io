@@ -1,5 +1,5 @@
 ---
-title: ES6-新特性详解 - 解构赋值
+title: ES6 新特性详解 - 解构赋值
 date: 2022-10-23 19:54:03
 author: yuanyxh
 tag:

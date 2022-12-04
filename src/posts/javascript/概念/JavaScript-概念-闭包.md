@@ -305,5 +305,5 @@ console.log(Counter.value()); /* logs 1 */
 > 《你不知道的 JavaScript》  
 > [MDN][MDN#JavaScript]
 
-[JavaScript 概念 - 高阶函数]: https://yuanyxh.com/posts/0a521b20/
+[JavaScript 概念 - 高阶函数]: ./JavaScript-概念-高阶函数.md
 [MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript

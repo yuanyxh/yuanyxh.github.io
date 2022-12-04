@@ -17,7 +17,9 @@ export default hopeTheme({
 
   repo: 'https://github.com/yuanyxh/yuanyxh.github.io',
 
-  docsDir: 'docs',
+  docsRepo: 'https://github.com/yuanyxh/yuanyxh.github.io',
+  docsDir: '/src',
+  docsBranch: 'source',
 
   pageInfo: ['Author', 'Original', 'Date', 'Category', 'Tag', 'ReadingTime'],
 

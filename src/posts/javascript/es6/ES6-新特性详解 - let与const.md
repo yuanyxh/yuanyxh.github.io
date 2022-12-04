@@ -1,5 +1,5 @@
 ---
-title: ES6+ 新特性详解 - let/const
+title: ES6 新特性详解 - let/const
 date: 2022-10-22 13:00:22
 author: yuanyxh
 tag:

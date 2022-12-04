@@ -1,5 +1,5 @@
 ---
-title: ES6-新特性详解 - 箭头函数
+title: ES6 新特性详解 - 箭头函数
 date: 2022-10-24 18:17:19
 author: yuanyxh
 tag:
