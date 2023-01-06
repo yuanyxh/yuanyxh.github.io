@@ -1,3 +1,4 @@
+import { path } from '@vuepress/utils';
 import { hopeTheme } from 'vuepress-theme-hope';
 import { zhNavbar } from './navbar/index.js';
 import { zhSidebar } from './sidebar/index.js';
@@ -44,15 +45,17 @@ export default hopeTheme({
     roundAvatar: true,
     description: '时间着急的，冲刷着，剩下了什么',
     medias: {
-      BiliBili: 'https://space.bilibili.com/29380273?spm_id_from=333.1007.0.0',
-      Email: 'mailto:yang_xuheng@163.com',
-      Gitee: 'https://gitee.com/xuhengyang',
       GitHub: 'https://github.com/yuanyxh',
-      Gmail: 'mailto:yangxuheng218@gmail.com',
-      QQ: 'http://wpa.qq.com/msgrd?v=3&uin=725441272&site=qq&menu=yes',
-      Wechat: 'hxy3130gbs',
-      Youtube: 'https://www.youtube.com/channel/UC_-fmapbeuOd2DOu8W1Wb2Q',
+      Gitee: 'https://gitee.com/xuhengyang',
+      JueJin: [
+        'https://juejin.cn/user/2881148117060749',
+        path.resolve(__dirname, 'public/assets/svg/juejin.svg')
+      ],
       Zhihu: 'https://www.zhihu.com/people/yuan-73-60-11',
+      Wechat: 'hxy3130gbs',
+      QQ: 'http://wpa.qq.com/msgrd?v=3&uin=725441272&site=qq&menu=yes',
+      Youtube: 'https://www.youtube.com/channel/UC_-fmapbeuOd2DOu8W1Wb2Q',
+      BiliBili: 'https://space.bilibili.com/29380273?spm_id_from=333.1007.0.0'
     },
   },
 
