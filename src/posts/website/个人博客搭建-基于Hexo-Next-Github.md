@@ -3,7 +3,7 @@ title: 个人博客搭建 - 基于Hexo + Next + Github
 date: 2022-10-21 09:21:00
 author: yuanyxh
 category:
-  - 站点建设
+  - create-site
 description: 基于 Hexo 框架，搭配 Next 主题搭建自己的第一个博客，并配合 Github Pages 免费服务，让别人也能访问你的博客！
 --- 
 

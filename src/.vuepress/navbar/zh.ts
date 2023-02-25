@@ -10,23 +10,23 @@ export const zhNavbar = navbar([
     children: [
       {
         text: 'JavaScript',
-        link: 'javascript',
+        link: 'javascript'
       },
       {
         text: '站点建设',
-        link: '站点建设',
-      },
-    ],
+        link: 'create-site'
+      }
+    ]
   },
   {
     text: '书籍',
     icon: 'blog',
-    prefix: '/书籍/',
-    children: book,
+    prefix: '/books/',
+    children: book
   },
   {
     text: '关于',
     icon: 'info',
-    link: '/intro',
-  },
+    link: '/intro'
+  }
 ]);

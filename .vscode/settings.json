@@ -1,0 +1,22 @@
+{
+  "editor.formatOnSave": true,
+  "fileheader.customMade": {
+    "Author": "git config user.name && git config user.email",
+    "Date": "Do not edit",
+    "LastEditors": "git config user.name && git config user.email",
+    "LastEditTime": "Do not edit",
+    "FilePath": "Do not edit",
+    "Description": "",
+    "custom_string_obkoro1": "",
+    "custom_string_obkoro1_copyright": "Copyright (c) ${now_year} by ${git_name_email}, All Rights Reserved. "
+    // "custom_string_obkoro1_copyright": "Copyright (c) ${now_year} by 写死的公司名/用户名, All Rights Reserved. "
+  },
+  "fileheader.cursorMode": {
+    "description": "",
+    "param": "",
+    "return": ""
+  },
+  "fileheader.configObj": {
+    "autoAdd": false
+  }
+}

@@ -9,8 +9,8 @@ export default defineUserConfig({
     '/': {
       lang: 'zh-CN',
       title: 'yuanyxh - 学习与沉淀',
-      description: 'yuanyxh の blog',
-    },
+      description: 'yuanyxh の blog'
+    }
     // "/zh/": {
     //   lang: "zh-CN",
     //   title: "博客演示",
@@ -22,5 +22,5 @@ export default defineUserConfig({
 
   shouldPrefetch: false,
 
-  plugins: [searchPlugin({})],
+  plugins: [searchPlugin({})]
 });

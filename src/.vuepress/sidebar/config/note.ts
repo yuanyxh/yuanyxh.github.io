@@ -4,6 +4,7 @@ export default {
   text: '文章',
   icon: 'note',
   prefix: 'posts/',
+  collapsible: true,
   children: [
     {
       text: 'JavaScript',
@@ -14,21 +15,21 @@ export default {
           text: '概念',
           prefix: '概念/',
           collapsible: true,
-          children: 'structure',
+          children: 'structure'
         },
         {
           text: 'ES6',
           prefix: 'es6/',
           collapsible: true,
-          children: 'structure',
-        },
-      ],
+          children: 'structure'
+        }
+      ]
     },
     {
       text: 'WebSite',
       prefix: 'website/',
       collapsible: true,
-      children: 'structure',
-    },
-  ],
+      children: 'structure'
+    }
+  ]
 } as SidebarItem;

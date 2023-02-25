@@ -9,7 +9,7 @@ export default hopeTheme({
   author: {
     name: 'yuanyxh',
     url: 'https://yuanyxh.com',
-    email: 'yang_xuheng@163.com',
+    email: 'yang_xuheng@163.com'
   },
 
   iconAssets: 'iconfont',
@@ -28,7 +28,7 @@ export default hopeTheme({
     blue: '#2196f3',
     red: '#f26d6d',
     green: '#3eaf7c',
-    orange: '#fb9b5f',
+    orange: '#fb9b5f'
   },
 
   fullscreen: true,
@@ -38,7 +38,7 @@ export default hopeTheme({
   navbarLayout: {
     left: ['Brand'],
     center: ['Links'],
-    right: ['Language', 'Repo', 'Outlook', 'Search'],
+    right: ['Language', 'Repo', 'Outlook', 'Search']
   },
 
   blog: {
@@ -56,7 +56,7 @@ export default hopeTheme({
       QQ: 'http://wpa.qq.com/msgrd?v=3&uin=725441272&site=qq&menu=yes',
       Youtube: 'https://www.youtube.com/channel/UC_-fmapbeuOd2DOu8W1Wb2Q',
       BiliBili: 'https://space.bilibili.com/29380273?spm_id_from=333.1007.0.0'
-    },
+    }
   },
 
   locales: {
@@ -97,25 +97,25 @@ export default hopeTheme({
 
       blog: {
         description: '一名前端开发者',
-        intro: '/intro.html',
+        intro: '/intro.html'
       },
 
       // page meta
       metaLocales: {
-        editLink: '编辑',
-      },
-    },
+        editLink: '编辑'
+      }
+    }
   },
 
   encrypt: {
     config: {
       // '/demo/encrypt.html': ['1234'],
-    },
+    }
   },
 
   plugins: {
     blog: {
-      autoExcerpt: true,
+      autoExcerpt: true
     },
 
     seo: true,
@@ -124,7 +124,7 @@ export default hopeTheme({
 
     copyCode: {
       duration: 1500,
-      showInMobile: true,
+      showInMobile: true
     },
 
     // If you don’t need comment feature, you can remove following option
@@ -138,7 +138,7 @@ export default hopeTheme({
       repo: 'yuanyxh/yuanyxh_blog_comment',
       repoId: 'R_kgDOIi7VEg',
       category: 'Announcements',
-      categoryId: 'DIC_kwDOIi7VEs4CS4Eo',
+      categoryId: 'DIC_kwDOIi7VEs4CS4Eo'
 
       /**
        * Using Twikoo
@@ -172,10 +172,10 @@ export default hopeTheme({
       mark: true,
       mermaid: true,
       playground: {
-        presets: ['ts', 'vue'],
+        presets: ['ts', 'vue']
       },
       presentation: {
-        plugins: ['highlight', 'math', 'search', 'notes', 'zoom'],
+        plugins: ['highlight', 'math', 'search', 'notes', 'zoom']
       },
       stylize: [
         {
@@ -185,16 +185,16 @@ export default hopeTheme({
               return {
                 tag: 'Badge',
                 attrs: { type: 'tip' },
-                content: 'Recommended',
+                content: 'Recommended'
               };
-          },
-        },
+          }
+        }
       ],
       sub: true,
       sup: true,
       tabs: true,
       vPre: true,
-      vuePlayground: true,
+      vuePlayground: true
     },
 
     pwa: {
@@ -204,11 +204,11 @@ export default hopeTheme({
       appendBase: true,
       apple: {
         icon: '/assets/icon/apple-icon-152.png',
-        statusBarColor: 'black',
+        statusBarColor: 'black'
       },
       msTile: {
         image: '/assets/icon/ms-icon-144.png',
-        color: '#ffffff',
+        color: '#ffffff'
       },
       manifest: {
         icons: [
@@ -216,24 +216,24 @@ export default hopeTheme({
             src: '/assets/icon/chrome-mask-512.png',
             sizes: '512x512',
             purpose: 'maskable',
-            type: 'image/png',
+            type: 'image/png'
           },
           {
             src: '/assets/icon/chrome-mask-192.png',
             sizes: '192x192',
             purpose: 'maskable',
-            type: 'image/png',
+            type: 'image/png'
           },
           {
             src: '/assets/icon/chrome-512.png',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/png'
           },
           {
             src: '/assets/icon/chrome-192.png',
             sizes: '192x192',
-            type: 'image/png',
-          },
+            type: 'image/png'
+          }
         ],
         shortcuts: [
           {
@@ -245,18 +245,18 @@ export default hopeTheme({
                 src: '/assets/icon/guide-maskable.png',
                 sizes: '192x192',
                 purpose: 'maskable',
-                type: 'image/png',
+                type: 'image/png'
               },
               {
                 src: '/assets/icon/guide-monochrome.png',
                 sizes: '192x192',
                 purpose: 'monochrome',
-                type: 'image/png',
-              },
-            ],
-          },
-        ],
-      },
-    },
-  },
+                type: 'image/png'
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
 });
