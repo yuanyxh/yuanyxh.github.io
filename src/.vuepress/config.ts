@@ -1,6 +1,9 @@
 import { defineUserConfig } from 'vuepress';
+import { getDirname, path } from "@vuepress/utils";
 import { searchPlugin } from '@vuepress/plugin-search';
 import theme from './theme.js';
+
+const __dirname = getDirname(import.meta.url);
 
 export default defineUserConfig({
   base: '/',
@@ -19,6 +22,10 @@ export default defineUserConfig({
   },
 
   theme,
+
+  'alias': {
+    '@Recommended': path.resolve(__dirname, "components/recommended.vue")
+  },
 
   shouldPrefetch: false,
 

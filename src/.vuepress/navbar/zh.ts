@@ -6,17 +6,7 @@ export const zhNavbar = navbar([
   {
     text: '博文',
     icon: 'article',
-    prefix: '/category/',
-    children: [
-      {
-        text: 'JavaScript',
-        link: 'javascript'
-      },
-      {
-        text: '站点建设',
-        link: 'create-site'
-      }
-    ]
+    link: '/note'
   },
   {
     text: '书籍',

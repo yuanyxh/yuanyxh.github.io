@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .box {
+      margin: 50px auto;
+      width: 50%;
+      height: 50px;
+      background-color: red;
+    }
+    .inner {
+      width: 50px;
+      height: 100%;
+      border-radius: 20px;
+      background-color: pink;
+    }
+
+    .inner.advance {
+      width: 100%;
+    }
+
+    .inner.retreat {
+      width: 50px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <div class="inner"></div>
+  </div>
+
+  <script>
+    const box = document.querySelector('.box'),
+      inner = document.querySelector('.inner'),
+      maxWidth = box.scrollWidth,
+      animation_time = 3,
+      step = (maxWidth - inner.scrollWidth) / animation_time;
+
+
+    let go = true;
+
+    function getCurrentWidth(el) {
+      return el?.scrollWidth || 0;
+    }
+
+    function setTransiton(el, width) {
+
+      el.style.transition = `width ${(getSpeed(el, width) / step).toFixed(1)}s`;
+    }
+
+    function getSpeed(el, width) {
+      let distance = 0;
+
+      if (go) {
+        go = false;
+        distance = maxWidth - width;
+        el.classList.remove('retreat');
+        el.classList.add('advance');
+      } else {
+        go = true;
+        distance = width - 50;
+        el.classList.remove('advance')
+        el.classList.add('retreat');
+      }
+
+      return distance;
+    }
+
+    box.addEventListener('mouseenter', e => {
+      setTransiton(inner, getCurrentWidth(inner));
+    })
+    box.addEventListener('mouseleave', e => {
+      setTransiton(inner, getCurrentWidth(inner));
+    })
+  </script>
+</body>
+
+</html>
