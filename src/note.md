@@ -10,25 +10,17 @@ comment: false
 
 ## JavaScript
 
-### 推荐文章
-
 <Recommended prefix="/posts/javascript" />
 
 ## 编程经验
-
-### 推荐文章
 
 <Recommended prefix="/skill" />
 
 ## 书籍阅读
 
-### 推荐文章
-
 <Recommended prefix="/books" />
 
 ## 网站搭建
-
-### 推荐文章
 
 <Recommended prefix="/posts/website" />
 

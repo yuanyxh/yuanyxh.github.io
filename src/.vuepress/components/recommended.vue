@@ -37,7 +37,7 @@ function getPagesData() {
         .map(item => ({ ...item, frontmatter: { ...item.frontmatter, date: formatTime(item.frontmatter.date) }}));
 
       // @ts-ignore
-      pages.value = list.sort((a, b) => b.frontmatter.date - a.frontmatter.date).slice(0, 5) as {
+      pages.value = list.sort((a, b) => b.frontmatter.date - a.frontmatter.date).slice(0, 3) as {
         path: string,
         title: string
       }[];
@@ -49,6 +49,7 @@ getPagesData();
 
 <style lang="scss">
 .recommended-container {
+  margin-top: 15px;
   margin-left: 15px;
   width: 100%;
 
