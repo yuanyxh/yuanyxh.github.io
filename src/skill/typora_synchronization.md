@@ -61,7 +61,12 @@ description: 学习好的代码风格与编码习惯
 
 坚果云免费账号每月都有 1 GB 的上传流量和 3 GB 的下载流量，对于同步文档笔记来说应该是够用了。
 
---end
+<p style="color: #555; font-size: 20px;">--end</p>
+
+## 参考资料
+
+[Typora实现云笔记，支持云同步+多端查看（附免费方案）]  
+[使用Typora+坚果云（github）打造免费的个人云笔记]
 
 <script setup>
 import Image from '@Image';
@@ -70,3 +75,5 @@ import Image from '@Image';
 [PicGo]: https://picgo.github.io/PicGo-Doc/zh/guide/
 [PicGo 插件开发]: https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/cli.html
 [坚果云]: https://www.jianguoyun.com/
+[Typora实现云笔记，支持云同步+多端查看（附免费方案）]: https://juejin.cn/post/7124701631345590285
+[使用Typora+坚果云（github）打造免费的个人云笔记]: https://zhuanlan.zhihu.com/p/71600196
