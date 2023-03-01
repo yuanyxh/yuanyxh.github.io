@@ -2,7 +2,7 @@
 title: typora & vscode 实现图片自动上传与云同步
 date: 2023-02-28 21:57:00
 author: yuanyxh
-description: 学习好的代码风格与编码习惯
+description: 实现 typora 与 vscode 的图片自动上传，并完成 typora 文档云同步功能
 ---
 
 <Image
