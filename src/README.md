@@ -47,7 +47,7 @@ projects:
   - icon: project
     name: picgo-plugin-custom-uploader
     desc: a plugin for picgo
-    link: https://github.com/yuanyxh/picgo-plugin-custom-uploader
+    link: https://github.com/yuanyxh/picgo-plugin-free-uploader
 
 #  - icon: /logo.svg
 #    name: custom item
