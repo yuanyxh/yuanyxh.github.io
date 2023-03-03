@@ -44,6 +44,11 @@ projects:
     desc: A front -end development, code copy engineer
     link: https://yang-xianzhu.github.io/blog/home/
 
+  - icon: project
+    name: picgo-plugin-custom-uploader
+    desc: a plugin for picgo
+    link: https://github.com/yuanyxh/picgo-plugin-custom-uploader
+
 #  - icon: /logo.svg
 #    name: custom item
 #    desc: Detailed description of this custom item
