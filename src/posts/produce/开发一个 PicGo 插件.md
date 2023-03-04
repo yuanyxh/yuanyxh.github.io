@@ -5,6 +5,13 @@ author: yuanyxh
 description: 开发一个自定义图片上传的 PicGo 插件，支持任意图床的图片快速上传功能。
 ---
 
+<div style="text-align: center;">
+  <Image
+    url="http://qkc148.bvimg.com/18470/d4545af9b03950ab.png"
+    alt="javascript"
+  />
+</div>
+
 ## 前言
 
 最近在搞 `typora` 的文档云同步功能，在网上看了一些文章有提到 [PicGo] 图片上传工具，于是放到一起折腾了一下，但 `PicGo` 默认只支持 7 种图床，搭配插件也无法满足我的需求，于是便想着开发一个高度自定义的上传插件。
@@ -178,6 +185,10 @@ module.exports = (ctx) => {
 - 因为采用了动态脚本的方式，我们甚至可以提供图片数据，让用户执行压缩，水印添加等操作，也可以提供请求相关函数以支持上传除图片外的数据，如视频。
 
 --end
+
+<script setup>
+import Image from '@Image';
+</script>
 
 [PicGo]: https://picgo.github.io/PicGo-Doc/zh/guide
 [PicGo-Core]: https://picgo.github.io/PicGo-Core-Doc/
