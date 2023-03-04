@@ -1,8 +1,9 @@
+import { SidebarItem } from 'vuepress-theme-hope';
+
 export default {
   text: '书籍',
   icon: 'blog',
   prefix: '/books',
-  collapsible: true,
   children: [
     {
       text: '前端',
@@ -16,4 +17,4 @@ export default {
       ]
     }
   ]
-};
+} as SidebarItem;

@@ -45,7 +45,7 @@ projects:
     link: https://yang-xianzhu.github.io/blog/home/
 
   - icon: project
-    name: picgo-plugin-custom-uploader
+    name: picgo-plugin-free-uploader
     desc: a plugin for picgo
     link: https://github.com/yuanyxh/picgo-plugin-free-uploader
 

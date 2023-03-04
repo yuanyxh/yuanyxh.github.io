@@ -4,6 +4,6 @@ export default {
   text: '技巧',
   icon: 'study',
   prefix: 'skill/',
-  collapsible: true,
-  children: 'structure'
+  children: 'structure',
+  collapsible: true
 } as SidebarItem;
