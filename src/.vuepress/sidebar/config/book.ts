@@ -7,7 +7,7 @@ export default {
   children: [
     {
       text: '前端',
-      prefix: '前端/',
+      prefix: 'web/',
       collapsible: true,
       children: [
         {
