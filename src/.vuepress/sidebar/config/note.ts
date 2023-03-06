@@ -23,6 +23,12 @@ export default {
       ]
     },
     {
+      text: 'CSS',
+      prefix: 'css',
+      collapsible: true,
+      children: 'structure'
+    },
+    {
       text: 'WebSite',
       prefix: 'website/',
       collapsible: true,

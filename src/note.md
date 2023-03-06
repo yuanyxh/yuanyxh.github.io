@@ -14,6 +14,10 @@ comment: false
 
 <Recommended prefix="/posts/javascript" />
 
+### CSS
+
+<Recommended prefix="/posts/css" />
+
 ### 编程经验
 
 <Recommended prefix="/skill" />
@@ -21,6 +25,10 @@ comment: false
 ### 书籍阅读
 
 <Recommended prefix="/books" />
+
+### 开发
+
+<Recommended prefix="/posts/produce" />
 
 ### 网站搭建
 
