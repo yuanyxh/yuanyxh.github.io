@@ -3,7 +3,7 @@ import { SidebarItem } from 'vuepress-theme-hope';
 export default {
   text: '书籍',
   icon: 'blog',
-  prefix: '/books',
+  prefix: 'books/',
   children: [
     {
       text: '前端',
