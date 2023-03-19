@@ -7,6 +7,8 @@ category:
 description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
 ---
 
+## 前言
+
 [axios] 版本 1.3.4，建议阅读 [axios 文档]，熟悉相关 Api 后进行学习。
 
 ## 追溯 axios 初始化
@@ -133,10 +135,10 @@ class InterceptorManager {
 
 有没有觉得很熟悉？这其实就是我们常用的请求、响应拦截器；`InterceptorManager` 原型方法的作用分别如下：
 
-- use: 注册一个请求或响应拦截器，将 `fulfilled`、 `rejected`, `options` 合并为一个对象并添加至 `handlers` 数组，返回索引。
-- eject: 从 `handlers` 数组中清除指定索引的请求或响应拦截器
-- clear: 重置 `handlers` 数组
-- forEach: 遍历数组并将数组项传入 `fn` 回调中
+- `use`: 注册一个请求或响应拦截器，将 `fulfilled`、 `rejected`, `options` 合并为一个对象并添加至 `handlers` 数组，返回索引。
+- `eject`: 从 `handlers` 数组中清除指定索引的请求或响应拦截器
+- `clear`: 重置 `handlers` 数组
+- `forEach`: 遍历数组并将数组项传入 `fn` 回调中
 
 所以我们才能通过 `axios.interceptors.(request | response).use` 注册拦截器并处理请求或响应数据。
 
