@@ -2,7 +2,7 @@
 title: 学习 axios 源码（一）
 date: 2023-03-07 16:42:00
 author: yuanyxh
-category:
+tag:
  - 学习 axios 源码
 description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
 ---
