@@ -49,6 +49,11 @@ projects:
     desc: a plugin for picgo
     link: https://github.com/yuanyxh/picgo-plugin-free-uploader
 
+  - icon: project
+    name: 个人简介
+    desc: a plugin for picgo
+    link: https://yuanyxh.com/introduce/
+
 #  - icon: /logo.svg
 #    name: custom item
 #    desc: Detailed description of this custom item
