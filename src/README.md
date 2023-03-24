@@ -50,8 +50,8 @@ projects:
     link: https://github.com/yuanyxh/picgo-plugin-free-uploader
 
   - icon: project
-    name: 个人简介
-    desc: a plugin for picgo
+    name: introduce
+    desc: 个人简介项目
     link: https://yuanyxh.com/introduce/
 
 #  - icon: /logo.svg
