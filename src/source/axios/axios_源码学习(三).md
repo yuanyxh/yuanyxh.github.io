@@ -542,6 +542,43 @@ class CancelToken {
 
 可以看到，`cancel` 函数调用了 `resolvePromise`，`resolvePromise` 被赋值为 `resolve` 函数，这意味着一个 `Promise` 被决议了，此时它的 `then` 链开始执行，可以看到 `then` 链中对 `_listeners` 数组进行迭代并调用其中的函数。
 
+### 响应处理
+
+`axios` 给适配器返回的 `Promise` 添加了默认的 `onFuiflled` 与 `onRejected` 处理程序，两者代码高度相似，且内容重复，这里只贴出代码：
+
+```js
+adapter(config).then(function onAdapterResolution(response) {
+  throwIfCancellationRequested(config);
+
+  // Transform response data
+  response.data = transformData.call(
+    config,
+    config.transformResponse,
+    response
+  );
+
+  response.headers = AxiosHeaders.from(response.headers);
+
+  return response;
+}, function onAdapterRejection(reason) {
+  if (!isCancel(reason)) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    if (reason && reason.response) {
+      reason.response.data = transformData.call(
+        config,
+        config.transformResponse,
+        reason.response
+      );
+      reason.response.headers = AxiosHeaders.from(reason.response.headers);
+    }
+  }
+
+  return Promise.reject(reason);
+});
+```
+
 -- end
 
 [axios_源码学习(一)]: ./axios_源码学习(一).md
