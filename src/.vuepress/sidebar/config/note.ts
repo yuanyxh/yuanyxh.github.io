@@ -19,6 +19,11 @@ export default {
           text: 'ES6',
           prefix: 'es6/',
           children: 'structure'
+        },
+        {
+          text: 'JS Api',
+          prefix: 'api/',
+          children: 'structure'
         }
       ]
     },
