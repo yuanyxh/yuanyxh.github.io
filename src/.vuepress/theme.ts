@@ -51,7 +51,7 @@ export default hopeTheme({
         'https://juejin.cn/user/2881148117060749',
         path.resolve(__dirname, 'public/assets/svg/juejin.svg')
       ],
-      Zhihu: 'https://www.zhihu.com/people/yuan-73-60-11',
+      Zhihu: 'https://www.zhihu.com/people/yuanyxh',
       Wechat: 'hxy3130gbs',
       QQ: 'http://wpa.qq.com/msgrd?v=3&uin=725441272&site=qq&menu=yes',
       Youtube: 'https://www.youtube.com/channel/UC_-fmapbeuOd2DOu8W1Wb2Q',
