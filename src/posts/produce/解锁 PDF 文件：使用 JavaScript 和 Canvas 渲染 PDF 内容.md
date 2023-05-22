@@ -647,6 +647,15 @@ PDF 中，通常不会直接存储页面上的文本，而是转换为 `Unicode`
 
 可能是矩阵转换的原因，图片角度是有问题的，在绘制文本时，矩阵的缩放系数是很小的，导致无法看到文本，这里还能看到是因为做了处理。
 
+## 参考资料
+
+> [PDF Explained]  
+> [PDF----全operators(操作符，指令)集]  
+> [PDF学习十：图形状态]  
+> [PDF 格式详解]  
+> [PDF格式简单分析]  
+> [PDF 解析]
+
 -- end
 
 
@@ -658,3 +667,9 @@ PDF 中，通常不会直接存储页面上的文本，而是转换为 `Unicode`
 [Excalidraw]: https://excalidraw.com/
 [pako]: https://github.com/nodeca/pako
 [PDF 解析示例]: https://github.com/yuanyxh/illustrate/blob/master/src/pages/PdfParser/PdfParser.tsx
+[PDF Explained]: https://zxyle.github.io/PDF-Explained/
+[PDF 格式详解]: https://www.cnblogs.com/Primzahl/p/14735567.html
+[PDF格式简单分析]: https://www.cnblogs.com/warcraft/p/10998541.html
+[PDF 解析]: https://www.cnblogs.com/adair-blog/p/14107894.html
+[PDF----全operators(操作符，指令)集]: https://blog.csdn.net/xzz/article/details/4447123
+[PDF学习十：图形状态]: https://blog.csdn.net/u012632138/article/details/81559375
