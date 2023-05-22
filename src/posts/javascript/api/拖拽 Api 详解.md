@@ -173,5 +173,5 @@ firefox 输出如下：
 [MDN]: https://developer.mozilla.org/
 [MDN#dragover]: https://developer.mozilla.org/zh-CN/docs/Web/API/HTMLElement/dragover_event
 [Html5原生拖拽操作]: https://segmentfault.com/a/1190000012811776
-[拖拽上传]: https://github.com/yuanyxh/illustrate/blob/yuanyxh/src/pages/DragUploadFile/DragUploadFile.tsx
+[拖拽上传]: https://github.com/yuanyxh/illustrate/blob/master/src/pages/UploadFile/UploadFile.tsx
 [可视化编辑]: https://github.com/yuanyxh/illustrate/blob/yuanyxh/src/pages/VisualEdit/VisualEdit.tsx
