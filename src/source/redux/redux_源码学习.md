@@ -15,8 +15,20 @@ description: 学习 redux 状态管理库的相关源码，了解其如何管理
 
 `Redux` 版本 4.2.1，建议阅读文档熟悉相关 Api 后进行学习。
 
-## store
+## createStore
 
+在使用 `Redux` 时，通常使用 `createStore` 函数进行全局状态（store）创建，它在 `/src/index.js` 中被导出，代码省略如下：
 
+```js
+// src/index.js
+
+import { createStore } from './createStore'
+
+export {
+  createStore
+}
+```
+
+可以看到是从同级的 `createStore.js` 导入进来的，``
 
 [redux]: https://redux.js.org/
