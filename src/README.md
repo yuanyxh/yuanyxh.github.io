@@ -45,6 +45,11 @@ projects:
     link: https://yang-xianzhu.github.io/blog/home/
 
   - icon: project
+    name: introduce
+    desc: 个人简介项目
+    link: https://yuanyxh.com/introduce/
+
+  - icon: project
     name: picgo-plugin-free-uploader
     desc: a plugin for picgo
     link: https://github.com/yuanyxh/picgo-plugin-free-uploader
