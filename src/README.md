@@ -55,9 +55,9 @@ projects:
     link: https://github.com/yuanyxh/picgo-plugin-free-uploader
 
   - icon: project
-    name: introduce
-    desc: 个人简介项目
-    link: https://yuanyxh.com/introduce/
+    name: illustrate
+    desc: 效果演示项目
+    link: https://github.com/yuanyxh/illustrate
 
 #  - icon: /logo.svg
 #    name: custom item
