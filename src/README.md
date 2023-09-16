@@ -56,8 +56,8 @@ projects:
 
   - icon: project
     name: illustrate
-    desc: 效果演示项目
-    link: https://github.com/yuanyxh/illustrate
+    desc: 效果演示站，演示各式前端效果与想法
+    link: https://yuanyxh.com/illustrate/
 
 #  - icon: /logo.svg
 #    name: custom item
