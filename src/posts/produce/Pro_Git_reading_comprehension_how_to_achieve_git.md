@@ -2,7 +2,7 @@
 title: Pro Git 阅读理解：Git 是如何实现的
 date: 2024-01-18 01:57:00
 author: yuanyxh
-description: 阅读 Pro Git 有关实现原理的部分内容，深入理解 Git 是如何实现版本控制的，并按实现方式编写一个还原 Git 工作区的 demo
+description: 阅读 Pro Git 有关实现原理的部分内容，深入理解 Git 是如何实现版本控制的。
 ---
 
 ## 前言
