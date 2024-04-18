@@ -64,7 +64,7 @@ const Link: React.FC<Readonly<ILinkProps>> = (props) => {
   );
 
   let mergeClassName = className;
-  if (activeClass && comparedRoute(location!.path, to)) {
+  if (activeClass && comparedRoute(location.path, to)) {
     mergeClassName += ` ${activeClass}`;
   }
 

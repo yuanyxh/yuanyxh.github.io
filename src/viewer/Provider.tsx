@@ -100,7 +100,7 @@ const Toc = ({ toc }: { toc: Toc[] }) => {
     function map(item: Toc) {
       const result: AnchorLinkItemProps = {
         key: Math.random().toString(16) + item.value,
-        href: `${location?.path}#${item.value}`,
+        href: `${location.path}#${item.value}`,
         title: item.value
       };
 

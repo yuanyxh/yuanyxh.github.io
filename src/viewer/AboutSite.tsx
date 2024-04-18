@@ -6,7 +6,7 @@ import { Icon } from '@/components';
 
 import styles from './styles/AboutSite.module.less';
 
-const { Paragraph, Title } = Typography;
+const { Paragraph, Title, Text } = Typography;
 
 const AboutSite = () => {
   return (
@@ -33,7 +33,7 @@ const AboutSite = () => {
       <Typography>
         <Title level={3}>介绍</Title>
 
-        <Paragraph style={{ fontSize: 'var(--font-size-base)' }}>
+        <Paragraph style={{ fontSize: 16 }}>
           最开始想做博客是因为一个朋友分享了他的&nbsp;
           <Link
             style={{ color: 'var(--color-primary)' }}
@@ -69,7 +69,7 @@ const AboutSite = () => {
 
         <Title level={3}>网站特色</Title>
 
-        <Paragraph style={{ fontSize: 'var(--font-size-base)' }}>
+        <Paragraph style={{ fontSize: 16 }}>
           <ul>
             <li style={{ padding: '4px' }}>
               SPA，单页应用程序，加入了 Server Worker 缓存，使网站的性能、SEO
@@ -97,19 +97,76 @@ const AboutSite = () => {
           </ul>
         </Paragraph>
 
+        <Title level={3}>网站技术与规划</Title>
+
+        <Paragraph style={{ fontSize: 16 }}>
+          网站使用 <Text code>React</Text> + <Text code>Vite</Text> +{' '}
+          <Text code>TypeScript</Text>
+          作为基础架构，搭配 <Text code>ESLint</Text>、
+          <Text code>StyleLint</Text>、<Text code>CommitLint</Text>、
+          <Text code>Prettier</Text>
+          规范项目，<Text code>Antd</Text> 实现网站的部分 UI，图标使用{' '}
+          <Text code>iconify/Material Symbols</Text> 与{' '}
+          <Text code>@ant-design/icons</Text>，使用 <Text code>postcss</Text> 和{' '}
+          <Text code>less</Text> 处理 css，<Text code>MDX</Text> 编译 markdown，
+          <Text code>zustand</Text> 作为全局状态管理。
+        </Paragraph>
+
+        <Paragraph style={{ fontSize: 16 }}>
+          网站目前部署在 Github Pages
+          中，是一个纯静态托管的服务，使用域名解析到国内域名，后续会学习服务端相关知识，并将网站迁移。
+        </Paragraph>
+
+        <Paragraph style={{ fontSize: 16 }}>
+          现在在慢慢的完善网站并填充内容，目的是将博客和演示站很好的融合，可以作为一个工具站使用。
+        </Paragraph>
+
         <Title level={3}>联系我</Title>
 
-        <Paragraph style={{ fontSize: 'var(--font-size-base)' }}>
+        <Paragraph style={{ fontSize: 16 }}>
           若本站文章中引用的素材侵犯了您的权益，或对部分内容有更好的建议，请联系：
         </Paragraph>
 
-        <Paragraph style={{ fontSize: 'var(--font-size-base)' }}>
+        <Paragraph style={{ fontSize: 16 }}>
           <ul>
-            <li>QQ：725441272</li>
+            <li>
+              <span
+                style={{
+                  display: 'inline-block',
+                  textAlignLast: 'justify',
+                  width: 55
+                }}
+              >
+                QQ：
+              </span>
+              725441272
+            </li>
 
-            <li>微信：hxy3130gbs</li>
+            <li>
+              <span
+                style={{
+                  display: 'inline-block',
+                  textAlignLast: 'justify',
+                  width: 55
+                }}
+              >
+                微信：
+              </span>
+              hxy3130gbs
+            </li>
 
-            <li>Email：yang_xuheng@163.com</li>
+            <li>
+              <span
+                style={{
+                  display: 'inline-block',
+                  textAlignLast: 'justify',
+                  width: 55
+                }}
+              >
+                Email：
+              </span>
+              yang_xuheng@163.com
+            </li>
           </ul>
         </Paragraph>
       </Typography>

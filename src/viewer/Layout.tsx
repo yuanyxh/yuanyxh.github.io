@@ -22,6 +22,8 @@ import { Link, Outlet, useHistory, useScrollStore } from '@/router';
 
 import { useAppStore } from '@/store';
 
+import { fallbackFullscreen, isFullScreen, requestFullScreen } from '@/utils';
+
 import { Icon } from '@/components';
 
 import LogoImage from '@/assets/images/logo.png';
@@ -47,6 +49,7 @@ const SearchWrap = (props: { onFocus: () => void; onBlur: () => void }) => {
     <>
       <div className={styles.searchWrap}>
         <Input
+          title="搜索网站内容"
           variant="filled"
           suffix={<Icon icon="material-symbols:search-rounded" size={20} />}
           onFocus={props.onFocus}
@@ -133,6 +136,8 @@ const Actions = () => {
     setColorScheme
   } = useAppStore();
 
+  const [fullScreen, setFullScreen] = useState(isFullScreen());
+
   const history = useHistory();
 
   const handleLanuageChange: MenuProps['onClick'] = (e) => {
@@ -150,19 +155,50 @@ const Actions = () => {
     history.push('/profile');
   };
 
+  const toggerFullScreen = () => {
+    if (!fullScreen) {
+      return requestFullScreen().then(() => {
+        setFullScreen(true);
+      });
+    }
+
+    fallbackFullscreen().then(() => {
+      setFullScreen(false);
+    });
+  };
+
   return (
     <div className={styles.actions}>
       <Icon
         className={`${styles.action} ${styles.light}`}
+        title="切换浅色模式"
         icon="material-symbols:light-mode"
         size={20}
         onClick={handleLight}
       />
       <Icon
         className={`${styles.action} ${styles.dark}`}
+        title="切换深色模式"
         icon="material-symbols:nightlight-rounded"
         size={20}
         onClick={handleDark}
+      />
+
+      <Icon
+        className={`${styles.action} ${styles.fullscreen}`}
+        title="进入全屏模式"
+        style={{ display: fullScreen ? 'none' : 'initial' }}
+        icon="material-symbols:fullscreen-rounded"
+        size={20}
+        onClick={toggerFullScreen}
+      />
+      <Icon
+        className={`${styles.action} ${styles.exitFullscreen}`}
+        title="退出全屏模式"
+        style={{ display: fullScreen ? 'initial' : 'none' }}
+        icon="material-symbols:fullscreen-exit-rounded"
+        size={20}
+        onClick={toggerFullScreen}
       />
 
       <Dropdown
@@ -177,6 +213,7 @@ const Actions = () => {
         <a onClick={(e) => e.preventDefault()}>
           <Space>
             <Icon
+              title="切换显示语言"
               className={styles.action}
               icon="material-symbols:language-sharp"
               size={20}
@@ -187,6 +224,7 @@ const Actions = () => {
 
       <Icon
         className={`${styles.action} ${styles.settings}`}
+        title="进入设置页"
         icon="material-symbols:settings"
         size={20}
         onClick={handleToSettings}

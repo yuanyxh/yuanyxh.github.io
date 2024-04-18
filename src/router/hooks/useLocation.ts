@@ -1,5 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 
+import { parse } from 'qs';
+
 import { RouterContext } from '../shared/context';
 
 export function useLocation() {
@@ -13,5 +15,12 @@ export function useLocation() {
     });
   }, [routerContext]);
 
-  return state;
+  return (
+    state || {
+      path: window.location.pathname as string,
+      query: parse(window.location.search.slice(1)),
+      hash: window.location.hash,
+      state: window.history.state
+    }
+  );
 }

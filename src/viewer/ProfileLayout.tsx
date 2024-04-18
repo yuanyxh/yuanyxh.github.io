@@ -21,10 +21,10 @@ const Settings = () => {
         height: '100%'
       }}
     >
-      <Sider width={200}>
+      <Sider breakpoint="xxl" collapsedWidth={200} width={250}>
         <Menu
           mode="inline"
-          defaultSelectedKeys={[location!.path]}
+          defaultSelectedKeys={[location.path]}
           style={{ height: '100%' }}
           items={profileSiderbarData}
           onClick={handleNavigate}
@@ -35,7 +35,7 @@ const Settings = () => {
         style={{
           height: '100%',
           overflowY: 'auto',
-          padding: '24px',
+          padding: '24px 24px 24px 40px',
           backgroundColor: 'inherit'
         }}
       >
