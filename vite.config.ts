@@ -17,6 +17,7 @@ import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
 import ViteRouteGenerator from './helpers/vite-route-generator';
 import rehypePrism from '@mapbox/rehype-prism';
+import vitePrerender from 'vite-plugin-prerender';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 interface ProjectEnv {
@@ -25,6 +26,8 @@ interface ProjectEnv {
   /** 初始标题 */
   VITE_APP_TITLE: string;
 }
+
+const Renderer = vitePrerender.PuppeteerRenderer;
 
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
@@ -37,6 +40,28 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       ViteRouteGenerator(),
+
+      // 预渲染配置：https://www.npmjs.com/package/vite-plugin-prerender
+      // vitePrerender({
+      //   // 要渲染的路由
+      //   routes: ['/'],
+      //   // 静态文件目录
+      //   staticDir: resolve('./build'),
+      //   // 是否压缩 HTML 文件
+      //   minify: {
+      //     collapseBooleanAttributes: true,
+      //     collapseWhitespace: true,
+      //     decodeEntities: true,
+      //     keepClosingSlash: true,
+      //     sortAttributes: true
+      //   },
+
+      //   // 渲染时是否显示浏览器窗口，值写false可用于调试
+      //   renderer: new Renderer({
+      //     headless: false,
+      //     renderAfterTime: 5000
+      //   })
+      // }),
       /**
        * format
        * baseUrl
