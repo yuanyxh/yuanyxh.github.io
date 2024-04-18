@@ -1,0 +1,178 @@
+---
+title: HTML5 拖拽 Api 研究
+date: 2023-04-10 18:03:40
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/4567f0aa4bbb41be.png
+description: 学习研究 HTML5 的拖拽 Api，了解其中的技术细节，并展示拖拽 Api 可能的实际应用。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 事件
+
+| event     | description                                                                          |
+| --------- | ------------------------------------------------------------------------------------ |
+| dragstart | 开始拖拽一个可拖拽元素时，在 **可拖拽元素** 身上触发                                 |
+| dragend   | 结束拖拽一个可拖拽元素时，在 **可拖拽元素** 身上触发                                 |
+| dragenter | 可拖拽元素进入可放置元素时，在 **可放置元素** 身上触发                               |
+| dragleave | 可拖拽元素离开可放置元素时，在 **可放置元素** 身上触发                               |
+| drag      | 拖拽一个可拖拽元素时，在 **可拖拽元素** 身上间隔几百毫秒触发一次                     |
+| dragover  | 当一个可拖拽元素被拖进一个可放置元素上时，在 **可放置元素** 身上间隔几百毫秒触发一次 |
+| drop      | 放置一个元素时，在 **可放置元素** 身上触发                                           |
+
+这些事件的事件对象中都有一个 `dataTransfer` 属性，主要依赖它来操作拖拽数据，另外从系统中拖拽文件至 web 网页时，与可拖拽元素相关的事件是可以忽略的。
+
+## 可拖拽元素
+
+在 web 网页中，文本、链接、图像默认是可以拖拽的，而其他元素需要设置 `draggable="true"` 才能实现拖拽功能，但是在 firefox 较新版本中此设置无效，在网上找了一篇 18 年的帖子 [Html5原生拖拽操作]，按作者所说设置也无效，目前不知道有什么解决方案。
+
+## 可放置元素
+
+要使一个元素变为可放置元素，需要给目标元素添加 `dragover` 和 `drop` 事件处理程序，同时为了阻止浏览器默认行为（浏览器会直接打开一个新标签页显示拖拽元素，只要类型是浏览器支持的），需要给 `document` 以下代码：
+
+```js
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
+```
+
+在 [MDN#dragover] 文档中说明了需要在放置元素的 `dragover` 事件中阻止默认事件，这样才能触发放置元素的 `drop` 事件，但是在 chrome 和 firefox 浏览器中测试是能正常触发的，其他浏览器未知，还是推荐加上。
+
+## datatransfer
+
+拖拽事件中给我们提供了一个操作拖拽行为和拖拽数据的接口 `datatransfer`，它是 `Datatransfer` 的实例，提供了一些实用的属性与方法。
+
+### dropEffect
+
+`MDN` 描述 `dropEffect` 是用于在拖拽中反馈的属性，它的取值必须是以下有效值：
+
+- copy：生成源数据的副本
+- link：建立源数据的链接
+- move：项目移动到新位置
+- none：禁止拖放
+
+它们在 chrome 浏览器的表现如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/2dc314add944c03d.png' width={245} height={111} alt='style' />
+
+除了样式的改变外，不同的 `dropEffect` 还会导致不同的行为，比如在放置元素的 `dragover` 事件中，将 `dropEffect` 设置为 `none`，那么此时是不会触发该放置元素的 `drop` 事件的。
+
+### effectAllowed
+
+`effectAllowed` 指示拖放操作允许的效果，该属性应该在拖拽元素的 `dragstart` 事件中指定，有效值为：
+
+- none：表示这个拖拽元素不允许放下
+- copy：源项目的复制项可能会出现在新位置
+- copyLink：允许 copy 或者 link 操作
+- copyMove：允许 copy 或者 move 操作
+- link：可以在新地方建立与源的链接
+- linkMove：允许 link 或者 move 操作
+- move：一个项目可能被移动到新位置
+- all：允许所有的操作
+- uninitialized：效果没有设置时的默认值，则等同于 all
+
+在拖拽元素的 `dragstart` 事件中设置 `effectAllowed` 为 `none` 与在放置元素的 `dragover` 事件中设置 `dropEffect` 为 `none` 效果是相似的，只是一个不允许在任何位置放下，一个不能在当前位置放下。
+
+### files
+
+拖拽的文件数据，`FileList` 实例，从系统拖拽文件至放置元素中时，通过此属性访问文件数据。
+
+### items
+
+`DataTransferItemList` 实例，其中包含本次拖拽行为的所有数据项，包含以下数据：
+
+- length：包含多少数据
+- add(file: File) | add(data: string, type: string)：添加一项数据，可以是字符串也可以是 File 对象
+- remove(index: number)：根据指定索引删除一项数据
+- clear()：清空数据项
+
+需要注意的是，`items` 属性中可能不只包含了我们想要的数据，比如我们创建一个放置容器，在这个放置容器中侦听 `drop` 事件，代码如下：
+
+<Image url='http://qkc148.bvimg.com/18470/365e55e996d74833.png' width={413} height={260} alt='20230411135956' />
+
+然后我们从一个网页中拖拽一张图片到这个放置容器中，chrome 输出如下：
+
+<Image url='http://qkc148.bvimg.com/18470/f00f24ce32b2df16.png' width={1366} height={346} alt='20230411141515' />
+
+firefox 输出如下：
+
+<Image url='http://qkc148.bvimg.com/18470/31dca340a32c6dcd.png' width={1366} height={346} alt='20230411141555' />
+
+从输出中可以发现除了图片外还包含了很多额外的数据，这些数据可能是网站域名信息、图像对应的 html 字符串等等，而且在 firefox 中是无法直接获取到文件数据的。
+
+从系统拖拽文件至放置元素中时，chrome 和 firefox 的行为一致。
+
+另外 `add` 方法添加一个 `File` 实例时，在 firefox 中能正常获取到这个实例，而在 chrome 中则无法获取到。
+
+#### DataTransferItem
+
+`DataTransferItemList` 中每一项都是 `DataTransferItem` 的实例，具有以下属性和方法：
+
+- kind：拖拽项的种类，取值为 file 或 string
+- type：拖拽项的类型，一般是一个 MIME 类型
+- getAsFile()：当前项的 `kind` 属性为 file 则返回对应的 File 实例，否则返回 null
+- getAsString((data: string) => undefined)：当前项的 `kind` 属性为 string，则回调接收到对应的字符串数据
+- webkitGetAsEntry()：当前项的 `kind` 属性为 file 则返回 FileSystemFileEntry 或 FileSystemDirectoryEntry 实例，否则返回 null
+
+### types
+
+一个字符串数组，`items` 中每一项数据的 `type` 组合而成，如果数据项的 `kind` 为 file，则在 `types` 中表示为 `Files`;
+
+### clearData(format?: string)
+
+该方法用于清除数据，支持传入一个 MIME 字符串，然后会将与之对应的数据项删除，如果未传入参数则所有非 File 类型的数据都会被清除。
+
+该方法只能在 `dragstart` 事件中调用。
+
+### getData(format: string)
+
+该方法用于获取指定 MIME 类型的数据，如果对应的 MIME 数据不存在则返回空字符串。
+
+`MDN` 描述推荐在 `dragstart` 和 `drop` 事件中访问数据。
+
+### setData(format: string, data: string)
+
+该方法用于设置指定 MIME 类型的数据，如果 MIME 类型已存在于拖拽数据中，则使用新数据替换旧数据，如果不存在，则添加一个新数据项至数据列表末尾。
+
+### setDragImage(image: HTMLElement, x: number, y: number)
+
+拖拽发生时浏览器通常会为可拖拽元素创建一个反馈图像跟随鼠标移动，此方法能修改或设置当前拖拽操作的反馈图像，接收三个参数：
+
+- image：`img`、`canvas` 或其他可见元素
+- x：相对于鼠标指针的 x 轴偏移
+- y：相对于鼠标指针的 y 轴偏移
+
+此方法应该在 `dragstart` 事件中调用。
+
+## 案例
+
+### 文件拖拽上传
+
+<Image url='http://qkc148.bvimg.com/18470/1693fabe581344ca.gif' width={1364} height={768} alt='uploadfile' />
+
+这个案例完成了简单的文件拖拽和图片拖拽上传的功能，根据前文的描述我们知道在 Web 中的文件 firefox 是获取不到的，所以这个案例只能处理从系统中拖拽的文件。
+
+案例使用 `DataTransfer` 的 `files` 属性获取文件数据，从系统中拖拽文件夹至放置元素中时，文件夹数据会被浏览器认为是一个文件而被添加至 `files` 属性中，如果需要进行处理则使用 `DataTransferItem` 的 `webkitGetAsEntry` 方法。
+
+案例源代码：[拖拽上传]
+
+### 可视化编辑
+
+<Image url='http://qkc148.bvimg.com/18470/4b2a16c4b2737a68.gif' width={1364} height={768} alt='visuble' />
+
+一个简单的可视化编辑案例，不了解低代码的相关知识，不过应该也有用到拖拽 Api。
+
+案例源代码：[可视化编辑]
+
+## 结语
+
+文章参考 [MDN] 文档以及个人实验、理解得出的结论，可能存在不正确的地方，欢迎指正。
+
+-- end
+
+[MDN]: https://developer.mozilla.org/
+[MDN#dragover]: https://developer.mozilla.org/zh-CN/docs/Web/API/HTMLElement/dragover_event
+[Html5原生拖拽操作]: https://segmentfault.com/a/1190000012811776
+[拖拽上传]: https://github.com/yuanyxh/illustrate/blob/master/src/pages/UploadFile/UploadFile.tsx
+[可视化编辑]: https://github.com/yuanyxh/illustrate/blob/yuanyxh/src/pages/VisualEdit/VisualEdit.tsx

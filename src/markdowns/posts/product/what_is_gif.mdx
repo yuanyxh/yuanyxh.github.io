@@ -1,0 +1,813 @@
+---
+title: 深入浅出 GIF
+date: 2023-09-12 13:41:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/5fb84fd5087780ea.jpg
+description: 本文深入探讨了 gif 编解码的原理与技术。涵盖了 gif 文件的格式、压缩算法、八叉树颜色量化和字典树等关键内容。通过这些知识，我们成功实现了视频转 gif、图片转 gif 和 gif 播放器等功能。无论是从理论还是实践角度，本文都将为你展示 gif 编解码的精髓。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+最近写文章时用到了大量的 gif，都是录制视频然后使用一些视频转 gif 的工具，所以对视频转 gif 的原理产生了兴趣，刚好闲着没事，搞懂了 gif 的文件格式以及对应的 lzw 压缩算法，并实现了视频转 gif、图片转 gif 和 gif 播放器，也就有了这篇文章。
+
+文章内容涉及 gif 的文件格式、图像压缩算法、颜色量化算法，以及为了在图像压缩算法中更快速的查找而使用的字典树，干货较多内容较长，请耐心观看。
+
+也可以在 [gif-explorer] 中进行体验。
+
+## GIF 文件格式
+
+gif，即 Graphics Interchange Format，图片互换格式，实际上是一种压缩文档，通过将真彩色转换为 8 位色并利用 lzw 算法来实现压缩，因为体积小支持动画，成为在互联网中广泛使用的图像格式之一。它发展至今有两个版本，分别是 87a 和 89a，以下所有的内容描述都以最新的 89a 版本为例。
+
+在 [PDF 解析][解锁 PDF 文件：使用 JavaScript 和 Canvas 渲染 PDF 内容] 中我们说过，所有有意义的文件都有它自己的格式，gif 文件也不例外，gif 由以下块组合为一个完成的文件 (部分块可出现多次)：
+
+- [Header](#Header)
+- [LogicScreenDescriptor](#LogicScreenDescriptor)
+- [Global Color Table](#Global-Color-Table)
+- [Application Extension](#Application-Extension)
+- [Graphic Control Extension](#Graphic-Control-Extension)
+- [Plain Text Extension](#Plain-Text-Extension)
+- [Comment Extension](#Comment-Extension)
+- [Image Descriptor](#Image-Descriptor)
+- [Local Color Table](#Local-Color-Table)
+- [Image Data](#Image-Data)
+- [Trailer](#Trailer)
+
+这里我们以下面的 gif 文件为例来讲解各个块的实际意义。
+
+<Image url="http://qkc148.bvimg.com/18470/6c9b329e24d97c4e.gif" width={320} height={200} alt='示例图片' />
+
+### Header
+
+在文件头中总是包含着 magic number 数据，标识当前的文件类型，对于 gif 而言，它的前三个字节总是 `0x47, 0x49, 0x46`，而后三个字节标识当前 gif 的版本，可能是 87a 也可能是 89a，这是 header 中包含的全部信息，如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/302f3fa33391f95d.png" width={1280} height={704} alt='文件头图片' />
+
+### LogicScreenDescriptor
+
+紧随 Header 之后的是 LogicScreenDescriptor，这里包含了整个 gif 文件的全局信息，固定 7 个字节，如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/e4b8d54aaef9e533.png" width={1282} height={728} alt='全局信息的图片' />
+
+前 4 个字节描述了这个 gif 的宽高，需要注意的是，在 gif 中，多字节数据是以小端形式存储的，也就是说 `0x40, 0x01` (宽) 和 `0xc8, 0x00` (高) 按人们所能接受的表示应该是 `0x01, 0x40` 和 `0x00, 0xc8`，也就是 320 x 200。
+
+第 5 个字节是一个压缩字节，这个字节中的不同位表示了不同的信息，`0xf6` 即 `11110110`，我们从左至右来讲解各个位的作用：
+
+- 1 位：全局颜色标识，如果存在则全局颜色表紧跟在 LogicScreenDescriptor 后面出现。
+- 2 - 4 位：色表中每个颜色通道的位深，`111` 即表示每个颜色通道允许的最大值为 255，也就是 7 + 1 位所能表示的最大值。
+- 5 位：排序标识，标识色表中的颜色是否经过排序，排序按颜色出现的次数从高至低，也就是说越重要的颜色排在更前面。
+- 6 - 8 位：全局色表的个数，记为 n，则颜色个数为 2 ** (n + 1)，示例中是 `110`，也就是 2 ** (6 + 1)，有 128 个颜色。
+
+第 6 个字节是背景色在全局色表中的索引，全局色表存在时有效，当图像不能完全占满 gif 的实际大小时，应显示背景色。
+
+第 7 个字节是每个像素的宽高比，一般不设置它。
+
+### Global-Color-Table
+
+全局色表，只有当全局颜色标识为 1 时才存在；gif 中颜色以 rgb 格式排序，也就是说每个颜色三字节，128 个颜色则占用 384 个字节，如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/a2b2997771b78520.png" width={1280} height={704} alt='全局色表的图片' />
+
+### Extension
+
+在 gif 中还存在着很多扩展块，这些块的格式都是固定的，所以在讲解扩展块前我们先来了解它们的格式：
+
+```js
+[0x21][flag][info]?[subdata]?[0x00]
+```
+
+- 固定值 `[0x21]` 标识这是一个扩展块
+- `[flag]` 标识当前扩展块的类型
+- `[info]` 是可选的，携带了所需的额外信息，它的第一个字节表示后续有多少个字节的数据
+- `[subdata]` 同样是可选的，这是携带的实际数据，它的第一个字节表示后续有多少个字节的数据，如果跳过这些字节后遇到的字节值不是 `0x00`，那么这个字节表示的依然是后续的数据子块大小
+- 固定值 `[0x00]` 表示块结束
+
+### Comment-Extension
+
+评论扩展，存储额外的文字数据。这些数据不能被感知，也就是与图像渲染无关，大部分解析器会跳过它。该扩展块以 `0x21, 0xfe` 开始，其后跟数据子块 (subdata)；gif 只支持 ASCII 码表中的字符，也就是一字节表示一字符，如果遇到不能打印的 ASCII 字符时，gif 规范建议我们用空格 (0x20) 代替。
+
+该扩展块建议始终在文件头或文件尾，不打扰到更重要的数据 (图像或文本) 的解析。
+
+在示例中，`0x21, 0xfe` 后的 `0xa1` 表示后续有 161 个字节的数据，跳过这些字节后遇到 `0x00`，表示没有其他数据子块了，此块结束。如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/f1671570f29ae4e0.png" width={1280} height={704} alt='评论扩展的图片' />
+
+### Graphic-Control-Extension
+
+图形控制扩展，顾名思义包含了可以控制图形展示的信息，它的作用范围是此块出现后的第一个 `Image` 或 `Plain Text Extension`，固定 7 字节，其中 `0x21, 0xf9` 占用两个字节。如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/fa884d776fcc7469.png" width={1282} height={728} alt='图形控制扩展的图片' />
+
+第 3 个字节为固定值 `0x04`，表示后续有 4 个字节的数据，即 `[info]` 数据。
+
+第 4 个字节是一个压缩字节，示例中为 `0x00`，即 `00000000`，各个位从左到右表示如下：
+
+- 1 - 3 位：保留位
+- 4 - 6 位：指示播放下一帧时当前帧的操作，支持 0 - 7 的值，各个值含义如下
+  - 0：解码器不采取任何行动
+  - 1：不处理，下一帧覆盖当前帧
+  - 2：播放下一帧前将当前帧所使用的区域恢复为背景色
+  - 3：播放下一帧前将当前帧所使用的区域恢复为渲染当前帧前的状态
+  - 4 - 7：待定义
+- 7 位：是否允许用户输入控制，控制方式由解析器决定
+- 8 位：透明标识，指示是否展示背景色，在 gif 中只支持完全透明
+
+第 5 - 6 字节表示播放下一帧所需要等待的时间。小端格式，每个单位表示 10 毫秒；示例中 `0x64, 0x00` = `0x00, 0x64` = 100， 100 * 10 = 1000ms。延迟时间可以配合用户输入控制使用，播放下一帧的时机取决于是用户控制先发生还是延迟时间先结束。
+
+第 7 个字节是需要透明的颜色在色表中的索引，配合透明标识使用。当透明标识为 1 且设置了透明色索引时，则表示这个颜色在当前图像中 “完全消失”，由背景色替代。
+
+最后是 `0x00`，标识着块结束。
+
+### Image-Descriptor
+
+图像描述符，描述了当前图像的信息。遇到此块时则表示着一个 `Image` 的开始，固定 10 个字节，其中第一个字节始终是 `0x2c`。如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/02129d069ddfbe62.png" width={1280} height={704} alt='图像描述符的图片' />
+
+第 2 - 9 字节分别是图像在整个 gif 图形区域中的左偏移、上偏移、图像宽、图像高，每个值占两个字节，以小端格式存储。
+
+第 10 个字节是一个压缩字节，各个位含义如下：
+
+- 1 位：是否有本地色表，存在则本地色表紧跟在 Image Descriptor 后出现
+- 2 位：图像数据是否是隔行交错存储的，这个没有深究
+- 3 位：排序标识，同全局色表
+- 4 - 5 位：保留位
+- 6 - 8 位：颜色数量，同全局色表
+
+示例文件中第十个字节是 `0x06`，即 `00000110`，没有本地色表却设置了颜色的数量，这是不规范的，其后也不会存在本地色表的数据。
+
+该块前可以有一个图形控制扩展用于控制图片展示的细节。
+
+### Local-Color-Table
+
+本地色表，同全局色表，在本地色表标识为 1 时存在，如果不存在则使用全局色表。如果想要 gif 重现真彩色，可以利用本地色表的特性，将一个完整的图片切割的足够小，并对它们应用不同的色表，但这在大部分时候没有必要，因为这会增加整个 gif 的体积。
+
+### Image-Data
+
+图像数据紧跟在本地色表 (不存在则跟随 Image Descriptor) 后，实际是经过压缩后的颜色索引。在 gif 编码中将图像中出现的所有颜色经过算法压缩至 256 色内，然后将每个颜色替换为在色表中最接近的颜色的索引，最后通过 lzw 算法将这些索引字节压缩。
+
+关于颜色压缩和 lzw 算法内容较多，这里暂且不表。
+
+### Plain-Text-Extension
+
+纯文本扩展，存放 ASCII 文本数据，这些文本需要被渲染到 gif 中，虽然大部分解析器都忽略它。此块包含 15 字节的固定信息，其后是可变长度的数据子块，用于存放文本数据。如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/ea76a08f203542ee.png" width={1280} height={704} alt='纯文本扩展的图片' />
+
+15 个字节中 `0x21, 0x01` 是固定的，标识这是一个纯文本扩展，其余字节的含义如下：
+
+- 第 3 个字节标识后续有多少数据
+- 第 4 - 11 字节分别表示当前文本块的左偏移、上偏移、宽、高等信息，每个值占两个字节，小端模式。
+- 第 12 - 15 字节分别表示单个字符的宽、高、字符颜色在全局色表中的索引、文本块背景色在全局色表中的索引。
+
+后续跟随着数据子块，这些子块就是实际的文本数据，虽然大部分解析器会忽略它，但 [gifiddle] 实现了一个较为完整的解析器支持显示这些文本。
+
+该块前面可以有一个图形控制扩展用来控制文本展示的一些细节。
+
+### Application-Extension
+
+应用程序扩展，该块以 `0x21, 0xff` 开始。示例文件中没有该块，下图是另一个 gif 中的应用程序扩展块：
+
+<Image url="http://qkc148.bvimg.com/18470/050d4872a4c38fc9.png" width={1280} height={704} alt='应用程序扩展的图片' />
+
+第三个字节开始是 `[info]` 数据，第一个字节标识后续有多少 (0x0b) 个字节，后续字节一般是 ASCII 码值 `NETSCAPE2.0`。
+
+随后是数据子块，子块中第 1 个字节依旧是标识后续有多少个字节，第 2 个字节是应用程序 `ID`。第 3、4 字节用于控制这个 gif 的循环播放次数，如果是 `0x00, 0x00` 则表示无限循环。
+
+我们可以利用 gif 播放次数控制，创建一个点击后是另一张图片的 gif，只需要创建一个只包含两帧并且只播放一次的 gif 上传至一些平台，因为这些平台在用户点击之前只会展示一张包含第一帧的图片，在点击后才会真正加载 gif，此时 gif 立即播放并切换至下一帧就完成了我们的需求。
+
+### Trailer
+
+文件结尾，包含固定值 `0x3b`。
+
+## 八叉树颜色量化算法
+
+根据上面的内容我们知道了，gif 中图像数据的编码是需要将真彩色转换为 256 色，然后将图像中每个像素点的颜色数据替换为这 256 色中的索引的。这可以看作是 gif 编码的第一次压缩，然后我们再依赖于 lzw 算法压缩这些索引。
+
+那么我们要怎么压缩颜色呢，暴力枚举吗？如果你想要你的浏览器跑个 44 分钟的代码那可以试试。我在刚开始研究 gif 编解码时没有经过任何算法，暴力枚举来完成颜色压缩及 lzw 压缩，这导致我的浏览器陷入了长时间的运行，一度怀疑代码有错误出现了死循环，在尝试过几次后我不去操作它，让它一直运行，经过计算开始和结束的两次 `performance` 时间差，我发现处理一张 1092 x 1080 的图片需要 44 分钟。
+
+为此我查找到了八叉树颜色量化算法。颜色量化，就是通过人眼对颜色的惰性，将原图中相近的颜色合并为一种颜色，使量化前后的图像对于人眼的认识误差最小，以此达到颜色压缩的目的。八叉树，即二叉树的变种，区别于二叉树的每个节点只能有两个子节点，八叉树中每个子节点允许存在八个子节点。
+
+这里我会尽力讲清楚八叉树颜色量化的基本概念并实现一个简单的八叉树颜色量化，如果对颜色量化内容感兴趣的话建议阅读专门讲解这方面的文章。
+
+### 颜色收集
+
+我们以 rgb 颜色 `[255, 255, 255]` 为例，看看怎么将它插入到八叉树中。我们将 rgb 值都转换为二进制数据，并排列成矩阵，如下：
+
+```js
+[
+  /* r */[1, 1, 1, 1, 1, 1, 1, 1],
+  /* g */[1, 1, 1, 1, 1, 1, 1, 1],
+  /* b */[1, 1, 1, 1, 1, 1, 1, 1]
+]
+```
+
+我们先取 rgb 值的最高位，也就是上面索引为 0 的位，以 r 为高位 b 为低位的顺序排列，组成 `111` 的二进制数据，也就是数字 7，我们即在八叉树中 `root` 树子树位置 7 的地方插入一个新的节点 (如果不存在)。
+
+<Image url="http://qkc148.bvimg.com/18470/63c84f91f8d0ca8b.png" width={339} height={99} alt='rgb 收集的图片' />
+
+接下来我们再读取矩阵中索引为 1 的位，再次执行上述操作，但这次我们插入到刚刚创建的新节点的子树中，以此类推，因为字节总共有八位，所以八叉树最深也只能有八层 (除去 root 树)。
+
+经过这一步操作，我们会发现相同的颜色总是会落到相同的位置，相近的颜色也会落到同一颗树中。以下图为例
+
+<Image url="http://qkc148.bvimg.com/18470/7f4a65aacc959abb.png" width={341} height={1144} alt='rgb 树展示的图片' />
+
+<Image url="http://qkc148.bvimg.com/18470/723268bd85db31ee.png" width={1366} height={360} alt='rgb 树展示的图片2' />
+
+上面的数据只是最低位发生了变化，可以看到结果确实是将它们归纳到了同一颗树中，这些颜色如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/2a55b6b16180a7b5.png" width={1366} height={279} alt='rgb 同一颗树颜色的展示图片' />
+
+你能看出区别吗？是不是很难，那如果我们将这第八层的数据丢弃改用它们共同的父节点，这样导致的颜色差异是不是很小呢？
+
+### 颜色量化
+
+在收集全部颜色之后我们需要开始对颜色量化处理，因为八叉树的特性，实际上在收集颜色时我们就已经将颜色分好类了，对于相近的颜色总是会在同一颗树中，所以颜色量化的过程可以说是八叉树的收缩，我们只需要将八叉树从第八层开始，不停的向上收缩直到颜色数量达到我们的要求。
+
+因为图像中相同颜色出现的概率是很大的，所以我们在颜色收集时对同一颜色需要累加它们的 rgb 值，并记录这个颜色出现的次数，在量化过程中需要将所有被删除节点的 rgb 值相加并除去累加后的颜色出现次数，来获取更精确的颜色值。
+
+但是这里我们还需要考虑一个因素，那就是每颗树中的节点在这个图像里的重要性，在图像中可能存在大部分颜色都集中在某颗树的情况，其他树只记录了部分颜色，这时如果还是层层去收缩八叉树的话可能会造成较大差异，这里可以酌情考虑怎么处理。
+
+八叉树还有一个好处就是易于查找，对于相近的颜色而言，它总是会经过相同的路径，即使是经过量化后也能准确的找到它对应的量化后的颜色，这对于我们后续将颜色替换为色表索引是很有用的。
+
+以下代码是我实现的一个八叉树颜色量化类，还是使用简易的层层收缩来达到颜色量化的目的：
+
+```ts
+class OctreeNode {
+  children: OctreeNode[] = [];
+  color: ColorObject | null;
+  pixelCount = 0;
+
+  constructor() {
+    this.color = null;
+  }
+}
+
+class Octree {
+  private maxDepth = 8;
+  private count = 1;
+
+  root: OctreeNode;
+
+  constructor(maxDepth = 8) {
+    if (maxDepth > 8) {
+      throw new Error('the maximum depth cannot exceed 8');
+    }
+
+    this.maxDepth = maxDepth;
+    this.root = new OctreeNode();
+  }
+
+  insertColor(color: ColorObject) {
+    let node = this.root;
+
+    node.pixelCount++;
+
+    for (let depth = this.maxDepth - 1; depth >= 0; depth--) {
+      const index = this.getColorIndex(color, depth);
+
+      if (!node.children[index]) {
+        node.children[index] = new OctreeNode();
+      }
+
+      node = node.children[index];
+
+      node.pixelCount++;
+    }
+
+    if (node.color === null) {
+      this.count++;
+
+      return (node.color = color);
+    }
+
+    const rgb = ['r', 'g', 'b'] as const;
+
+    for (let i = 0; i < rgb.length; i++) {
+      node.color[rgb[i]] += color[rgb[i]];
+    }
+  }
+
+  getColorIndex(color: ColorObject, depth: number) {
+    let index = 0;
+    const mask = 1 << depth;
+
+    if (color.r & mask) {
+      index |= 1;
+    }
+
+    if (color.g & mask) {
+      index |= 2;
+    }
+
+    if (color.b & mask) {
+      index |= 4;
+    }
+
+    return index;
+  }
+
+  shrink(maxCount: number) {
+    if (this.count <= maxCount) return [];
+
+    for (let depth = this.maxDepth - 1; depth >= 0; depth--) {
+      this.reduceColor(this.root, depth, 0, maxCount);
+
+      if (this.count <= maxCount) break;
+    }
+
+    return this.collectColor();
+  }
+
+  reduceColor(
+    node: OctreeNode,
+    depth: number,
+    currDepth: number,
+    maxCount: number
+  ) {
+    if (this.count <= maxCount) return;
+
+    const children = [...node.children];
+
+    if (depth === currDepth) {
+      this._reduceColor(node, maxCount);
+    } else if (depth > currDepth) {
+      for (let i = 0; i < children.length; i++) {
+        if (children[i] === null || children[i] === undefined) continue;
+
+        this.reduceColor(children[i], depth, currDepth + 1, maxCount);
+      }
+    }
+  }
+
+  _reduceColor(node: OctreeNode, maxCount: number) {
+    let isClear = true;
+
+    const children = [...node.children];
+
+    children.sort((a, b) => a.pixelCount - b.pixelCount);
+
+    for (let i = 0; i < children.length; i++) {
+      if (children[i] === null || children[i] === undefined) continue;
+
+      const color = children[i].color;
+
+      if (color === null) continue;
+
+      if (node.color === null) {
+        node.color = color;
+
+        continue;
+      }
+
+      const rgb = ['r', 'g', 'b'] as const;
+
+      for (let j = 0; j < rgb.length; j++) {
+        node.color[rgb[j]] += color[rgb[j]];
+      }
+
+      this.count--;
+
+      if (this.count <= maxCount) {
+        isClear = false;
+
+        for (let j = 0; j < i; j++) {
+          const index = node.children.indexOf(children[j]);
+
+          node.children.splice(index, 1, null as unknown as OctreeNode);
+        }
+
+        break;
+      }
+    }
+    if (isClear) node.children = [];
+  }
+
+  quantizeColor(color: ColorObject) {
+    let node = this.root;
+
+    for (let depth = this.maxDepth - 1; depth >= 0; depth--) {
+      const index = this.getColorIndex(color, depth);
+      if (!node.children[index]) {
+        break;
+      }
+      node = node.children[index];
+    }
+
+    return node.color;
+  }
+
+  collectColor(node = this.root) {
+    if (node === null || node === undefined) return [];
+
+    const colors: ColorObject[] = [];
+    const children = node.children;
+
+    for (let i = 0; i < children.length; i++) {
+      if (children[i] === null || children[i] === undefined) continue;
+
+      const { color } = children[i];
+      if (color) {
+        if (!color.normalize) {
+          const { r, g, b } = color;
+
+          color.r = Math.round(r / children[i].pixelCount) || 0;
+          color.g = Math.round(g / children[i].pixelCount) || 0;
+          color.b = Math.round(b / children[i].pixelCount) || 0;
+          color.normalize = true;
+        }
+
+        colors.push(color);
+      }
+
+      colors.push(...this.collectColor(children[i]));
+    }
+
+    return colors;
+  }
+
+  calcColorDistance(color_1: ColorObject, color_2: ColorObject) {
+    const d = Math.sqrt(
+      (color_1.r - color_2.r) ** 2 +
+        (color_1.g - color_2.g) ** 2 +
+        (color_1.b - color_2.b) ** 2
+    );
+
+    return Math.floor(
+      (1 - d / Math.sqrt(255 ** 2 + 255 ** 2 + 255 ** 2)) * 100
+    );
+  }
+}
+```
+
+在研究颜色量化算法的过程中我发现 [gif.js] 转换的图像与源图像的差异很小，翻看了它的源码发现使用了 [NeuQuant Neural-Net Quantization Algorithm]，即神经网络算法，感兴趣的可以去研究。
+
+## lzw 压缩算法
+
+在图像数据一节中我们知道了 gif 中存储的图像数据是经过压缩的颜色索引，现在我们已经可以通过八叉树将每个像素的颜色转换为索引了，接下来则需要对它进行压缩，这是通过 lzw 算法来实现的。
+
+关于 lzw 算法，网上已经有很多详细讲解的文章了，也想不到怎么写的更通俗易懂一点，所以这里只贴出相关代码，通过注释加以讲解，如果对原理感兴趣我文末会贴出链接。
+
+### 编码
+
+```ts
+class TrieNode {
+  children: TrieNode[];
+  isEndOfWord: boolean;
+  code!: number;
+
+  constructor() {
+    this.children = new Array(4096);
+    this.isEndOfWord = false;
+  }
+}
+
+/**
+ * 字典树，在压缩过程中需要查找前缀数据，这部分耗时很长，所以使用了字典树减少查找耗时
+ */
+class Trie {
+  root = new TrieNode();
+  count = 0;
+
+  insert(nums: number[]) {
+    let node = this.root;
+
+    for (let i = 0; i < nums.length; i++) {
+      const index = nums[i];
+
+      if (!node.children[index]) {
+        node.children[index] = new TrieNode();
+      }
+
+      node = node.children[index];
+    }
+
+    node.isEndOfWord = true;
+    node.code = this.count;
+
+    this.count++;
+  }
+
+  search(nums: number[]) {
+    let node = this.root;
+    for (let i = 0; i < nums.length; i++) {
+      const index = nums[i];
+
+      if (!node.children[index]) {
+        return false;
+      }
+
+      node = node.children[index];
+    }
+
+    return node;
+  }
+
+  clear() {
+    this.root = new TrieNode();
+    this.count = 0;
+  }
+}
+
+/**
+ *
+ * @param indexStream 输入流，索引数组
+ * @param colorTable 色表
+ */
+function encoder(indexStream: number[], colorTable: number[][]) {
+  /*
+    初始化最小代码大小，在编码解码中都扮演了重要角色，应该始终大于等于色表长度
+    以 256 色为例，lzwMiniCodeSize 应为 8，256 = (2 ** 8)
+  */
+  let lzwMiniCodeSize = 2;
+  while (colorTable.length > 1 << lzwMiniCodeSize) lzwMiniCodeSize++;
+
+  /* 初始化清除码，为了压缩效率，gif 建议每当输出代码 0xfff 时重置映射表，同时输出清除码 */
+  const clearCode = 1 << lzwMiniCodeSize;
+  /* 初始化信息结束码，当输入流压缩完成时输出信息结束码 */
+  const eoiCode = clearCode + 1;
+  /*
+    初始化映射表，lzw 压缩是利用较短的代码表示较长的代码来实现压缩的，依赖于映射表来完成数据替换
+    映射表是动态创建的，除了初始的映射数据外，其他的数据在压缩过程中确定
+  */
+  const trie = new Trie();
+
+  /* 初始化输出，存放压缩后的代码 */
+  const codeStream: number[] = [];
+
+  /*
+    初始化可变代码大小，初始值为 lzwMiniCodeSize + 1，codeSize 不能大于 12，每当输出代码 0xfff 时，
+    输出清除码后立即重置
+  */
+  let codeSize = lzwMiniCodeSize + 1;
+  /*
+    当前前缀
+  */
+  let prefix: number[] = [];
+  /*
+    当前索引
+  */
+  let k: number[] = [];
+
+  /* 初始化输入长度 */
+  const len = indexStream.length;
+  /* 初始化指针，指向输入流的当前位置 */
+  let point = 0;
+
+  // 首先输出清除码
+  codeStream.push(clearCode);
+
+  // 取第一个输入作为初始化的当前前缀
+  prefix = [indexStream[point++]];
+
+  // 初始化映射表
+  for (let i = 0; i <= eoiCode; i++) trie.insert([i]);
+
+  // 主循环体
+  while (point < len) {
+    // 获取下一个输入作为 k
+    k = [indexStream[point++]];
+
+    // 映射表中查找是否存在 (前缀 + k)
+    const current = prefix.concat(k);
+    const result = trie.search(current);
+
+    // 找到则: 前缀 = (前缀 + k)
+    if (result) {
+      prefix = current;
+      k = [];
+
+      continue;
+    }
+
+    // 未找到在映射表中插入
+    trie.insert(current);
+    // 获取前缀对应的码
+    const prefixCode = trie.search(prefix);
+    // 添加至码表
+    if (prefixCode) {
+      codeStream.push(prefixCode.code);
+    }
+
+    // (前缀 = k)
+    prefix = k;
+    // k 重置
+    k = [];
+
+    // 获取刚刚添加的码
+    const preCode = trie.count - 1;
+
+    // 如果码大于 codeSize 所能表示的数字且 codeSize 小于 12, codeSize + 1
+    if (preCode > (1 << codeSize) - 1 && codeSize < 12) {
+      codeSize++;
+    } else if (preCode === 1 << 12) {
+      // 如果码等于最大代码 12 所能表示的值, 重新初始化映射表
+      trie.clear();
+      for (let i = 0; i <= eoiCode; i++) trie.insert([i]);
+      // 输出清除码
+      codeStream.push(clearCode);
+      // 重置 codeSize
+      codeSize = lzwMiniCodeSize + 1;
+    }
+  }
+
+  // 已完成输出最后的码
+  const val = trie.search(prefix);
+  if (val) {
+    codeStream.push(val.code);
+  }
+  // 输出信息结束码
+  codeStream.push(eoiCode);
+}
+```
+
+代码中用到了字典树，因为在压缩过程中会不断更新映射表，并通过前缀在映射表中查找数据。一开始的代码没有使用数据结构所以耗时很长，咨询了群大佬后得知这种前缀查找的方式适合使用字典树，当然现在编码还是比较慢，有想法的大佬可以讨论交流。
+
+### 解码
+
+```ts
+/**
+ *
+ * @param blocks 图像数据块，gif 中图像数据一般被分为每块 255 字节的数据
+ * @param lzwMiniCodeSize 最小代码大小
+ * @param colorTable 色表
+ */
+function decoder(codeStream: number[], lzwMiniCodeSize: number) {
+  /* 初始化清除码 */
+  const clearCode = 1 << lzwMiniCodeSize;
+  /* 初始化信息结束码 */
+  const eoiCode = clearCode + 1;
+  /* 初始化映射表，这样不需要查找前缀的操作 */
+  const trie = new Map<number, number[]>();
+  /* 初始化输出索引流 */
+  const indexStream: number[] = [];
+
+  /* 初始化可变代码大小 */
+  let codeSize = lzwMiniCodeSize + 1;
+
+  /* 当前代码 */
+  let code = -1;
+  /* code 对应的索引值 */
+  let $index: number[] = [];
+  /* 之前的代码 */
+  let prevCode = -1;
+  /* 前缀 */
+  let perfix: number[] = [];
+  /* 每次索引更新时的第一个索引 */
+  let k = -1;
+  /* 指针指向当前代码索引 */
+  let cursor = 0;
+
+  /* 是否已完成 */
+  let isFinish = false;
+
+  /* 获取第一个代码，第一个代码应始终是清除码 */
+  code = codeStream[cursor++];
+  if (code !== clearCode) {
+    throw new Error(
+      "invalid data, the first code in the code stream should be Clear Code"
+    );
+  }
+
+  /* 初始化映射表 */
+  for (let i = 0; i <= eoiCode; i++) trie.set(i, [i]);
+
+  /* 获取第二个代码 */
+  code = codeStream[cursor++];
+  /* 获取 code 对应的索引值 */
+  $index = trie.get(code)!;
+  /* 输出索引 */
+  indexStream.push(...$index);
+  /* prevCode 设置为当前 code */
+  prevCode = code;
+
+  /* 主循环 */
+  while (cursor < codeStream.length) {
+    /* 在每次映射表输出的代码等于 1 << codeSize 时，codeSize 需要增加且不能大于 12 */
+    if (trie.size - 1 === (1 << codeSize) - 1 && codeSize < 12) {
+      codeSize++;
+    }
+
+    /* 获取下一个代码 */
+    code = codeStream[cursor++];
+
+    switch (true) {
+      /* code 等于清除码时重置映射表即 codeSize */
+      case code === clearCode:
+        /* 重置映射表 */
+        trie.clear();
+        /* 重新初始化 */
+        for (let i = 0; i <= eoiCode; i++) trie.set(i, [i]);
+        /* 重置 codeSize */
+        codeSize = lzwMiniCodeSize + 1;
+
+        /* 获取下一个代码 */
+        code = codeStream[cursor++];
+        /* 将当前 code 对应的索引值添加至输出 */
+        $index = trie.get(code)!;
+        indexStream.push(...$index);
+        /* 之前的代码设置为当前代码 */
+        prevCode = code;
+        break;
+
+      /* code 等于信息结束码时，图像结束，结束压缩 */
+      case code === eoiCode:
+        isFinish = true;
+        break;
+
+      /* 其他 code 值 */
+      default:
+        if (trie.has(code)) {
+          /* 映射表中存在 code 时获取当前 code 对应的索引 */
+          $index = trie.get(code)!;
+          /* 添加至输出 */
+          indexStream.push(...$index);
+          /* 获取 prevCode 对应的索引 */
+          perfix = trie.get(prevCode)!;
+          /* k 设置为 当前 code 对应索引的第一个索引 */
+          k = $index[0];
+          /* 前缀 + k */
+          perfix = perfix.concat(k);
+          /* 映射表中插入 前缀 + k */
+          trie.set(trie.size, perfix);
+          /* 之前的码等于当前码 */
+          prevCode = code;
+        } else {
+          /* 不存在则获取 prevCode 对应的索引 */
+          perfix = trie.get(prevCode)!;
+          /* k 设置为前缀的第一个索引 */
+          k = perfix[0];
+          /* 前缀 = 前缀 + k */
+          perfix = perfix.concat(k);
+          /* 输出索引 前缀 + k */
+          indexStream.push(...perfix);
+          /* 映射表添加前缀数据 */
+          trie.set(trie.size, perfix);
+          /* 之前的码等于当前码 */
+          prevCode = code;
+        }
+
+        break;
+    }
+
+    if (isFinish) break;
+  }
+}
+```
+
+## 案例
+
+俗话说好记性不如烂笔头，一个东西再怎么研究也是需要实践的，所以我基于上述内容实现了几个案例，分别是：视频转 gif，这是最初想要实现的功能；图片转 gif 以及 gif 播放器。这些案例都可以在我的效果演示站中体验 [illustrate][gif-explorer]。
+
+### 视频转 gif
+
+思路是 `canvas` 通过定时器来绘制 `video`，然后通过 worker 在后台执行编码算法，实际测试可能会有 bug，目前还未找到原因。
+
+视频转 gif 需要控制帧数，为了保证流畅我设置的是每秒 24 帧，5 秒大概有 122 帧，以下是一个 640 x 360 视频编码的 5 秒 gif 文件，耗时 2 分 40 秒，还是比较慢的。
+
+<Image url="http://qkc148.bvimg.com/18470/103cb89dd2180c85.gif" width={640} height={360} alt='gif 展示的图片' />
+
+### 图片转 gif
+
+这个没什么好说的，只是简单的使用 `canvas` 来绘制图像并组合为 gif 帧，前面说过 gif 也支持文本渲染，也是可以实现添加的。
+
+### gif 播放器
+
+也是实现了一个简易的 gif 播放器，同时添加了用户控制扩展，不过不支持渲染文本。思路是解码 gif 的图像数据后通过变量一帧一帧的绘制到 `canvas` 中，同时也支持将全部帧图片下载为单独的图片。如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/5b90ec5020e61cf0.png" width={1069} height={551} alt='gif 播放器展示的图片' />
+
+在实现 gif 解码的过程中发现了 web 支持了一个新的 API [ImageDecoder] 可以很方便的解码图像，可以基于此来实现播放器功能。
+
+## 参考链接
+
+- [w3 规范]
+- [What's In A GIF]
+- [LZW and GIF explained]
+- [你真的了解 gif 吗？分析 gif 文件和一些奇怪的 gif 特性]
+- [庖丁解牛：GIF]
+- [【读懂 Gif 第二节】LZW 压缩算法在 Gif 中的应用👑]
+- [GIF Codec – LZW Compression Algorithm LZW算法]
+- [八叉树颜色压缩图解以及c++实现]
+- [八叉树算法--图像量化法]
+- [借助 gif.js 实现前端视频转GIF]
+
+[解锁 PDF 文件：使用 JavaScript 和 Canvas 渲染 PDF 内容]: https://yuanyxh.com/posts/produce/%E8%A7%A3%E9%94%81%20PDF%20%E6%96%87%E4%BB%B6%EF%BC%9A%E4%BD%BF%E7%94%A8%20JavaScript%20%E5%92%8C%20Canvas%20%E6%B8%B2%E6%9F%93%20PDF%20%E5%86%85%E5%AE%B9.html
+[gif-explorer]: https://yuanyxh.com/illustrate/#/sequel/gif-explorer
+[gifiddle]: http://ata4.github.io/gifiddle/
+[gif.js]: https://github.com/jnordberg/gif.js
+[NeuQuant Neural-Net Quantization Algorithm]: https://scientificgems.wordpress.com/stuff/neuquant-fast-high-quality-image-quantization/
+[w3 规范]: https://www.w3.org/Graphics/GIF/spec-gif89a.txt
+[What's In A GIF]: http://www.matthewflickinger.com/lab/whatsinagif/
+[LZW and GIF explained]: http://web.archive.org/web/20050217131148/http://www.danbbs.dk/~dino/whirlgif/lzw.html
+[你真的了解 gif 吗？分析 gif 文件和一些奇怪的 gif 特性]: https://www.infoq.cn/article/fqe808mycqc0fb8u2dsx
+[庖丁解牛：GIF]: https://cloud.tencent.com/developer/article/1005831
+[【读懂 Gif 第二节】LZW 压缩算法在 Gif 中的应用👑]: https://burqee.com/article/12/
+[GIF Codec – LZW Compression Algorithm LZW算法]: https://succlz123.wordpress.com/2017/12/20/gif-codec-lzw-compression-algorithm/
+[八叉树颜色压缩图解以及c++实现]: https://zhuanlan.zhihu.com/p/220177037
+[八叉树算法--图像量化法]: https://blog.csdn.net/qq_34341423/article/details/119353680
+[借助 gif.js 实现前端视频转GIF]: https://juejin.cn/post/7075194236684992542
+[ImageDecoder]: https://developer.mozilla.org/en-US/docs/Web/API/ImageDecoder

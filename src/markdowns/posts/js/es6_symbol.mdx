@@ -1,0 +1,521 @@
+---
+title: ES6 新特性详解 - Symbol
+date: 2022-11-06 17:09:27
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/0d598efd28c6cf11.png
+description: 详解 JavaScript ES6 symbol
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+`JS` 中内置了很多数据类型，如基本数据类型 `number`、`string`、`boolean`，引用数据类型 `object` 等，而 `ES6` 的推出也为我们带来了新的基本数据类型：`symbol`。
+
+本文理解并讲述 `ES6` 基本数据类型 `symbol`，内容有误请指出，内容有缺请补充。
+
+## 概念
+
+`symbol`，译为符号，使用 `Symbol` 函数创建，关于创建符号，有几点需要注意
+
+- `Symbol` 函数接受一个可选的字符串描述值，用于描述符号的作用
+- 每个符号都是唯一的，即使传入相同的描述值
+- `Symbol` 函数不允许通过 `new` 的方式调用
+
+```javascript
+// 使用 Symbol 创建一个符号
+const sym = Symbol();
+console.log(sym); // Symbol()
+
+// 对一个符号使用 typeof 返回 symbol
+console.log(typeof Symbol()); // symbol
+
+// 不允许通过 new 调用
+// PS: 可以通过检测 new.target 实现相同效果
+const sym = new Symbol(); // TypeError
+
+// 创建时可以传入一个可选的描述
+const sym = Symbol('descript');
+console.log(sym); // Symbol(descript)
+
+// 每个 Symbol 创建的符号都是不同的，即使拥有相同的描述
+console.log(Symbol('test') === Symbol('test')); // false
+```
+
+`symbol` 不同于 `number`、`string`、`boolean`，它的包装类型并没有那么多有用的 `Api`，`symbol` 类型最大的作用就是用作对象键
+
+```javascript
+const sym = Symbol('name');
+
+const obj = {
+  // 对象键引用变量要使用中括号包裹
+  [sym]: 'yuanyxh'
+};
+
+console.log(obj[sym]); // yuanyxh
+```
+
+## 复用符号
+
+虽然 `Symbol` 创建的符号是全局唯一的，但 `JS` 还提供了 `Symbol.for` 方法用来复用符号，该方法接受一个字符串参数，该参数如果不存在于全局 `symbol` 注册表中则返回一个新的 `symbol` 值，并注册该值，如果存在则返回已被注册的 `symbol`
+
+```javascript
+// 全局 symbol 注册表中不存在 test
+// 返回新的 symbol，并注册 test 与 对应 symbol
+const sym = Symbol.for('test');
+console.log(sym); // Symbol(test)
+
+// 全局 symbol 注册表中已存在 test
+// 复用已被注册的 symbol
+const symCopy = Symbol.for('test');
+
+console.log(sym === symCopy); // true
+```
+
+与 `Symbol.for` 对应的还有 `Symbol.keyFor` 方法，该方法的作用是获取已在全局 `symbol` 注册表中注册的 `symbol` 的 `key` 值
+
+```javascript
+// 注册全局 symbol
+const sym = Symbol.for('test');
+// 获取已全局的注册的 symbol 对应的 key 值
+const key = Symbol.keyFor(sym);
+
+console.log(key); // test
+```
+
+`Symbol.for` 方法并不能获取到使用 `Symbol` 创建的符号，因为 使用 `Symbol` 创建的符号并不会在全局 `symbol` 注册表中注册
+
+```javascript
+// 创建 symbol
+const sym = Symbol('test');
+// 注册全局 symbol
+const globalSym = Symbol.for('test');
+
+// 两者不相等
+console.log(sym === globalSym); // false
+```
+
+## 内建符号
+
+除了自定义符号外，`JS` 还内置了很多特殊的符号，这些符号的作用已被预先定义，在 `ES5` 以后才对外暴露，所有的内置符号都是不可写，不可枚举，不可配置的。
+
+### Symbol.iterator & Symbol.asyncIterator
+
+`Symbol.iterator` 符号用于标识一个迭代器，该迭代器被 `for...of` 或其他消费迭代器的语法所使用
+
+```javascript
+const obj = {
+  // 定义迭代器
+  [Symbol.iterator]() {
+    let i = 0;
+    // 迭代器应返回一个符合 iterable 协议的对象
+    return {
+      next() {
+        // next 方法应返回格式为 { done: boolean, value: any } 的对象
+        return { done: i >= 5, value: i++ };
+      }
+    };
+  }
+};
+
+// for...of 消费
+for (const i of obj) {
+  console.log(i); // 0 1 2 3 4
+}
+
+// of
+const [a, b, c, d, e] = obj;
+console.log(a, b, c, d, e); // 0 1 2 3 4
+```
+
+`Symbol.asyncIterator` 符号用于标识一个异步迭代器，作用与 `Symbol.iterator` 相同，但产生的值期待为 [Promise] 实例，该异步迭代器被 `for await...of` 所使用
+
+```javascript
+const obj = {
+  // 定义异步迭代器
+  [Symbol.asyncIterator]() {
+    let i = 0;
+    // 迭代器应返回一个符合 iterable 协议的对象
+    return {
+      next() {
+        // next 方法应返回格式为 { done: boolean, value: any } 的对象
+        return { done: i >= 5, value: Promise.resolve(i++) };
+      }
+    };
+  }
+};
+
+// for await...of 消费
+async function test(target) {
+  // for await...of 语法应在异步函数中使用
+  for await (const i of target) {
+    console.log(i); // 0 1 2 3 4
+  }
+}
+test(obj);
+```
+
+异步迭代器一般配合生成器函数使用，因为即使异步迭代器返回 `Promise` 实例，`for await...of` 语法也不会等待 `Promise` 成功并解构成功值，而配合生成器可以直接 `yield` 出 `Promise` 内部值
+
+```javascript
+const obj = {
+  // 定义异步迭代器
+  async *[Symbol.asyncIterator]() {
+    let i = 0;
+
+    while (i < 5) {
+      // 等待 Promise 完成
+      const res = await createPromise(i++);
+      // yield 出 res 值
+      yield res;
+    }
+  }
+};
+
+// 创建一个两秒后 resolve 的 Promise
+function createPromise(value) {
+  return new Promise((resolve) => setTimeout(resolve, 2000, value));
+}
+
+// for await...of 消费
+(async function (target) {
+  // for await...of 语法应在异步函数中使用
+  for await (const i of target) {
+    console.log(i); // 0 1 2 3 4
+  }
+})(obj);
+```
+
+### Symbol.hasInstance
+
+`Symbol.hasInstance` 符号被 `instanceof` 操作符所使用，用来判断一个对象是否是对应函数、类的实例
+
+```javascript
+// F 函数
+function F() {}
+// 构造实例
+const f = new F();
+
+console.log(f instanceof F); // true
+```
+
+该符号存在于 `Function` 原型上，所以所有函数、类都能调用，通过属性遮蔽能够覆盖默认的符号行为
+
+```javascript
+// F 函数
+function F() {}
+// 构造实例
+const f = new F();
+
+// 调用默认 Symbol.hasInstance 函数
+console.log(F[Symbol.hasInstance](f)); // true
+
+// 重写 Symbol.hasInstance 函数
+Object.defineProperty(F, Symbol.hasInstance, {
+  value: function (instace) {
+    return false;
+  }
+});
+
+console.log(f instanceof F); // false
+console.log(F[Symbol.hasInstance](f)); // false（Symbol.hasInstance 的默认行为被改变了！）
+```
+
+### Symbol.isConcatSpreadable
+
+`Symbol.isConcatSpreadable` 符号用于配置指定对象作为数组的 `concat` 方法的参数时是否展开其数组元素
+
+```javascript
+const arr1 = [1, 2, 3, 4];
+const arr2 = [5, 6, 7, 8];
+
+// concat 接受到的参数为数组时默认打平
+console.log(arr1.concat(arr2)); // [1, 2, 3, 4, 5, 6, 7, 8]
+```
+
+修改 `Symbol.isConcatSpreadable` 的值能够修改默认行为
+
+```javascript
+const arr1 = [1, 2, 3, 4];
+const arr2 = [5, 6, 7, 8];
+
+// 配置不打平
+arr2[Symbol.isConcatSpreadable] = false;
+
+// arr2 的默认行为被改变，concat 不打平数组元素，直接将数组添加至末尾
+console.log(arr1.concat(arr2)); // [1, 2, 3, 4, Array(4)]
+```
+
+同时，类数组在被当作数组 `concat` 方法的参数时也是不会被打平的，可以配置该符号值为 `true` 来实现打平效果
+
+```javascript
+const arr = [1, 2, 3, 4];
+const obj = {
+  length: 4,
+  0: 5,
+  1: 6,
+  2: 7,
+  3: 8
+};
+
+// 配置打平
+obj[Symbol.isConcatSpreadable] = true;
+
+// obj 的默认行为被改变，concat 打平类数组
+console.log(arr.concat(obj)); // [1, 2, 3, 4, 5, 6, 7, 8]
+```
+
+### Symbol.unscopables
+
+`Symbol.unscopables` 符号用于配置哪些对象属性需要从 [with] 环境中移除
+
+```javascript
+const obj = {
+  a: 'a',
+  b: 'b'
+};
+
+obj[Symbol.unscopables] = {
+  // 配置为 false 则存在于 with 词法上，为 true 则不存在
+  a: false,
+  b: true
+};
+
+with (obj) {
+  console.log(a); // a
+  console.log(b); // ReferenceError
+}
+```
+
+注意，`with` 存在许多弊端，不推荐使用，且在严格模式下使用会抛出错误，所以 `Symbol.unscopables` 也不建议使用。
+
+### Symbol.species
+
+`Symbol.species` 允许子类覆盖对象的默认构造函数，如一个扩展子类的实例对象调用指定方法后返回新的实例对象，希望这个对象是由父类构造的
+
+```javascript
+// 继承 Array
+class MyArray extends Array {}
+
+// 构造 MyArray 实例
+const myArray = new MyArray(1, 3, 6);
+
+const arr = myArray.map((v) => v * 2);
+console.log(arr instanceof MyArray); // true
+console.log(arr instanceof Array); // true
+
+// 重写 Symbol.species
+Object.defineProperty(MyArray, Symbol.species, {
+  // 定义访问器
+  get() {
+    // 返回 Array
+    return Array;
+  }
+});
+
+// 构造 MyArray 实例
+const myArray2 = new MyArray(1, 3, 6);
+
+const arr2 = myArray2.map((v) => v * 2);
+console.log(arr2 instanceof MyArray); // false
+console.log(arr2 instanceof Array); // true
+```
+
+### Symbol.toPrimitive
+
+`Symbol.toPrimitive` 属性在对象被转换为对应原始值时被调用，该属性会接受到一个参数，参数是 `string`、`number`、`default` 其中之一
+
+```javascript
+const obj = {
+  // 重写 Symbol.toPrimitive
+  [Symbol.toPrimitive](hint) {
+    console.log('print: '， hint);
+  }
+}
+
+String(obj); // print: string
+Number(obj); // print: number
+```
+
+可以重写指定对象的 `Symbol.toPrimitive` 属性，从而自定义转换后的值
+
+```javascript
+const obj = {
+  // 重写 Symbol.toPrimitive
+  [Symbol.toPrimitive](hint) {
+    switch (hint) {
+      case 'string':
+        return 'test';
+      case 'number':
+        return 8362;
+      default:
+        return obj;
+    }
+  }
+};
+
+String(obj); // test
+Number(obj); // 8362
+```
+
+### Symbol.toStringTag
+
+`Symbol.toStringTag` 用于指定对象标签，标签可以使用 `Object.prototype.toString` 获取，一些类型无需指定 `Symbol.toStringTag`，而一些对象类型因为 `JS` 内部指定了对应的 `Symbol.toStringTag` 所以也能返回对应的值，但是自定义的类需要手动绑定标签
+
+```javascript
+// 无需 Symbol.toStringTag 指定标签
+Object.prototype.toString.call('foo'); // "[object String]"
+Object.prototype.toString.call([1, 2]); // "[object Array]"
+
+// 语言内部已指定 Symbol.toStringTag 值
+Object.prototype.toString.call(new Map()); // "[object Map]"
+Object.prototype.toString.call(function* () {}); // "[object GeneratorFunction]"
+Object.prototype.toString.call(Promise.resolve()); // "[object Promise]"
+
+// 自定义类
+class MyClass {}
+
+// 默认值
+Object.prototype.toString.call(new MyClass()); // [object Object]
+// 手动绑定
+MyClass.prototype[Symbol.toStringTag] = 'MyClass';
+Object.prototype.toString.call(new MyClass()); // [object MyClass]（被修改！！）
+```
+
+### Symbol.match
+
+除了上述内置符号外，还有四个内置符号被字符串方法所使用，通过重写这些符号对应的值能够修改默认行为。
+
+字符串 `startsWith`、`endsWith`、`includes` 等方法规定第一个参数不得为正则表达式，而 `Symbol.match` 可以作为正则对象的属性使用，通过修改该属性能够消除字符串上述方法的检测
+
+```javascript
+const reg = /foo/;
+
+'/foo/'.startsWith(reg); // TypeError
+
+// 修改默认行为
+reg[Symbol.match] = false;
+
+'/foo/'.startsWith(reg); // true
+```
+
+同时，`String.prototype.match` 方法的参数不为正则对象时会默认转换为正则对象，可以给参数添加 `Symbol.match` 属性来覆盖默认行为，该属性值为一个函数
+
+```javascript
+const obj = {
+  // 添加 Symbol.match 方法
+  [Symbol.match](str) {
+    return str;
+  }
+};
+
+console.log('test'.match(obj)); // test
+```
+
+### Symbol.replace
+
+`Symbol.replace` 符号被字符串方法 `replace` 使用，该方法第一个参数不为正则对象时默认转换为正则对象，可以通过添加该符号属性来修改默认行为
+
+```javascript
+const str = 'hello world';
+const obj = {
+  // 添加 Symbol.replace 方法
+  [Symbol.replace](target, replace) {
+    console.log(target); // hello world
+    console.log(replace); // hi
+    return target;
+  }
+};
+
+str.replace(obj, 'hi');
+```
+
+### Symbol.search
+
+`Symbol.search` 符号被字符串方法 `search` 使用，该方法参数不为正则对象时默认转换为正则对象，可以通过添加该符号属性来修改默认行为
+
+```javascript
+const str = 'hello world';
+const obj = {
+  // 添加 Symbol.search 方法
+  [Symbol.search](target) {
+    return target.indexOf('h');
+  }
+};
+
+str.search(obj); // 0
+```
+
+### Symbol.split
+
+`Symbol.split` 符号被字符串方法 `split` 使用，该方法参数不为正则对象时默认转换为正则对象，可以通过添加该符号属性来修改默认行为
+
+```javascript
+const str = 'hello world';
+const obj = {
+  // 添加 Symbol.split 方法
+  [Symbol.split](target) {
+    return target.split(' ').join('#');
+  }
+};
+
+str.split(obj); // hello#world
+```
+
+## 私有变量
+
+我们知道，`JS` 中是没有私有变量的概念的，这是 `JS` 中的一个痛点，在 `ES6` 模块化推出之前，创造出私有变量的方式主要是利用闭包，但大量使用闭包可能造成内存泄漏，这让 `JS` 没有一个完美的方式来营造出私有变量。
+
+很多人在初学 `symbol` 时可能都有过这样一个想法，既然 `symbol` 是全局唯一的，且能够作为对象的键来使用，那么是不是能够用来定义私有属性呢？
+
+```javascript
+function test() {
+  return {
+    [Symbol('name')]: 'yuanyxh',
+    [Symbol('age')]: 22
+  };
+}
+
+const info = test();
+console.log(info); // { Symbol(name): 'yuanyxh', Symbol(age): 22 }
+```
+
+上述代码并没有保存两个 `symbol` 属性键的引用，这是不是意味着我们无法访问到这个对象的数据，而达到了属性私有的目的呢？
+
+很遗憾，并不是，因为 `symbol` 类型本身不是为了私有属性的目的而设计的，且 `JS` 还提供了一些方法能够让我们获取到对象的 `symbol` 键
+
+```javascript
+function test() {
+  return {
+    [Symbol('name')]: 'yuanyxh',
+    [Symbol('age')]: 22
+  };
+}
+
+const info = test();
+console.log(info); // { Symbol(name): 'yuanyxh', Symbol(age): 22 }
+
+// 获取指定对象自有的 symbol 键，返回 symbol 数组
+const symbols = Object.getOwnPropertySymbols(info);
+symbols.forEach((v) => console.log(info[v])); // yuanyxh 22
+```
+
+可以看到，通过 `Object.getOwnPropertySymbols` 方法能够获取到指定对象的所有 `symbol` 键，这也让我们想通过 `symbol` 实现私有属性的想法落空。
+
+其实除了闭包外，在运行时没有相应的环境创建出私有变量，但我们可以在编译时对代码进行检查，像 `typescript` 就提供了这样的功能，而 ==私有字段== 的规范目前处于第三阶段，通过 `babel` 等编译工具也能够识别。
+
+## 结语
+
+本文理解并讲述了 `ES6` 中的新增类型 `symbol`。其实 `symbol` 类型在一般开发中并不常用，但理解内置符号的特性是有必要的，这些内置符号定义了我们常用的操作符、方法的行为，通过重写内置符号能够让我们进行更深层次的自定义。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN][MDN#JavaScript]
+
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/
+[Promise]: ../js/es6_promise.mdx
+[with]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/with

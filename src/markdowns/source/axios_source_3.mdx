@@ -1,0 +1,646 @@
+---
+title: 学习 axios 源码（三）
+date: 2023-03-21 10:54:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/1dbf569c31dd90e6.png
+description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## axios 源码学习系列
+
+- [axios 源码学习 - axios 的初始化][axios_源码学习(一)]
+- [axios 源码学习 - request 执行流程][axios_源码学习(二)]
+
+## dispatchRequest 执行流程
+
+上一章中我们讲解了 `request` 方法的执行流程，在 `request` 方法的最后调用了 `dispatchRequest` 函数以完成请求，这一篇文章我们就来学习一下后续的请求流程。`dispatchRequest` 函数定义在 `lib\core\dispatchRequest.js`。
+
+```js
+// lib\core\dispatchRequest.js
+function dispatchRequest(config) {}
+```
+
+### 检查请求
+
+在函数的开头，调用了 `throwIfCancellationRequested`，它的代码如下：
+
+```js
+// lib\core\dispatchRequest.js
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+
+  if (config.signal && config.signal.aborted) {
+    throw new CanceledError(null, config);
+  }
+}
+```
+
+我们知道，`axios` 是支持取消请求的，且支持两种取消方式，分别是 `CancelToken` 和 `AbortController`，它们的使用如下：
+
+```js
+// CancelToken
+const CancelToken = axios.CancelToken;
+const source = CancelToken.source();
+axios.get('https://yuanyxh.com/', {
+  cancelToken: source.token
+});
+source.cancel();
+
+// AbortController
+const controller = new AbortController();
+axios.get('https://yuanyxh.com/', {
+  signal: controller.signal
+});
+controller.about();
+```
+
+`CancelToken` 是 `axios` 作者自实现取消请求的工具类，请求配置中的 `cancelToken` 字段对应的就是这个类的实例，实例方法 `throwIfRequested` 判断当前请求是否被取消，是则抛出错误。
+
+[AbortController][MDN#AbortController] 是 `ES` 规范定义的用于取消请求的控制器，这个控制器对象有一个 `signal` 属性和一个 `abort` 方法；`signal` 属性又是 [AbortSignal][MDN#AbortSignal] 的实例，它有以下属性与方法：
+
+- aborted: 请求是否被取消
+- reason: 请求被中止的原因
+- throwIfAborted(): 如果请求被取消则抛出 `reason`
+
+`AbortController` 实例的 `abort` 方法用于中止对应的 `signal`。
+
+根据代码我们可以知道，`throwIfCancellationRequested` 函数就是在判断当前请求是否已被取消，是则抛出错误。
+
+为什么要在正式请求开始前进行这样一个判断呢，在上一章中我们讲过，`dispatchRequest` 的调用可能是异步的，这取决于我们的请求拦截器配置，如果我们在调用 `axios` 后的下一行代码就取消了当前请求，如果不进行这一层判断那请求仍可能会发送出去。
+
+### header & data 的处理
+
+在判断请求未被取消后会进行请求头与请求体数据的转换，首先是 `headers`：
+
+```js
+// lib\core\dispatchRequest.js
+config.headers = AxiosHeaders.from(config.headers);
+```
+
+`AxiosHeaders.from` 代码如下，就是将 `header` 转换为 `AxiosHeaders` 的实例，以便后续使用封装好的 `AxiosHeaders` 实例方法
+
+```js
+// lib\core\AxiosHeaders.js
+class AxiosHeaders {
+  // other...
+  static from(thing) {
+    return thing instanceof this ? thing : new this(thing);
+  }
+}
+```
+
+随后处理请求体数据：
+
+```js
+// lib\core\dispatchRequest.js
+config.data = transformData.call(config, config.transformRequest);
+```
+
+`transformData` 用于转换请求与响应数据，在 `axios` 的请求配置中支持以数组形式传入 `transformRequest` 与 `transformResponse`，数组元素应为函数，这些函数会被 `transformData` 调用以完成对请求体数据与响应数据的更改。注意，`transformRequest` 改变的是请求体的数据，意味着它只对 `PUT`, `POST`, `PATCH` 以及 `DELETE` 生效。
+
+```js
+// lib\core\transformData.js
+import defaults from '../defaults/index.js';
+
+function transformData(fns, response) {
+  const config = this || defaults;
+  const context = response || config;
+  const headers = AxiosHeaders.from(context.headers);
+  let data = context.data;
+
+  utils.forEach(fns, function transform(fn) {
+    data = fn.call(
+      config,
+      data,
+      headers.normalize(),
+      response ? response.status : undefined
+    );
+  });
+
+  headers.normalize();
+
+  return data;
+}
+```
+
+注意上述代码中的 `this` 关键字，因为 `axios` 使用 `call` 方法改变了函数的 `this` 指向，所以这里的 `this` 应该是 `config` 配置对象；`transformData` 在请求完成时会被再次调用，它的第二个参数就是响应数据。
+
+获取到需要转换的数据后对 `transformRequest` 或 `transformResponse` 数组进行迭代并将数据的处理交给使用者。
+
+这里我不明白的是在每次调用转换函数前都会执行 `headers.normalize()`，且在迭代完成后也默认调用了一次，`normalize` 方法的代码以我个人的理解就是去除字符相同但大小写不同的字段，比如：
+
+```js
+const headers = AxiosHeaders.from({ key: 'value', Key: 'value' });
+
+console.log(headers.normalize()); // { key: value }
+```
+
+查找 `axios` 的历史版本时，在 `1.0` 版本发现了这个 [issues][axios#headers]，也是从这个版本开始多了这些代码，那么我们可以认为 `headers.normalize()` 是用于剔除那些字符相同但大小写不同的字段，以保证 `headers` 的准确性。
+
+在处理完 `headers` 与 `data` 后判断当前请求的方法是否是 `post`、`put`、`patch` 其中之一，是则设置默认的 `Content-Type`，代码如下：
+
+```js
+if (['post', 'put', 'patch'].indexOf(config.method) !== -1) {
+  config.headers.setContentType('application/x-www-form-urlencoded', false);
+}
+```
+
+这里我一直找不到定义 `setContentType` 的位置，通过断点调试的方式找到了 `buildAccessors` 函数，随后向前追溯找到了 `setContentType` 的来源：
+
+```js
+// lib\core\AxiosHeaders.js
+AxiosHeaders.accessor([
+  'Content-Type',
+  'Content-Length',
+  'Accept',
+  'Accept-Encoding',
+  'User-Agent',
+  'Authorization'
+]);
+
+class AxiosHeaders {
+  static accessor(header) {
+    const internals =
+      (this[$internals] =
+      this[$internals] =
+        {
+          accessors: {}
+        });
+
+    const accessors = internals.accessors;
+    const prototype = this.prototype;
+
+    function defineAccessor(_header) {
+      const lHeader = normalizeHeader(_header);
+
+      if (!accessors[lHeader]) {
+        buildAccessors(prototype, _header);
+        accessors[lHeader] = true;
+      }
+    }
+
+    utils.isArray(header)
+      ? header.forEach(defineAccessor)
+      : defineAccessor(header);
+
+    return this;
+  }
+}
+
+function buildAccessors(obj, header) {
+  const accessorName = utils.toCamelCase(' ' + header);
+
+  ['get', 'set', 'has'].forEach((methodName) => {
+    Object.defineProperty(obj, methodName + accessorName, {
+      value: function (arg1, arg2, arg3) {
+        return this[methodName].call(this, header, arg1, arg2, arg3);
+      },
+      configurable: true
+    });
+  });
+}
+```
+
+可以看到就是在定义一些常见请求头的 `get`、`set`、`has` 方法，比如 `Content-Type` 定义了 `setContentType`、`getContentType`、`hasContentType` 等方法，这些方法的核心代码只有一句，即：
+
+```js
+// lib\core\AxiosHeaders.js
+this[methodName].call(this, header, arg1, arg2, arg3);
+```
+
+这里的 `this` 是 `AxiosHeaders` 实例，也就是说这些方法调用的最终仍是 `AxiosHeaders` 原型的 `get`、`set`、`has` 方法。
+
+### 获取适配器
+
+请求前的数据处理完成后就需要获取到请求所需的载体
+
+```js
+const adapter = adapters.getAdapter(config.adapter || defaults.adapter);
+```
+
+`config.adapter` 是我们可以传入的适配器，如果存在则请求会通过它发出，`defaults.adapter` 是一个字符串数组，数据为 `['xhr', 'http']`，其中每个数组元素对应 `axios` 默认提供适配器的 `key`。
+
+`adapters.getAdapter` 的核心代码如下：
+
+```js
+// lib\adapters\adapters.js
+import httpAdapter from './http.js'; // node.js http & https
+import xhrAdapter from './xhr.js'; // web XMLHTTPRequest
+
+const knownAdapters = {
+  http: httpAdapter,
+  xhr: xhrAdapter
+};
+
+export default {
+  getAdapter: (adapters) => {
+    adapters = utils.isArray(adapters) ? adapters : [adapters];
+
+    const { length } = adapters;
+    let nameOrAdapter;
+    let adapter;
+
+    for (let i = 0; i < length; i++) {
+      nameOrAdapter = adapters[i];
+      if (
+        (adapter = utils.isString(nameOrAdapter)
+          ? knownAdapters[nameOrAdapter.toLowerCase()]
+          : nameOrAdapter)
+      ) {
+        break;
+      }
+    }
+
+    /* other... */
+
+    return adapter;
+  },
+  adapters: knownAdapters
+};
+```
+
+方法主要做了几件事：
+
+1. 传入的参数转换为数组
+2. 迭代这个数组
+3. 判断数组元素是否是字符串，是则将其当做默认适配器的 `key`，以此取到默认的适配器，不是则认为是使用者传入的适配器
+4. 判断适配器是否有效（这里代码被省略）
+5. 返回这个适配器
+
+### xhr adapter
+
+请求过程我们以 `xhr` 这个适配器来讲解（node 不熟啊:sob:），适配器应该默认返回一个 `Promise`
+
+```js
+// lib/adapters\xhr.js
+const isXHRAdapterSupported = typeof XMLHttpRequest !== 'undefined';
+
+export default isXHRAdapterSupported &&
+  function (config) {
+    return new Promise(function dispatchXhrRequest(resolve, reject) {
+      /* other... */
+    });
+  };
+```
+
+适配器开头进行了基本数据与 `xhr` 的初始化
+
+```js
+// lib/adapters\xhr.js
+export default isXHRAdapterSupported &&
+  function (config) {
+    return new Promise(function dispatchXhrRequest(resolve, reject) {
+      let requestData = config.data; // 请求 body
+      const requestHeaders = AxiosHeaders.from(config.headers).normalize(); // headers
+      const responseType = config.responseType; // 响应数据类型
+      let onCanceled; // 用于取消的函数
+
+      let request = new XMLHttpRequest(); // 实例化 XMLHttpRequest
+    });
+  };
+```
+
+文章不讲述所有的代码，而是分模块列举出相关代码，比如：取消请求的实现、上传进度的实现等。
+
+#### 请求结束
+
+首先是请求结束事件，这个事件不管请求是否成功，都会在请求结束后触发：
+
+```js
+// lib/adapters\xhr.js
+if ('onloadend' in request) {
+  request.onloadend = onloadend;
+} else {
+  request.onreadystatechange = function handleLoad() {
+    if (!request || request.readyState !== 4) {
+      return;
+    }
+    if (
+      request.status === 0 &&
+      !(request.responseURL && request.responseURL.indexOf('file:') === 0)
+    ) {
+      return;
+    }
+    setTimeout(onloadend);
+  };
+}
+```
+
+这里的判断主要是处理兼容性问题，如果存在 `onloadend` 则优先使用，而 `onreadystatechange` 事件中为什么要使用 `setTimeout` 来调用事件处理函数，根据原代码注释理解应该是为了保证 `onerror` 与 `ontimeout` 事件在此之前先执行。
+
+来看 `onloadend` 函数的核心代码：
+
+```js
+// lib/adapters\xhr.js
+function onloadend() {
+  if (!request) {
+    return;
+  }
+
+  /* other... */
+
+  settle(
+    function _resolve(value) {
+      resolve(value);
+      done();
+    },
+    function _reject(err) {
+      reject(err);
+      done();
+    },
+    response
+  );
+
+  request = null;
+}
+```
+
+`axios` 的配置中支持传入 `validateStatus` 函数，让我们自定义请求成功时的响应状态范围，如果设置为 `status => status === 200`，此时响应状态必须等于 200 `axios` 才会认为请求是成功的，而 `settle` 函数就是用于调用 `validateStatus` 的中间层，它的代码如下：
+
+```js
+// lib\core\settle.js
+function settle(resolve, reject, response) {
+  const validateStatus = response.config.validateStatus;
+  if (!response.status || !validateStatus || validateStatus(response.status)) {
+    resolve(response);
+  } else {
+    reject(
+      new AxiosError(
+        'Request failed with status code ' + response.status,
+        [AxiosError.ERR_BAD_REQUEST, AxiosError.ERR_BAD_RESPONSE][
+          Math.floor(response.status / 100) - 4
+        ],
+        response.config,
+        response.request,
+        response
+      )
+    );
+  }
+}
+```
+
+在 `onloadend` 中还调用了一个 `done` 函数，它被执行时会去除取消请求相关的事件侦听，代码如下：
+
+```js
+// lib/adapters\xhr.js
+function done() {
+  if (config.cancelToken) {
+    config.cancelToken.unsubscribe(onCanceled);
+  }
+
+  if (config.signal) {
+    config.signal.removeEventListener('abort', onCanceled);
+  }
+}
+```
+
+#### 中止请求、请求错误与请求超时
+
+这几个事件相关的代码比较简单也高度相同，逻辑就是在事件触发时将当前的 `Promsie` `rejected`
+
+```js
+// lib/adapters\xhr.js
+request.onabort = function handleAbort() {
+  if (!request) {
+    return;
+  }
+
+  reject(
+    new AxiosError('Request aborted', AxiosError.ECONNABORTED, config, request)
+  );
+
+  request = null;
+};
+
+request.onerror = function handleError() {
+  reject(
+    new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request)
+  );
+
+  request = null;
+};
+
+request.ontimeout = function handleTimeout() {
+  let timeoutErrorMessage = config.timeout
+    ? 'timeout of ' + config.timeout + 'ms exceeded'
+    : 'timeout exceeded';
+  const transitional = config.transitional || transitionalDefaults;
+  if (config.timeoutErrorMessage) {
+    timeoutErrorMessage = config.timeoutErrorMessage;
+  }
+  reject(
+    new AxiosError(
+      timeoutErrorMessage,
+      transitional.clarifyTimeoutError
+        ? AxiosError.ETIMEDOUT
+        : AxiosError.ECONNABORTED,
+      config,
+      request
+    )
+  );
+
+  request = null;
+};
+```
+
+#### 上传、下载进度
+
+`axios` 还支持我们侦听上传与下载的进度，对应的请求配置是 `onUploadProgress` 与 `onDownloadProgress`，代码如下：
+
+```js
+// lib/adapters\xhr.js
+if (typeof config.onDownloadProgress === 'function') {
+  request.addEventListener(
+    'progress',
+    progressEventReducer(config.onDownloadProgress, true)
+  );
+}
+
+if (typeof config.onUploadProgress === 'function' && request.upload) {
+  request.upload.addEventListener(
+    'progress',
+    progressEventReducer(config.onUploadProgress)
+  );
+}
+
+function progressEventReducer(listener, isDownloadStream) {
+  let bytesNotified = 0;
+  const _speedometer = speedometer(50, 250);
+
+  return (e) => {
+    const loaded = e.loaded; // 已经完成的数据
+    const total = e.lengthComputable ? e.total : undefined; // 总数据
+    const progressBytes = loaded - bytesNotified; // 当前完成了多少数据
+    const rate = _speedometer(progressBytes); // 加载的速度
+    const inRange = loaded <= total; // 已完成的数据是否在总数据范围内
+
+    bytesNotified = loaded;
+
+    const data = {
+      loaded,
+      total,
+      progress: total ? loaded / total : undefined,
+      bytes: progressBytes,
+      rate: rate ? rate : undefined,
+      estimated: rate && total && inRange ? (total - loaded) / rate : undefined, // 预计还有多久完成
+      event: e
+    };
+
+    data[isDownloadStream ? 'download' : 'upload'] = true;
+
+    listener(data);
+  };
+}
+```
+
+#### 取消请求
+
+最后是取消请求的模块，代码如下：
+
+```js
+// lib/adapters\xhr.js
+if (config.cancelToken || config.signal) {
+  onCanceled = (cancel) => {
+    if (!request) {
+      return;
+    }
+    reject(
+      !cancel || cancel.type ? new CanceledError(null, config, request) : cancel
+    );
+    request.abort();
+    request = null;
+  };
+
+  config.cancelToken && config.cancelToken.subscribe(onCanceled);
+  if (config.signal) {
+    config.signal.aborted
+      ? onCanceled()
+      : config.signal.addEventListener('abort', onCanceled);
+  }
+}
+```
+
+关于 `AbortSignal` 的取消方式很简单，侦听 `abort` 事件，当我们调用了 `AbortController` 实例的 `abort` 方法时就会触发这个事件，这里我们讲讲 `axios` 自实现的 `CancelToken` 的取消方式。
+
+注意上面代码中的 `config.cancelToken.subscribe(onCanceled)`，`subscribe` 方法代码如下：
+
+```js
+class CancelToken {
+  subscribe(listener) {
+    if (this.reason) {
+      listener(this.reason);
+      return;
+    }
+
+    if (this._listeners) {
+      this._listeners.push(listener);
+    } else {
+      this._listeners = [listener];
+    }
+  }
+}
+```
+
+可以看到就是添加一个侦听器至 `_listeners` 数组中，那么这个数组什么时候会被执行呢，我们一般使用 `CancelToken` 是这样的：
+
+```js
+let cancel = null;
+axios('https://yuanyxh.com/', {
+  cancelToken: new axios.CancelToken((c) => cancel = c);
+});
+
+cancel(); // request abort
+```
+
+可以看到当我们构造一个 `CancelToken` 时会传入一个函数，`CancelToken` 会在内部调用这个函数并传递一个 `cancel` 函数，当我们调用 `cancel` 函数时请求便被取消了，那么我们看看 `CancelToken` 构造器：
+
+```js
+class CancelToken {
+  constructor(executor) {
+    let resolvePromise;
+
+    this.promise = new Promise(function promiseExecutor(resolve) {
+      resolvePromise = resolve;
+    });
+
+    const token = this;
+
+    this.promise.then((cancel) => {
+      if (!token._listeners) return;
+
+      let i = token._listeners.length;
+
+      while (i-- > 0) {
+        token._listeners[i](cancel);
+      }
+      token._listeners = null;
+    });
+
+    executor(function cancel(message, config, request) {
+      if (token.reason) {
+        // Cancellation has already been requested
+        return;
+      }
+
+      token.reason = new CanceledError(message, config, request);
+      resolvePromise(token.reason);
+    });
+  }
+}
+```
+
+可以看到，`cancel` 函数调用了 `resolvePromise`，`resolvePromise` 被赋值为 `resolve` 函数，这意味着一个 `Promise` 被决议了，此时它的 `then` 链开始执行，可以看到 `then` 链中对 `_listeners` 数组进行迭代并调用其中的函数。
+
+### 响应处理
+
+`axios` 给适配器返回的 `Promise` 添加了默认的 `onFuiflled` 与 `onRejected` 处理程序，两者代码高度相似，且内容重复，这里只贴出代码：
+
+```js
+adapter(config).then(
+  function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    response.data = transformData.call(
+      config,
+      config.transformResponse,
+      response
+    );
+
+    response.headers = AxiosHeaders.from(response.headers);
+
+    return response;
+  },
+  function onAdapterRejection(reason) {
+    if (!isCancel(reason)) {
+      throwIfCancellationRequested(config);
+
+      // Transform response data
+      if (reason && reason.response) {
+        reason.response.data = transformData.call(
+          config,
+          config.transformResponse,
+          reason.response
+        );
+        reason.response.headers = AxiosHeaders.from(reason.response.headers);
+      }
+    }
+
+    return Promise.reject(reason);
+  }
+);
+```
+
+-- end
+
+[axios_源码学习(一)]: ./axios_源码学习(一).md
+[axios_源码学习(二)]: ./axios_源码学习(二).md
+[MDN#AbortController]: https://developer.mozilla.org/zh-CN/docs/Web/API/AbortController
+[MDN#AbortSignal]: https://developer.mozilla.org/zh-CN/docs/Web/API/AbortSignal
+[axios#headers]: https://github.com/axios/axios/pull/4745

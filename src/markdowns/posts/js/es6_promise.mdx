@@ -1,0 +1,696 @@
+---
+title: ES6 新特性详解 - Promise
+date: 2022-10-29 18:24:50
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/817e1efc333799c0.png
+description: 详解 JavaScript ES6 Promise
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 简述
+
+我们知道，异步操作在 `JavaScript` 中是非常常见的，而编写健壮且易于维护的异步代码是非常重要的，在 `ES6` 之前，人们常常需要花费大量时间精力来对异步代码进行优化测试，而 `ES6 Promise` 的推出，让我们能够更优雅的编写异步代码。
+
+文章理解并讲述 `ES6` 新特性：`Promise`，内容有误请指出，内容有缺请补充。
+
+## 概念
+
+`Promise`，翻译为承诺、诺言，在 `JS` 中表示为一个未来的值，适用于处理耗时、异步任务，一个 `Promise` 只有三种状态：待定、已完成和已拒绝，状态一旦敲定便无法再次更改，当 `Promise` 状态落定到已完成时，会接收到一个完成的值，落定到已拒绝时则会收到一个拒绝的原因。
+
+## Promise 之前
+
+关于异步编程，我们先了解一下 `JS` 中同步、异步的区别
+
+- 同步：代码从上到下按顺序执行，立即得出结果，当前任务未完成不会执行后续任务
+- 异步：代码立即执行，执行完毕立即返回执行后续代码，但结果在未来给出
+
+同步任务在得出结果前会一直等待，而异步任务与之相反
+
+```javascript
+console.log(1); // 1
+
+setTimeout(() => {
+  console.log(2); // 2
+}, 0);
+
+console.log(3); // 3
+```
+
+上述代码的打印结果为 `1、3、2`，也验证了我们的说法，第一个 `console.log` 是同步任务[^1]，在得出结果前不会向下执行，而第二个 `console.log` 包裹在 `setTimeout` 里面，它用来告诉浏览器这个任务在未来执行，而第三个 `console.log` 与第一个一样，也是同步任务，所以打印结果为 `1、3、2`。
+
+说完了同步与异步的区别，我们思考一个问题：既然异步任务会在未来得出结果，那怎么能拿到这个结果或者说什么时候拿呢，像平时一样吗？
+
+```javascript
+// 假设 ajax 是一个异步网络请求库
+const data = ajax('https://yuanyxh.com');
+
+console.log(data); // undefined
+```
+
+有经验的 `JavaScript` 程序员一眼就能看出 `data` 的打印结果为 `undefined`，因为 `ajax` 是异步执行的，它只是在内部完成了它该做的事，然后告诉 `JS` 引擎：我完事了，你去干其他活吧，东西我以后交给你。
+
+看来不能用平时的方法了。没办法了吗？当然不是，我们还有 `JavaScript` 世界中的一等公民：函数。我们并不需要关心什么时候去取这个未来的值，只需要给异步任务指定一个回调函数，在未来，值可用的时候浏览器会通知 `JS` 引擎，`JS` 引擎会在合适的时机调用回调并传递结果
+
+```javascript
+// 假设 ajax 是一个异步网络请求库
+ajax('https://yuanyxh.com', function (res) {
+  // do something...
+  console.log(res); // response
+});
+```
+
+我们使用伪代码模拟一下上述代码内部发生了什么
+
+```javascript
+function ajax(url, callback) {
+  // 实例化网络请求对象
+  const xhr = new XMLHttpRequest();
+  // 打开流
+  xhr.open('get', url);
+  // 监听网络请求状态变化事件
+  xhr.onreadystatechange = function (e) {
+    // 网络请求成功
+    if (xhr.readystate === 4 && xhr.status === 200) {
+      // 调用回调函数
+      callback && callback(xhr.responseText);
+    }
+  };
+  // 发送请求
+  xhr.send();
+}
+```
+
+在 `JS` 中，异步任务跟回调函数是息息相关的，我们无法确定什么时候能取得异步任务所产生的值，只能通过回调函数，让浏览器告诉我们。
+
+这种异步编程方式虽然常见，但也有它的不足与局限性，其中最经典的问题就是 `callback hell`，即回调地狱。
+
+思考一下这样一个业务需求：一个三级列表，我们需要先获取到一级列表的 id，再根据这个 id 去获取二级列表，又根据二级列表的 id 获取三级列表
+
+```javascript
+// 假设 ajax 是一个异步网络请求库
+ajax('https://yuanyxh.com/', function (res_1) {
+  ajax('https://yuanyxh.com/' + res_1.id, function (res_2) {
+    ajax('https://yuanyxh.com/' + res_2.id, function (res_3) {
+      // do something...
+      console.log(res_3); // response
+    });
+  });
+});
+```
+
+可以看到，因为数据之间的依赖关系，回调地狱的雏形已经出来了，我们不得不嵌套多个回调函数以满足业务需求，如果依赖关系更深，那么回调函数的嵌套也会更深。
+
+如果回调地狱影响的是代码的可读性与可维护性，那么异常处理影响的就是代码的健壮性，在 `JS` 中，我们通常使用 `try{...} catch (err) {...}` 对可能出错的代码进行异常捕获
+
+```javascript
+try {
+  (function unlimited(i) {
+    unlimited(++i);
+  })(0);
+} catch (err) {
+  console.log(err); // Maximum call stack size exceeded
+}
+```
+
+上述代码没有添加终止的条件，所以会无限递归下去，最终超出浏览器允许的最大栈帧数而抛出错误，然后被 `try {...} catch (err) {...}` 捕获。
+
+但这仅适用于同步任务的错误处理，我们回想一下异步任务与同步任务的区别：异步任务虽然会立即执行一次，但不会立即得出结果，也不会阻塞代码的执行。如果在立即执行的阶段代码没有抛出异常，但在求值过程中出现错误，这样的错误我们该怎么捕获呢？
+
+```javascript
+try {
+  // 假设 ajax 是一个异步网络请求库
+  ajax('https://yuanyxh.com', function (res) {
+    console.log(res);
+  });
+} catch (err) {
+  console.log(err);
+}
+```
+
+如果你在网络请求未完成之前将网络断开，你会发现回调函数没有被调用，而是在控制台输出了错误，但这个错误并没有被 `try {...} catch (err) {...}` 块所捕获，这也证实了 `try {...} catch (err) {...}` 并不适合处理异步任务产生的错误。
+
+事实上，就如同无法确定何时去取未来的值一样，在异步任务过程中产生的错误我们也无法以同步方式去处理，异步产生的错误就跟未来值一样，会交由浏览器告知我们
+
+```javascript
+// 假设 ajax 是一个异步网络请求库
+ajax('https://yuanyxh.com', function (err, res) {
+  // 如果 err 有值
+  if (err) {
+    // do something
+    return;
+  }
+  // do something...
+  console.log(res); // response
+});
+```
+
+而对应的伪代码可能是下面这样
+
+```javascript
+function ajax(url, callback) {
+  // 实例化网络请求对象
+  const xhr = new XMLHttpRequest();
+  // 打开流
+  xhr.open('get', url);
+  // 监听网络请求状态变化事件
+  xhr.onreadystatechange = function () {
+    // 网络请求成功
+    if (xhr.readystate === 4 && xhr.status === 200) {
+      // 调用回调并传递响应数据
+      callback && callback(null, xhr.responseText);
+    }
+  };
+  // 监听网络请求错误事件
+  xhr.onerror = function (e) {
+    // 调用回调并传递错误信息
+    callback && callback(new Error('request error'), null);
+  };
+  // 发送请求
+  xhr.send();
+}
+```
+
+除了这种方式，有些异步封装库可能还会让你传递两个回调函数，一个成功回调和一个失败回调，根据异步任务的结果来调用。
+
+虽然有多种异步错误处理的方式，但不论哪种方式都不是最好的，我们总是需要针对每一个异步任务编写错误处理的逻辑。
+
+思考一下：一个数据相互依赖的场景，相互嵌套的异步任务，这些任务中都需要有错误处理的逻辑，尽管在其中一个任务出错后后续任务都不应该再执行，但由于我们不知道会在哪个阶段出现错误，所以所有的异步任务都需要编写一次错误处理的逻辑
+
+```javascript
+// 假设 ajax 是一个异步网络请求库
+ajax('https://yuanyxh.com/', function (err_1, res_1) {
+  // 如果第一个网络请求失败
+  if (err_1) {
+    // do something
+    return;
+  }
+  ajax('https://yuanyxh.com/' + res_1.id, function (err_2, res_2) {
+    // 如果第二个网络请求失败
+    if (err_2) {
+      // do something
+      return;
+    }
+    ajax('https://yuanyxh.com/' + res_2.id, function (err_3, res_3) {
+      // 如果第三个网络请求失败
+      if (err_3) {
+        // do something
+        return;
+      }
+      // do something...
+      console.log(res_3); // response
+    });
+  });
+});
+```
+
+可以看到，我们编写的代码更像 **地狱** 了，我们会需要大量时间精力来对这样的代码进行优化，或寻找其他更好的方式来进行异步流程控制，`Promise` 由此而生。
+
+## Promise
+
+`Promise`，其实并不只是指 `ES6` 中的 `Promise Api`，任何符合 [Promises/A+ 规范][Promise 规范] 的接口都可以成为 `Promise`，事实上，在 `ES6` 的 `Promise Api` 推出前就已经存在很多优秀的 `Promise` 库，而 `ECMA` 在 `ES6` 中才正式将其纳入规范[^2]。
+
+当然，本文的目的还是讲述 `ES6` 中的 `Promise Api`，`ES6` 中的 `Promise` 并不完全按规范实现，而是基于规范添加了更加强大的功能。
+
+### 构造 Promise
+
+要使用一个 `Promise`，我们首先需要先构造一个 `Promise` 实例，在 `new` 一个 `Promise` 时，需要传递一个回调函数，这个回调会以同步方式被调用，并接收两个参数，都为函数，通常被命名为 `resolve` 和 `reject`
+
+```javascript
+new Promise(function executor(resolve, reject) {});
+```
+
+就像文章开始所说，一个 `Promise` 只有三种状态，初始状态总是待定，当调用 `resolve` 时，`Promise` 状态可能[^3]变为已完成，且已完成的值为调用 `resolve` 时传递的参数，当 `reject` 被调用或代码抛出错误时，状态落定为已拒绝，且拒绝的原因为调用 `reject` 时传递的参数或抛出的错误值
+
+```javascript
+new Promise(function executor(resolve, reject) {
+  resolve('yes'); // 状态落定为已完成，已完成的值为 yes
+  throw Error('no'); // 状态已落定，忽视抛出的错误
+});
+
+new Promise(function executor(resolve, reject) {
+  throw Error('no'); // 状态落定为已拒绝，拒绝的原因为一个 Error 对象
+  resolve('yes'); // 到不了这里
+});
+
+new Promise(function executor(resolve, reject) {
+  reject('no'); // 状态落定为已拒绝，拒绝的原因为 no
+  resolve('yes'); // 状态已拒绝，修改状态失败
+});
+```
+
+关于 `resolve` 和 `reject`，有一些需要注意的地方
+
+- 调用 `resolve` 时，`Promise` 状态并不总是落定为已完成，而是根据传递的参数决定，如传递的参数也是一个 `Promise`，那么当前 `Promise` 实例状态根据传递的 `Promise` 状态决定，当前 `Promise` 实例已完成或已拒绝的值亦然
+- 调用 `reject` 时，不管传入的值是什么，当前 `Promise` 状态总是落定为已拒绝，且拒绝的原因为传入的值，即便参数也是一个 `Promise`
+
+```javascript
+// 构造一个状态为已失败的 Promise
+const p1 = new Promise(function executor(resolve, reject) {
+  reject('no');
+});
+
+new Promise(function executor(resolve, reject) {
+  resolve(p); // 当前 Promise 实例状态落定为已拒绝，拒绝原因为 no
+});
+
+// ---------------------------------
+
+// 构造一个状态为已完成的 Promise
+const p2 = new Promise(function executor(resolve, reject) {
+  resolve('yes');
+});
+
+new Promise(function executor(resolve, reject) {
+  reject(p); // 当前 Promise 实例状态落定为已拒绝，拒绝原因为 p2 Promise 实例
+});
+```
+
+### then
+
+`then` 是一个 `Promise` 实例方法，最多接受两个参数，都为函数，第一个参数在 `Promise` 状态为已完成时调用，调用时会传入已完成的值；第二个参数在 `Promise` 状态为已拒绝时调用，调用时会传入拒绝的原因；`then` 能够被调用任意多次，哪怕 `Promise` 状态已经敲定，也能够通过 `then` 取出对应的值。
+
+```javascript
+// 已完成的 Promise
+const p1 = new Promise((resolve, reject) => resolve('yes'));
+
+p1.then(
+  function fulfilled(value) {
+    // 调用成功回调
+    console.log(value); // yes
+  },
+  function rejected(reason) {
+    console.log(reason);
+  }
+);
+
+// --------------------------
+
+// 已拒绝的 Promise
+const p2 = new Promise((resolve, reject) => reject('no'));
+
+p2.then(
+  function fulfilled(value) {
+    console.log(value);
+  },
+  function rejected(reason) {
+    // 调用失败回调
+    console.log(reason); // no
+  }
+);
+```
+
+`then` 的两个参数都不是必须的，当参数不为函数时会被忽略，且会使用默认函数代替，默认成功函数将已完成的值向后传递，默认失败函数将拒绝的原因抛出，类似以下伪代码
+
+```javascript
+function fulfilled(value) {
+  return value;
+}
+
+function rejected(reason) {
+  throw reason;
+}
+```
+
+调用 `then` 方法后，会返回一个新的 `Promise` 实例，以此可以做到链式调用，返回的 `Promise` 实例依据上一个 `then` 链的处理结果决定状态
+
+```javascript
+// 已完成的 Promise
+const p1 = new Promise((resolve, reject) => resolve('yes'));
+
+const p2 = p1.then(
+  function fulfilled(value) {
+    // 调用 p1 成功回调
+    throw 'next Promise rejected'; // 抛出失败值，p2 状态落定到已拒绝
+  },
+  function rejected(reason) {
+    console.log(reason);
+  }
+);
+
+p2.then(
+  function fulfiled(value) {
+    console.log(value);
+  },
+  function rejected(reason) {
+    // 调用 p2 失败回调
+    console.log(reason); // next Promise rejected
+  }
+);
+
+// ------------------------------
+
+// 已拒绝的 Promise
+const p3 = new Promise((resolve, reject) => reject('no'));
+
+p3.then(
+  function fulfilled(value) {
+    console.log(value);
+  },
+  function rejected(reason) {
+    // 调用 p3 失败回调
+    // 注意，失败回调中并没有抛出异常，也没有返回一个已被拒绝的 Promise
+    // 所以后面的 Promise 实例状态会落定到已完成
+    console.log(reason); // no
+  }
+).then(
+  // 返回新的 Promise，链式调用
+  function fulfilled(value) {
+    // 调用成功回调
+    console.log(value); // undefined
+  },
+  function rejected(reason) {
+    console.log(reason);
+  }
+);
+```
+
+关于 `then` 链中的成功与失败回调，好像有很多看似匪夷所思的地方，对于此，我们需要牢记以下细节
+
+- 不管是成功还是失败回调，执行过程中抛出错误则下一个 `Promise` 实例落定为已拒绝状态，拒绝原因为错误值
+- 不管是成功还是失败回调，返回一个 `Promise` 则下一个 `Promise` 实例状态根据返回的 `Promise` 状态决定，值亦然
+- 除以上条件外，下一个 `Promise` 的状态都会变为已完成，已完成的值为成功或失败回调返回的值
+
+为什么失败回调不抛出错误或返回一个已被拒绝的 `Promise`，后续 `Promise` 状态就会落定为已完成呢？其实这很好理解，既然当前 `Promise` 实例被拒绝，且调用了失败回调，则 `JS` 引擎会认为当前 `Promise` 产生的错误已被处理，不需要向后传递。
+
+## Promise 之后
+
+对于 `ES6 Promise` 中的其他 `Api`，读者可自行查看 [MDN][MDN#JavaScript] 文档，文章不再过多介绍。接下来，我们试着使用 `Promise` 来优化异步代码。
+
+还记得之前的一个小案例吗？数据依赖导致多重回调嵌套的回调地狱问题，我们添加上 `Promise` 试试
+
+```javascript
+// 假设 ajax_promise 是一个基于 Promise 封装的异步网络请求库
+// 请求一级列表
+ajax_promise('https://yuanyxh.com').then(
+  function fulfilled(value_1) {
+    // 请求二级列表
+    ajax_promise('https://yuanyxh.com' + value_1.id).then(
+      function fulfilled(value_2) {
+        // 请求三级列表
+        ajax_promise('https://yuanyxh.com' + value_2.id).then(
+          function fulfilled(value_3) {
+            // do something
+            console.log(value_3); // response
+          },
+          function rejected(reason) {
+            // do something
+          }
+        );
+      },
+      function rejected(reason) {
+        throw reason;
+      }
+    );
+  },
+  function rejected(reason) {
+    throw reason;
+  }
+);
+```
+
+怎么回事？回调嵌套的问题并没有得到解决，甚至更遭了！！！
+
+不要着急，我们再来看看以下代码
+
+```javascript
+// 假设 ajax_promise 是一个基于 Promise 封装的异步网络请求库
+// 请求一级列表
+ajax_promise('https://yuanyxh.com')
+  .then(
+    function fulfilled(value_1) {
+      // 请求二级列表
+      return ajax_promise('https://yuanyxh.com' + value_1.id);
+    },
+    function rejected(reason) {
+      throw reason;
+    }
+  )
+  .then(
+    function fulfilled(value_2) {
+      // 请求三级列表
+      return ajax_promise('https://yuanyxh.com' + value2_.id);
+    },
+    function rejected(reason) {
+      throw reason;
+    }
+  )
+  .then(
+    function fulfilled(value_3) {
+      // do something
+      console.log(value_3); // response
+    },
+    function rejected(reason) {
+      // do something
+    }
+  );
+```
+
+还记得吗，`then` 添加的成功与失败回调如果返回 `Promise`，则后续 `Promise` 状态会根据返回的 `Promise` 状态而定，也意味着如果返回的 `Promise` 状态还未敲定，后续 `Promise` 也会一直等待，这也是我们能够串联多个 `Promise` 而不是一层层嵌套的原因。
+
+解决了回调嵌套的问题，我们再想想异常处理如何解决，可以看到上述代码在每个 `then` 调用中都传入了一个失败回调，除了最后一个失败回调，其他的都只是将拒绝原因手动抛出，这是为了保证后续的 `Promise` 状态不会落定为已完成，这些代码其实是可以省略的
+
+```javascript
+// 假设 ajax_promise 是一个基于 Promise 封装的异步网络请求库
+// 请求一级列表
+ajax_promise('https://yuanyxh.com')
+  .then((value_1) => ajax_promise('https://yuanyxh.com' + value_1.id)) // 请求二级列表
+  .then((value_2) => ajax_promise('https://yuanyxh.com' + value2_.id)) // 请求三级列表
+  .then(
+    (value_3) => {
+      // do something
+      console.log(value_3); // response
+    },
+    (reason) => {
+      // do something
+    }
+  );
+```
+
+我们删除了除最后一个 `then` 调用外的失败处理回调，并将所有函数替换为箭头函数，代码量就只剩下几行，可读性却大大提高，但最后一个 `then` 调用中的失败回调也是不必要的，我们应该使用 `catch` 进行统一的异常处理
+
+```javascript
+// 假设 ajax_promise 是一个基于 Promise 封装的异步网络请求库
+// 请求一级列表
+ajax_promise('https://yuanyxh.com')
+  .then((value_1) => ajax_promise('https://yuanyxh.com' + value_1.id)) // 请求二级列表
+  .then((value_2) => ajax_promise('https://yuanyxh.com' + value2_.id)) // 请求三级列表
+  .then((value_3) => {
+    // do something
+    console.log(value_3); // response
+  })
+  .catch((reason) => {
+    // do something
+  });
+```
+
+`catch` 接受一个参数，返回一个新的 `Promise`，参数应为函数，这个函数在当前 `Promise` 被拒绝时被调用，并接收拒绝原因。上述代码中所有 `then` 调用都没有传入失败处理回调，所以当其中一个 `Promise` 被拒绝时会调用默认失败回调抛出拒绝原因，导致后续的 `Promise` 状态也被落定为已拒绝，直到被 `catch` 捕获。
+
+## 实现自己的 Promise
+
+想要加深自己对 `Promise` 的理解，最好的方式便是自己动手实现一个，以下代码是带着本人的理解实现的简陋版 `Promise`，`then` 链的处理思路来自 [手写Promise教程]，若有不合理之处请指出
+
+```typescript
+enum EState {
+  pending = 'pending',
+  fulfilled = 'fulfilled',
+  rejected = 'rejected'
+}
+
+type Resolve = <T>(value?: T) => void;
+type Reject = <T>(reason?: T) => void;
+type Executor = (resolve: Resolve, reject: Reject) => void;
+type StackItem = {
+  onFulfilled: Resolve | null;
+  onRejected: Reject;
+  afterResolve: Resolve;
+  afterReject: Reject;
+};
+
+class Promise_ {
+  // Promise 状态
+  private state = EState.pending;
+
+  // 成功值
+  private value: unknown = null;
+  // 失败值
+  private reason: unknown = null;
+
+  // then 回调队列
+  private queue: StackItem[] = [];
+
+  // 是否是 Promise 或 thenable
+  private isPromise_(target: any): target is Promise_ {
+    return (
+      target instanceof Promise_ ||
+      (((target && typeof target === 'object') ||
+        typeof target === 'function') &&
+        typeof target.then === 'function')
+    );
+  }
+
+  // 消耗 then 队列，取出成功回调并执行
+  private __Fulfilled<T>(result: T) {
+    this.startTask(result, (item) => item.onFulfilled);
+  }
+  // 消耗 then 队列，取出失败回调并执行
+  private __Rejected<T>(reason: T) {
+    this.startTask(reason, (item) => item.onRejected);
+  }
+
+  // 消耗 then 队列
+  private startTask<T>(
+    arg: T,
+    callback: (item: StackItem) => Resolve | null | Reject
+  ) {
+    const queue = this.queue;
+    let item, data;
+
+    // 取出任务
+    while ((item = queue.shift())) {
+      const { afterResolve, afterReject } = item;
+      const func = callback(item);
+      // 尝试调用
+      try {
+        data = func && func(arg);
+        // 失败则 next Promise reject
+      } catch (err) {
+        afterReject(err);
+      }
+
+      // 不是 thenable 直接 resolve
+      if (!this.isPromise_(data)) return afterResolve(data);
+
+      const next = data;
+
+      // 下一个 Promise then 队列添加一个任务
+      this.addTask(next, afterResolve, afterReject);
+    }
+  }
+
+  // 添加任务
+  private addTask(target: Promise_, resolve: Resolve, reject: Reject) {
+    target.then(
+      (value) => resolve(value),
+      (reason) => reject(reason)
+    );
+  }
+
+  constructor(executor: Executor) {
+    // 创建 resolve 或 reject 函数
+    const createFulfillOrReject = (
+      state: EState.fulfilled | EState.rejected,
+      isResolve: boolean
+    ) => {
+      return <T>(data: T): any => {
+        // 如果参数是 Promise 且是 resolve 调用则等待
+        if (this.isPromise_(data) && state !== EState.rejected) {
+          return this.addTask(data, resolve, reject);
+        }
+        // 如果状态为待定则改变状态
+        if (this.state === EState.pending) {
+          this.state = state;
+          isResolve ? (this.value = data) : (this.reason = data);
+        }
+        // 如果状态已落定，则无视修改
+        if (this.state !== state) return;
+
+        // 添加异步微任务
+        queueMicrotask(
+          (this.state === EState.fulfilled
+            ? this.__Fulfilled
+            : this.__Rejected
+          ).bind(this, data)
+        );
+      };
+    };
+
+    const resolve = createFulfillOrReject(EState.fulfilled, true),
+      reject = createFulfillOrReject(EState.rejected, false);
+
+    // 尝试执行
+    try {
+      executor(resolve, reject);
+    } catch (err) {
+      // 出错直接 reject
+      reject(err);
+    }
+  }
+
+  then(onFulfilled?: Resolve | null, onRejected?: Reject) {
+    // 不为函数使用默认值
+    onFulfilled =
+      typeof onFulfilled === 'function' ? onFulfilled : (value) => value;
+    onRejected =
+      typeof onRejected === 'function'
+        ? onRejected
+        : (reason) => {
+            throw reason;
+          };
+
+    // 状态已落定则添加异步微任务，用于多次 then 调用处理
+    if (this.state !== EState.pending) {
+      const isFulfilled = this.state === EState.fulfilled;
+      // 添加异步微任务
+      queueMicrotask(
+        (isFulfilled ? this.__Fulfilled : this.__Rejected).bind(
+          this,
+          isFulfilled ? this.value : this.reason
+        )
+      );
+    }
+
+    // 构造 next Promise 并将 next Promise 的 resovle，reject 添加到当前 Promise 实例的 then 队列
+    let afterResolve!: Resolve, afterReject!: Reject;
+    const next = new Promise_((resolve, reject) => {
+      afterResolve = resolve;
+      afterReject = reject;
+    });
+
+    this.queue.push({ onFulfilled, onRejected, afterResolve, afterReject });
+
+    // 返回 next Promise
+    return next;
+  }
+
+  // 失败处理
+  catch(onRejected?: Reject) {
+    return this.then(null, onRejected);
+  }
+
+  // 静态 resolve 方法，参数为 Promise 则直接返回，否则构造一个指定值的 Promise
+  static resolve(target?: any): Promise_ {
+    const { isPromise_ } = Promise_.prototype;
+    if (isPromise_.call(null, target)) {
+      return target;
+    }
+    return new Promise_((resolve) => resolve(target));
+  }
+
+  // 静态 reject 方法，构造一个指定失败原因的 Promise
+  static reject(target?: any): Promise_ {
+    return new Promise_((_, reject) => reject(target));
+  }
+}
+```
+
+## 结语
+
+`ES6` 中的 `Promise` 给我们带来了强大的异步编程方式，使我们能够编写更健壮的异步代码，但它并不是没有缺点，如不支持 `Promise` 取消和进度通知等，可这并不影响我们去拥抱它并基于它去实现更强大的异步编程方式。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN][MDN#JavaScript]
+- [Promise 规范]
+
+[^1]: 根据浏览器厂商实现，`console.log` 方法其实并不总是同步，具体可看: [console.log()输出时是同步还是异步的问题](https://github.com/bytemofan/think/issues/30)
+[^2]: 不仅仅是 `Promise`，还存在着很多早已流行起来的模式后续被 `ECMA` 纳入规范。
+[^3]: 取决于 `resolve` 时传递的参数，如果参数是一个状态为已拒绝的 `Promise`，那么当前 `Promise` 也会被拒绝。
+
+[Promise 规范]: https://promisesaplus.com/
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/
+[手写Promise教程]: https://juejin.cn/post/6844903625769091079?spm=a2c6h.12873639.article-detail.15.13c35a7bErbQQm

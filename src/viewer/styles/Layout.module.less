@@ -1,0 +1,265 @@
+@sideTabBorderBottom: 0 1px 1px 0 rgb(0 0 0 / 6%);
+
+.headerStyle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--navbar-height);
+  padding-right: 15px;
+  padding-left: 20px;
+
+  > a {
+    flex-shrink: 0;
+
+    > .logo {
+      width: 40px;
+      border-radius: 4px;
+    }
+
+    > .title {
+      margin-left: 10px;
+      font-size: 1.125rem;
+      font-weight: 500;
+      line-height: 1.75rem;
+      color: var(--color-info);
+    }
+  }
+}
+
+.tabStyle {
+  a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 20px;
+    font-size: 15px;
+    color: var(--color-info);
+    cursor: pointer;
+    transition: minianimation(color, background-color);
+
+    &:hover {
+      color: var(--color-primary);
+    }
+
+    &.active {
+      color: var(--color-primary);
+      background-color: var(--color-primary-light);
+    }
+  }
+}
+
+.headerIconStyle {
+  margin-right: 15px;
+  cursor: pointer;
+  transition: minianimation(color);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.layout {
+  --viewer-bg-color: white;
+  --navbar-height: 48px;
+
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--viewer-bg-color);
+}
+
+.header {
+  position: fixed;
+  background-color: var(--background-color);
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 3%),
+    0 1px 6px -1px rgb(0 0 0 / 2%),
+    0 2px 4px 0 rgb(0 0 0 / 2%);
+
+  .headerStyle();
+
+  > .drawer {
+    display: none;
+
+    .headerIconStyle();
+  }
+
+  > .topNavbar {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    height: 100%;
+    padding-right: 10px;
+    padding-left: 30px;
+
+    > ul {
+      display: flex;
+      flex: 1;
+      height: 100%;
+
+      > li {
+        flex-shrink: 0;
+
+        .tabStyle();
+      }
+    }
+
+    > .searchWrap {
+      width: 200px;
+      transition: width 0.3s ease;
+      will-change: transition;
+    }
+
+    &.extendSearch {
+      justify-content: flex-end;
+
+      > ul {
+        display: none;
+      }
+
+      > .searchWrap {
+        width: 100%;
+      }
+    }
+  }
+
+  > .sideContainer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -250px;
+    z-index: var(--z-important);
+    display: none;
+    width: 250px;
+    background-color: var(--background-color);
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+    will-change: transform;
+
+    &.active {
+      transform: translateX(100%);
+    }
+
+    > .sideHeader {
+      box-shadow: @sideTabBorderBottom;
+
+      .headerStyle();
+
+      > .close {
+        .headerIconStyle();
+      }
+    }
+
+    > .sideNavbar {
+      width: 100%;
+      height: calc(100% - var(--navbar-height));
+      overflow: auto;
+
+      li {
+        height: var(--navbar-height);
+        box-shadow: @sideTabBorderBottom;
+
+        a {
+          &:hover {
+            background-color: var(--color-primary-light);
+          }
+        }
+
+        .tabStyle();
+      }
+    }
+  }
+
+  > .mask {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-ignore);
+    display: none;
+    background-color: var(--mask-color);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  > .actions {
+    margin-left: 10px;
+
+    .action {
+      padding: 0 10px;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--color-primary);
+        transition: minianimation(color);
+      }
+
+      &.light {
+        display: none;
+      }
+
+      &.dark {
+        display: inline;
+      }
+    }
+  }
+}
+
+.main {
+  width: 100%;
+  height: calc(100vh - var(--navbar-height));
+  margin-top: var(--navbar-height);
+  overflow: auto;
+}
+
+:root[mode='dark'] {
+  .layout {
+    --viewer-bg-color: black;
+  }
+
+  .header {
+    box-shadow:
+      0 1px 2px 0 rgb(255 255 255 / 3%),
+      0 1px 6px -1px rgb(255 255 255 / 2%),
+      0 2px 4px 0 rgb(255 255 255 / 2%);
+
+    > .actions {
+      .action {
+        &.dark {
+          display: none;
+        }
+
+        &.light {
+          display: inline;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (width <= 768px) {
+  .header {
+    > .drawer {
+      display: block;
+    }
+
+    > .topNavbar {
+      > ul {
+        display: none;
+      }
+
+      > .searchWrap {
+        display: none;
+      }
+    }
+
+    > .sideContainer {
+      display: block;
+    }
+
+    > .mask.active {
+      z-index: var(--z-useful);
+      display: block;
+      opacity: 1;
+    }
+  }
+}

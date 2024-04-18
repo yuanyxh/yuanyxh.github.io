@@ -1,0 +1,72 @@
+---
+title: typora & vscode 实现图片自动上传与云同步
+date: 2023-02-28 21:57:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/181a4aef9f1c32b5.jpg
+description: 实现 typora 与 vscode 的图片自动上传，并完成 typora 文档云同步功能
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 起因
+
+最近因为工作原因，公司家里两头跑，记的笔记无法同步，因为更习惯 typora、vscode 这类本地编辑工具，所以想基于 typora 实现文档云同步的功能，网上刚好有很多这类的参考文章，所以搭建并不困难。
+
+## PicGo 图片自动上传
+
+经常写博客或笔记的人肯定知道，文章中常常需要插入图片来帮助自己或别人理解文章内容，而图片一般会被存放在第三方图床上，我们经常需要上传图片，但手动上传未免费事费力，而 `PicGo` 则是解决这一问题的好帮手。
+
+### typora
+
+[PicGo] 是一个图片上传工具，它能够很方便的将本地图片上传至云服务并获取到对应的 URL，我们只需要下载 `PicGo` 应用程序并进行配置即可，`PicGo` 默认支持以下七种图床：
+
+- 七牛图床
+- 腾讯云 COS
+- 又拍云
+- GitHub
+- SM.MS
+- 阿里云 OSS
+- Imgur
+
+如果你的图床不在支持范围内，可以下载 `web-uploader` 插件，这个插件能够自定义上传接口与参数，如果都无法满足可以参考 [PicGo 插件开发] 自己实现一个上传插件。
+
+`PicGo` 设置完后配置 `typora` 插入图片时的动作为上传图片，并配置上传服务为 `PicGo`，最后可以运行测试来检查配置是否可以运行。
+
+<Image url='http://qkc148.bvimg.com/18470/12f3869387bf3152.png' width={1337} height={656} alt='typora 运行测试的图片' />
+
+### vscode
+
+本人记笔记用的是 `typora`，而博客更多的是使用 `vscode`，好消息是 `PicGo` 拥有 `vscode` 的插件版本，坏消息是这个版本没有内置插件系统，无法使用第三方插件，包括上文提到的 `web-uploader`。
+
+而对于我这种使用不知名第三方图床的人来说，解决方案也很简单（PS：但不推荐），那就是修改插件源码，在对应源码处插入自己的上传逻辑即可（PS：这是不好的行为）。
+
+找到 `vscode` 存放插件的目录（`windows` 一般为 `系统盘:\Users\你的用户名\.vscode\extensions`），并找到插件目录，`extension.js` 文件内的 `doUpload` 函数即是与上传有关的逻辑，可以在此函数内添加自己的代码，注意，每次修改后需重启 `vscode` 以加载最新代码。
+
+<Image url='http://qkc148.bvimg.com/18470/fa6cf9dba95ff765.png' width={1093} height={567} alt='pigco 插件上传部分的代码图片' />
+
+对于想在 `vscode` 中使用 `PicGo` 但默认图床不支持的同学可以使用此方法。
+
+## 文档云同步
+
+图片上传搞定了，但主要的还是同步文档的问题，同步文档我们使用 [坚果云] 来实现，因为它能监听本地文件夹内文件的实时变动，还支持多端同步。
+
+操作很简单，我们只需要下载相应环境的客户端，注册登录并选择监听自己想要同步的文件夹，当我们想要在另一个设备查看文档时，只需要进行相同的操作，并将已上传云服务的文档同步至本地。
+
+<Image url='http://qkc148.bvimg.com/18470/2e9648e4a72f28f3.png' width={1114} height={691} alt='坚果云的图片' />
+
+坚果云免费账号每月都有 1 GB 的上传流量和 3 GB 的下载流量，对于同步文档笔记来说应该是够用了。
+
+<p style={{ color: '#555', fontSize: '20px;' }}>--end</p>
+
+## 参考资料
+
+- [Typora实现云笔记，支持云同步+多端查看（附免费方案）]
+- [使用Typora+坚果云（github）打造免费的个人云笔记]
+
+[PicGo]: https://picgo.github.io/PicGo-Doc/zh/guide/
+[PicGo 插件开发]: https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/cli.html
+[坚果云]: https://www.jianguoyun.com/
+[Typora实现云笔记，支持云同步+多端查看（附免费方案）]: https://juejin.cn/post/7124701631345590285
+[使用Typora+坚果云（github）打造免费的个人云笔记]: https://zhuanlan.zhihu.com/p/71600196

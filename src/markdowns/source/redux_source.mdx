@@ -1,0 +1,627 @@
+---
+title: redux 源码学习
+date: 2023-06-26 23:36:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/c5a5b8af015c8f76.png
+description: 学习 redux 状态管理库的相关源码，了解其如何管理维护 web 应用程序的状态，并从源码中学习函数式编程的思想。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+[redux]，一个继承了 `flux` 架构思想的状态管理库，不与任何 UI 框架、库强绑定，因为其不与框架耦合的特性，所以在状态变更时无法自动触发视图更新，且配置较为繁琐，在使用体验上不如一些较新的状态管理库。
+
+为什么学习它？在几个月前笔者学习 `React` 及其周边库时，对 `Redux` 的中间件实现颇感兴趣，所以翻看了对应的源码，以此进了函数式编程的门，这次想对 `Redux` 的完整源码进行学习。
+
+`Redux` 版本 4.2.1，建议阅读文档熟悉相关 Api 后进行学习。
+
+## createStore
+
+在使用 `Redux` 时，通常使用 `createStore` 函数进行状态（store）的创建，它在 `/src/index.js` 中被导出，代码省略如下：
+
+```js
+// src/index.js
+
+import { createStore } from './createStore';
+
+export { createStore };
+```
+
+可以看到是从同级的 `createStore.js` 文件导入进来的，该 js 文件中只定义了一个 `createStore` 函数，这个函数可以说是 `redux` 的核心。
+
+下面我们就一步一步的学习 `createStore` 函数的代码，首先查看它的函数签名：
+
+```js
+// src/createStore.js
+
+export function createStore(reducer, preloadedState, enhancer) {}
+```
+
+在函数签名中可以发现它定义了三个形参：
+
+- `reducer`：作用固定，即用户定义的用于更新状态的纯函数
+- `preloadedState`：作用不固定，可能是初始状态，也可能是中间件
+- `enhancer`：可能是中间件函数，也可能为 `undefined`
+
+`preloadedState` 和 `enhancer` 的作用在后续代码的判断中可以知道：
+
+```js
+// src/createStore.js
+
+export function createStore(reducer, preloadedState, enhancer) {
+  if (
+    (typeof preloadedState === 'function' && typeof enhancer === 'function') ||
+    (typeof enhancer === 'function' && typeof arguments[3] === 'function')
+  ) {
+    throw new Error(
+      'It looks like you are passing several store enhancers to ' +
+        'createStore(). This is not supported. Instead, compose them ' +
+        'together to a single function. See https://redux.js.org/tutorials/fundamentals/part-4-store#creating-a-store-with-enhancers for an example.'
+    );
+  }
+
+  if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
+    enhancer = preloadedState;
+    preloadedState = undefined;
+  }
+
+  if (typeof enhancer !== 'undefined') {
+    if (typeof enhancer !== 'function') {
+      throw new Error(
+        `Expected the enhancer to be a function. Instead, received: '${kindOf(
+          enhancer
+        )}'`
+      );
+    }
+
+    return enhancer(createStore)(reducer, preloadedState);
+  }
+
+  if (typeof reducer !== 'function') {
+    throw new Error(
+      `Expected the root reducer to be a function. Instead, received: '${kindOf(
+        reducer
+      )}'`
+    );
+  }
+}
+```
+
+在第一个判断中判断了 `preloadedState` 和 `enhancer` 是否是函数，或者 `enhancer` 和可能传入的第四个参数是否是函数，如果这两个中的其中一个满足了条件即抛出错误，根据错误信息可以知道 `redux` 不允许直接传递多个中间件，而建议将多个中间件以组合的方式组合为一个函数。
+
+在第二个判断中判断了 `preloadedState` 是否是一个函数且 `enhancer` 为 `undefined`，当条件满足时， `redux` 会认为用户没有传入初始状态，只传入了中间件函数，此时会交换两者的值以明确它们的含义以完成后续的操作。
+
+第三个判断限制了 `enhancer` 只能为 `undefined` 或是一个中间件，当 `enhancer` 是一个中间件时，会执行 `enhancer(createStore)(reducer, preloadedState)`，这部分代码在后续关于中间件的实现中再讲解。
+
+第四个判断限制了 `reducer` 必须是一个函数。
+
+通过这四个判断我们可以发现几种常见的调用 `createStore` 的方式：
+
+```js
+import { createStore, applyMiddleware } from 'redux';
+
+// 传入 reducer 及初始状态
+createStore(reducer, initState);
+
+// 中间件
+createStore(reducer, applyMiddleware(/** 一个或多个中间件 */));
+createStore(reducer, initState, applyMiddleware(/** 一个或多个中间件 */));
+```
+
+当我们需要传入中间件时，可以使用 `redux` 提供的工具函数 `applyMiddleware`，这个函数会初始化 `store` 并将传入的中间件挂载。
+
+在经过几个判断后，`createStore` 定义了几个变量，这些变量是 `redux` 用于维护内部行为的：
+
+```js
+// src/createStore.js
+
+export function createStore(reducer, preloadedState, enhancer) {
+  /** ..... */
+
+  /** reducer 纯函数 */
+  let currentReducer = reducer;
+  /** 当前状态 */
+  let currentState = preloadedState;
+  /** 当前侦听器 */
+  let currentListeners = [];
+  /** 替换后的侦听器 */
+  let nextListeners = currentListeners;
+  /** 是否在更新状态 */
+  let isDispatching = false;
+}
+```
+
+后续的代码因为代码顺序写的比较乱，所以从调用者的角度去讲解相关的代码，当我们调用 `createStore` 时，它是返回了一个 `store` 对象的，而我们则依靠这个对象提供的方法进行状态的更新维护：
+
+```js
+// src/createStore.js
+
+export function createStore(reducer, preloadedState, enhancer) {
+  /** ..... */
+
+  return {
+    dispatch,
+    subscribe,
+    getState,
+    replaceReducer,
+    [$$observable]: observable
+  };
+}
+```
+
+### dispatch
+
+我们使用 `redux` 来管理状态时，使用 `dispatch` 方法来进行状态的更新，它的实现如下：
+
+```js
+// src/createStore.js
+
+function dispatch(action) {
+  if (!isPlainObject(action)) {
+    throw new Error(
+      `Actions must be plain objects. Instead, the actual type was: '${kindOf(
+        action
+      )}'. You may need to add middleware to your store setup to handle dispatching other values, such as 'redux-thunk' to handle dispatching functions. See https://redux.js.org/tutorials/fundamentals/part-4-store#middleware and https://redux.js.org/tutorials/fundamentals/part-6-async-logic#using-the-redux-thunk-middleware for examples.`
+    );
+  }
+
+  if (typeof action.type === 'undefined') {
+    throw new Error(
+      'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.'
+    );
+  }
+
+  if (isDispatching) {
+    throw new Error('Reducers may not dispatch actions.');
+  }
+
+  try {
+    isDispatching = true;
+    currentState = currentReducer(currentState, action);
+  } finally {
+    isDispatching = false;
+  }
+
+  const listeners = (currentListeners = nextListeners);
+  for (let i = 0; i < listeners.length; i++) {
+    const listener = listeners[i];
+    listener();
+  }
+
+  return action;
+}
+```
+
+开头进行了三个判断，前面两个判断限制了 `dispatch` 必须传入一个参数 `action`，且必须是一个带有 `type` 属性的普通对象；随后判断当 `isDispatching` 的值为真时抛出一个错误，这是一个常见的开关操作，可以避免一些不合理操作导致的错误，如在 `reducer` 函数中进行 `dispatch` 的调用。
+
+之后尝试进行状态更新的操作，先将 `isDispatching` 设置为真，将通道关闭，防止在本次状态更新完毕前又触发一次更新操作，然后调用传入的 `reducer` 函数并传入当前状态和 `action` 来进行状态的更新，然后将通道打开。
+
+函数最后就是遍历监听器数组，将更新操作告诉每个侦听器，这里个人感觉进行一层比较会更好，有时候我们会将状态原样返回表示我们不需要此次更新，加上一层对比可以阻止侦听器的触发，`redux` 一般是在 `UI` 框架中使用的，状态变更通常意味着 `UI` 框架会重新渲染组件，加上一层对比也能有效防止组件重渲染的情况。
+
+### subscribe
+
+当我们进行状态的更新后，我们是希望得知状态的变化从而去做一些事情的，为此 `createStore` 返回了一个 `subscribe` 方法，这个方法允许我们注册若干个侦听器，当状态变更时侦听器就会被触发，`subscribe` 代码如下：
+
+```js
+// src/createStore.js
+
+function ensureCanMutateNextListeners() {
+  if (nextListeners === currentListeners) {
+    nextListeners = currentListeners.slice();
+  }
+}
+
+function subscribe(listener) {
+  if (typeof listener !== 'function') {
+    throw new Error(
+      `Expected the listener to be a function. Instead, received: '${kindOf(
+        listener
+      )}'`
+    );
+  }
+
+  if (isDispatching) {
+    throw new Error(
+      'You may not call store.subscribe() while the reducer is executing. ' +
+        'If you would like to be notified after the store has been updated, subscribe from a ' +
+        'component and invoke store.getState() in the callback to access the latest state. ' +
+        'See https://redux.js.org/api/store#subscribelistener for more details.'
+    );
+  }
+
+  let isSubscribed = true;
+
+  ensureCanMutateNextListeners();
+  nextListeners.push(listener);
+
+  return function unsubscribe() {
+    if (!isSubscribed) {
+      return;
+    }
+
+    if (isDispatching) {
+      throw new Error(
+        'You may not unsubscribe from a store listener while the reducer is executing. ' +
+          'See https://redux.js.org/api/store#subscribelistener for more details.'
+      );
+    }
+
+    isSubscribed = false;
+
+    ensureCanMutateNextListeners();
+    const index = nextListeners.indexOf(listener);
+    nextListeners.splice(index, 1);
+    currentListeners = null;
+  };
+}
+```
+
+开始还是经典的进行判断，主要是限制 `subscribe` 方法的入参，以及避免在状态更新中进行添加侦听器的操作，然后声明了一个 `isSubscribed` 变量，这也是一个开关变量，用于避免重复卸载侦听器；随后调用了 `ensureCanMutateNextListeners` 函数，这个函数的作用就是区分开 `currentListeners` 和 `nextListeners` 这两个变量的引用，最后将传入的参数 `listener` 添加进 `nextListeners` 数组中。
+
+`subscribe` 的返回值是一个 `unsubscribe` 函数，用于将当前添加的侦听器移除。
+
+### getState
+
+获取状态的方法，单纯的返回当前状态，代码如下：
+
+```js
+// src/createStore.js
+
+function getState() {
+  if (isDispatching) {
+    throw new Error(
+      'You may not call store.getState() while the reducer is executing. ' +
+        'The reducer has already received the state as an argument. ' +
+        'Pass it down from the top reducer instead of reading it from the store.'
+    );
+  }
+
+  return currentState;
+}
+```
+
+### replaceReducer
+
+这是一个替换 `reducer` 状态更新函数的方法，代码如下：
+
+```js
+// src/createStore.js
+
+function replaceReducer(nextReducer) {
+  if (typeof nextReducer !== 'function') {
+    throw new Error(
+      `Expected the nextReducer to be a function. Instead, received: '${kindOf(
+        nextReducer
+      )}`
+    );
+  }
+
+  currentReducer = nextReducer;
+
+  // This action has a similiar effect to ActionTypes.INIT.
+  // Any reducers that existed in both the new and old rootReducer
+  // will receive the previous state. This effectively populates
+  // the new state tree with any relevant data from the old one.
+  dispatch({ type: ActionTypes.REPLACE });
+}
+```
+
+判断参数的有效性后会替换 `currentReducer` 变量的值，需要注意的是在替换后还默认调用了一次 `dispatch`，这是为了更新状态，代码中的 `ActionTypes` 定义在 `/src/utils/actionTypes.js` 里，里面存放了一些 `redux` 内部使用的 `type`：
+
+```js
+// src/utils/actionTypes.js
+
+const randomString = () =>
+  Math.random().toString(36).substring(7).split('').join('.');
+
+const ActionTypes = {
+  INIT: `@@redux/INIT${randomString()}`,
+  REPLACE: `@@redux/REPLACE${randomString()}`,
+  PROBE_UNKNOWN_ACTION: () => `@@redux/PROBE_UNKNOWN_ACTION${randomString()}`
+};
+
+export default ActionTypes;
+```
+
+这些 `type` 也是 `redux` 不建议我们在 `reducer` 函数中使用的。
+
+### $$observable
+
+这个方法其实就是另一个版本的 `subscribe` 实现，根据代码以及注释可以知道这是当时 `redux` 作者为了兼容以后可能成为规范的 `observable` 协议而做的一层封装，实现还是依赖于 [subscribe](#subscribe)，方法代码如下：
+
+```js
+// src/utils/symbol-observable.js
+
+export default (() =>
+  (typeof Symbol === 'function' && Symbol.observable) || '@@observable')();
+
+// src/createStore.js
+import $$observable from './utils/symbol-observable';
+
+function observable() {
+  const outerSubscribe = subscribe;
+
+  return {
+    subscribe(observer) {
+      if (typeof observer !== 'object' || observer === null) {
+        throw new TypeError(
+          `Expected the observer to be an object. Instead, received: '${kindOf(
+            observer
+          )}'`
+        );
+      }
+
+      function observeState() {
+        if (observer.next) {
+          observer.next(getState());
+        }
+      }
+
+      observeState();
+      const unsubscribe = outerSubscribe(observeState);
+      return { unsubscribe };
+    },
+
+    [$$observable]() {
+      return this;
+    }
+  };
+}
+```
+
+关于 `observable` 提案可以查看 [tc39/proposal-observable]。
+
+## 中间件实现
+
+`redux` 除了封装了常规的状态操作外，还提供了非常高的可扩展、可定制能力，这都是中间件带来的，下面我们就来看看 `redux` 中的中间件是如何设计的。
+
+当我们使用 `redux` 时并需要传入中间件时，一般会进行这样的操作：
+
+```js
+import { createStore, applyMiddleware } from 'redux';
+
+createStore(reducer, applyMiddleware(/** 一个或多个中间件 */));
+```
+
+而 `applyMiddleware` 的代码如下：
+
+```js
+// src/applyMiddleware.js
+
+export default function applyMiddleware(...middlewares) {
+  return (createStore) =>
+    (...args) => {
+      /** do something */
+    };
+}
+```
+
+它直接返回了一个函数，而在 `createStore` 中会执行 `enhancer(createStore)(reducer, preloadedState)` 代码块，这个 `enhancer` 也就是 `applyMiddleware` 函数的返回值，也就是说相当于执行了以下代码：
+
+```js
+createStore(reducer, applyMiddleware(/** 一个或多个中间件 */));
+
+// be equal
+
+applyMiddleware(/** 一个或多个中间件 */)(createStore)(reducer, preloadedState);
+```
+
+这时我们就知道实际执行的是最内层的函数，再看这个函数里面都干了些什么，代码如下：
+
+```js
+// src/applyMiddleware.js
+
+(...args) => {
+  const store = createStore(...args);
+  let dispatch = () => {
+    throw new Error(
+      'Dispatching while constructing your middleware is not allowed. ' +
+        'Other middleware would not be applied to this dispatch.'
+    );
+  };
+
+  const middlewareAPI = {
+    getState: store.getState,
+    dispatch: (...args) => dispatch(...args)
+  };
+  const chain = middlewares.map((middleware) => middleware(middlewareAPI));
+  dispatch = compose(...chain)(store.dispatch);
+
+  return {
+    ...store,
+    dispatch
+  };
+};
+```
+
+首先初始化一个 `store` 对象，并声明一个 `dispatch` 函数，这个函数什么也不干，单纯抛出一个错误，随后声明了一个对象，这个对象对 `store` 的 `getState` 和 `dispatch` 方法进行包装；随后执行了两句代码，第一句代码是初始化中间件函数并将之前的对象传递过去，这时中间件函数内部是能够访问到 `dispatch` 函数的，只是访问到的是一个抛出错误的 `dispatch`，而第二句代码将那个抛出错误的 `dispatch` 函数重新赋值，这里我们就能看出作者的用意：不允许在中间件初始化时调用 `dispatch` 进行状态更新。
+
+关于中间件，它应该是如下格式的一个函数：
+
+```js
+const middleware = (store) => (next) => (action) => next(action);
+```
+
+我们知道 `store` 就是一个含有 `getState` 和 `dispatch` 方法的对象，同时经过初始化后，得到以下函数：
+
+```js
+(next) => (action) => next(action);
+```
+
+这些函数包含在 `chain` 数组中，然后通过 `compose(...chain)(store.dispatch)` 语句整合为了一个函数，这里我们看看 `compose` 的实现，代码如下：
+
+```js
+// src/compose.js
+
+export default function compose(...funcs) {
+  if (funcs.length === 0) {
+    return (arg) => arg;
+  }
+
+  if (funcs.length === 1) {
+    return funcs[0];
+  }
+
+  return funcs.reduce(
+    (a, b) =>
+      (...args) =>
+        a(b(...args))
+  );
+}
+```
+
+我们主要看最后一句代码，这里使用了函数式编程中的组合概念，将多个函数组合为了一个函数， `(...args) => a(b(c(...args)))`，而当调用这个函数时，看似先执行 `a`，但为了拿到入参其实会执行 `b`，而对于 `b` 同样如此。
+
+我们先以一个中间件的情况举例，当只传入一个函数时 `compose` 是将它直接返回的，那么此时就是：
+
+```js
+const temp = (next) => (action) => next(action);
+
+dispatch = temp(store.dispatch);
+```
+
+此时的 `dispatch` 就变成了：
+
+```js
+(action) => next(action);
+```
+
+这里的 `next` 就是传入的 `store.dispatch` 方法，也就是真正的状态更新函数，而对于多个中间件而言，因为会执行 `a(b(c(...args)))`，除了最开始执行的 `c` 接收到的是真正的 `dispatch` 外，后续的中间件接收到的都是上一个中间件返回的伪 `dispatch`，这样就保证了中间件以一个层层递进的关系被调用，而不是同时调用。
+
+## combineReducers
+
+项目中，可能有不同逻辑的状态需要维护，为此我们需要定义多个 `reducer`，而 `redux` 提供了 `combineReducers` 函数能够将多个 `reducer` 组合为一个 `rootReducer`，它的实现精简代码如下：
+
+```js
+// src/combineReducers.js
+
+export default function combineReducers(reducers) {
+  const reducerKeys = Object.keys(reducers);
+
+  const finalReducers = {};
+
+  for (let i = 0; i < reducerKeys.length; i++) {
+    const key = reducerKeys[i];
+
+    if (typeof reducers[key] === 'function') {
+      finalReducers[key] = reducers[key];
+    }
+  }
+
+  const finalReducerKeys = Object.keys(finalReducers);
+
+  let shapeAssertionError;
+  try {
+    assertReducerShape(finalReducers);
+  } catch (e) {
+    shapeAssertionError = e;
+  }
+
+  return function combination(state = {}, action) {
+    if (shapeAssertionError) {
+      throw shapeAssertionError;
+    }
+
+    let hasChanged = false;
+    const nextState = {};
+
+    for (let i = 0; i < finalReducerKeys.length; i++) {
+      const key = finalReducerKeys[i];
+
+      const reducer = finalReducers[key];
+
+      const previousStateForKey = state[key];
+
+      const nextStateForKey = reducer(previousStateForKey, action);
+
+      nextState[key] = nextStateForKey;
+
+      hasChanged = hasChanged || nextStateForKey !== previousStateForKey;
+    }
+
+    hasChanged =
+      hasChanged || finalReducerKeys.length !== Object.keys(state).length;
+
+    return hasChanged ? nextState : state;
+  };
+}
+```
+
+主要是遍历传入的 `reducers` 对象，获取其中的 `key` 与实际的 `value`，代码中 `assertReducerShape` 函数用于初始化所有的 `reducer` 并判断返回值是否有效，然后返回了一个 `combination` 函数。
+
+返回的 `combination` 函数遍历 `reducers` 对象并执行所有的 `reducer`，传入对应的状态和 `action`，同时对比前后状态来判断是否需要返回新的状态。
+
+## bindActionCreators
+
+在项目中，如果需要维护多个状态，以正常方式来说是比较麻烦且难以维护，其中对于如何维护不同的 `action` 也是一个比较繁琐的事情，对于此 `redux` 提供了一个工具函数 `bindActionCreators`，我们可以使用它来管理维护不同状态的 `action`，例如：
+
+```js
+import { createStore, bindActionCreators } from 'redux';
+
+const add = (payload) => {
+  return { type: 'add', payload };
+};
+
+const remove = (payload) => {
+  return { type: 'remove', payload };
+};
+
+const reducer = (state = [], action) => {
+  if (action.type === 'add') {
+    return [...state].push(action.payload);
+  } else if (action.type === 'remove') {
+    const index = state.indexOf(action.payload);
+
+    const newState = state.slice().splice(index, 1);
+
+    return newState;
+  }
+};
+
+const store = createStore(reducer);
+
+const boundActionCreators = bindActionCreators({ add, remove }, store.dispatch);
+```
+
+然后我们就可以直接通过 `boundActionCreators.add(1)` 进行状态的更新了，而关于 `bindActionCreators` 的实现，代码如下：
+
+```js
+// src/bindActionCreators.js
+
+function bindActionCreator(actionCreator, dispatch) {
+  return function () {
+    return dispatch(actionCreator.apply(this, arguments));
+  };
+}
+
+export default function bindActionCreators(actionCreators, dispatch) {
+  if (typeof actionCreators === 'function') {
+    return bindActionCreator(actionCreators, dispatch);
+  }
+
+  const boundActionCreators = {};
+  for (const key in actionCreators) {
+    const actionCreator = actionCreators[key];
+    if (typeof actionCreator === 'function') {
+      boundActionCreators[key] = bindActionCreator(actionCreator, dispatch);
+    }
+  }
+  return boundActionCreators;
+}
+```
+
+可以看到实际的逻辑就是将 `actionCreator` 函数替换为：
+
+```js
+function () {
+  return dispatch(actionCreator.apply(this, arguments));
+};
+```
+
+---end
+
+[redux]: https://redux.js.org/
+[tc39/proposal-observable]: https://github.com/tc39/proposal-observable

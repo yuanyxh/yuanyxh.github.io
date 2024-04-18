@@ -1,0 +1,193 @@
+---
+title: 开发一个 PicGo 插件
+date: 2023-03-03 22:37:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/7ca9f9ebd0cbcd20.png
+description: 开发一个自定义图片上传的 PicGo 插件，支持任意图床的图片快速上传功能。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+最近在搞 `typora` 的文档云同步功能，在网上看了一些文章有提到 [PicGo] 图片上传工具，于是放到一起折腾了一下，但 `PicGo` 默认只支持 7 种图床，搭配插件也无法满足我的需求，于是便想着开发一个高度自定义的上传插件。
+
+关于 `PicGo` 插件开发，详细信息可看官方文档 [PicGo-Core]，本文只实现了 `Uploader` 上传器组件，其他组件还有
+
+- Transformer
+- beforeTransformPlugins
+- beforeUploadPlugins
+- afterUploadPlugins
+
+如有需要，读者可查看官方文档自己实现，本文不作讨论。
+
+## 项目基本架构
+
+根据官方描述，一个合法的 `PicGo` 插件应该是一个 `npm` 包，它的最简单的结构如下
+
+```sh
+.
+├── README.md
+├── index.js      # plugin
+└── package.json
+```
+
+也可以使用 `npx webpack init` 命令快速生成符合条件的完整项目环境，其中 `package.json` 文件应添加以下字段
+
+<Image url='http://qkc148.bvimg.com/18470/6e244cb48c13e4f1.png' width={704} height={256} alt='package.json 字段图片' />
+
+为让插件能够被 `PicGo` 识别，`name` 需要写成指定格式: `picgo-plugin-xxx`。
+
+## 插件实现
+
+### 插件注册
+
+`PicGo` 中图片上传对应的组件是 `Uploader`，它被实现为一个函数，接收一个 `PicGo` 实例作为参数，并返回一个包含 `register` 和 `uploader` 字段的对象；其中，`register` 是一个注册器函数，`uploader` 则告诉 `PicGo` 这个 `Uploader` 的名字，基本格式如下：
+
+```js
+module.exports = (ctx) => {
+  return {
+    register() {
+      // do something
+    },
+    uploader: 'test'
+  }
+}
+```
+
+在 `register` 中我们需要调用 `PicGo` 提供的 `Uploader` 注册器注册我们的 `Uploader` 插件，注册器接收一个插件 id 和一个配置对象，配置对象必须实现一个 `handle` 方法，这个方法就是主要的上传逻辑，代码大概如下：
+
+```js
+module.exports = (ctx) => {
+  return {
+    register() {
+      ctx.helper.uploader.register('test', {
+        handle() {
+          // do something
+        }
+      })
+    },
+    uploader: 'test'
+  }
+}
+```
+
+### 用户配置
+
+我们先忽略上传的主要逻辑，先完善用户能够自定义的配置部分；`PicGo` 允许我们定义一个 `config` 函数，函数应该返回与当前组件有关的问题数组，`PicGo` 会根据这个问题数组渲染对应的配置项，比如：
+
+```js
+module.exports = (ctx) => {
+  return {
+    register() {
+      ctx.helper.uploader.register('test', {
+        handle() {},
+        config(ctx) {
+          return [{
+            name: 'url', // 配置名
+            type: 'input', // 配置类型，input 展示为一个输入框
+            default: '', // 默认值
+            required: true, // 是否必填
+            message: '上传接口' // 占位符
+          }];
+        }
+      })
+    },
+    uploader: 'test'
+  }
+}
+```
+
+那么渲染出来的配置项就长这样
+
+<Image url='http://qkc148.bvimg.com/18470/35f03a074e74b180.png' width={800} height={450} alt='展示渲染结果的图片' />
+
+通过配置项我们将部分数据交由用户输入，实现自定义上传配置的操作，但这样的数据是死数据，如果我们需要动态数据时要怎么办呢？
+
+一个简单的想法是直接修改插件，另一个想法是定义一些关键字，用户配置了关键字时我们就构造出相应的数据，比如用户定义了 `timestamp` 字段，我们就在上传时构建一个时间戳出来。
+
+这两个办法都能够解决我们的问题，但是我不用:smirk:，我们为什么不允许用户自定义脚本，在每次上传时调用用户脚本获取到他需要的参数呢。
+
+这个想法是好的，但我们需要考虑一个问题：安全性。我们不知道用户的脚本是否是安全可靠的，为此，我们需要一个安全的环境来执行用户的脚本，也就是 sandbox (沙箱)。
+
+这里我用到了在网上看到的一遍讲解 sandbox 的文章 [为 Node.js 应用建立一个更安全的沙箱环境] 作者开发的库 [Safeify]，这个库允许我们创建沙箱环境并限制 sandbox 内部能够访问的上下文，并配置代码执行的超时时长、cpu 资源的分配比、内存的分配比等等，它的简单使用如下：
+
+```js
+import { Safeify } from './Safeify';
+
+const safeVm = new Safeify({
+  timeout: 50,          //超时时间，默认 50ms
+  asyncTimeout: 500,    //包含异步操作的超时时间，默认 500ms
+  quantity: 4,          //沙箱进程数量，默认同 CPU 核数
+  memoryQuota: 500,     //沙箱最大能使用的内存（单位 m），默认 500m
+  cpuQuota: 0.5,        //沙箱的 cpu 资源配额（百分比），默认 50%
+});
+
+// 沙箱环境接收到的上下文
+const context = {
+  a: 1,
+  b: 2,
+  add(a, b) {
+    return a + b;
+  }
+};
+
+// run 方法执行动态代码并返回一个 Promise
+const rs = await safeVm.run(`return add(a, b)`, context);
+console.log('result',rs);
+```
+
+安全的问题解决了，那我们怎么获取到用户的脚本呢，让用户复制粘贴并不是很友好，不过好在 `PicGo` 还提供了 [guiMenu] 配置，`guiMenu` 的格式如下：
+
+```js
+module.exports = (ctx) => {
+  return {
+    register() { /* do something */ },
+    guiMenu(ctx, guiApi) {
+      return [
+        {
+          label: '选择脚本',
+          async handle() {
+            // 调用系统的选择文件操作，返回文件路径数组
+            const files = await guiApi.showFileExplorer({
+              properties: ['openFile' /* 打开文件 */],
+              filters: [{ name: 'JavaScript', extensions: ['js'] } /* 只允许 .js 文件 */]
+            });
+          }
+        }
+      ];
+    }
+    uploader: 'test'
+  }
+}
+```
+
+渲染后大概长下面这样
+
+<Image url='http://qkc148.bvimg.com/18470/1d2c51843e81e77a.png' width={800} height={450} alt='展示渲染结果的图片2' />
+
+通过 `guiMenu` 能够获取到用户选择的文件路径，然后使用 `fs` 模块读取用户脚本并使用 `PicGo` 实例的 `saveConfig` 方法即可保存用户脚本至 `PicGo` 配置文件里，获取 `PicGo` 配置可使用 `PicGo` 实例的 `getConfig` 方法。
+
+### 上传器
+
+上传的逻辑都是大同小异的，主要是遍历 `PicGo` 实例的 `output` 数组，获取其中的图片数据，整合用户配置，最后发起请求，这部分的代码可以直接 CV [PicGo 插件列表] 中其他插件开发者的代码，这里不做详述。
+
+这里我自己实现了一个插件 [free-uploader]，感兴趣的可以看看。
+
+目前这个插件个人觉得可以优化的点有：
+
+- `PicGo` 提供了 `failed` 事件，在生命周期中出现错误或上传失败时会触发这个事件，可以将失败处理统一挪动到这个事件中并自定义通知用户。
+- `PicGo` 提供了 `remove` 事件，用户删除本地图片数据时会触发，因为用户所使用的图床不一定支持删除接口，可以把这部分交由用户实现以达到同步删除的目的。
+- 因为采用了动态脚本的方式，我们甚至可以提供图片数据，让用户执行压缩，水印添加等操作，也可以提供请求相关函数以支持上传除图片外的数据，如视频。
+
+--end
+
+[PicGo]: https://picgo.github.io/PicGo-Doc/zh/guide
+[PicGo-Core]: https://picgo.github.io/PicGo-Core-Doc/
+[为 Node.js 应用建立一个更安全的沙箱环境]: https://cloud.tencent.com/developer/article/1802781
+[Safeify]: https://github.com/Houfeng/safeify
+[guiMenu]: https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/gui.html#guimenu
+[PicGo 插件列表]: https://github.com/PicGo/Awesome-PicGo
+[free-uploader]: https://github.com/yuanyxh/picgo-plugin-free-uploader

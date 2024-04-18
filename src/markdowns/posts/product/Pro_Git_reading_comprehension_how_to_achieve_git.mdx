@@ -1,0 +1,344 @@
+---
+title: Pro Git 阅读理解：Git 是如何实现的
+date: 2024-01-18 01:57:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/474d39a9bb90c51f.png
+description: 阅读 Pro Git 有关实现原理的部分内容，深入理解 Git 是如何实现版本控制的。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+文章是对 Pro Git 第一版的阅读总结，因本人更关注 Git 的实现原理，所以文章只包含了个人认为对理解 Git 内部原理有帮助的第 1、3、4、7、9 章内容的总结，如果你也想深入的了解 Git，推荐阅读 Pro Git 的第一版和第二版：
+
+- [Pro Git v1]
+- [Pro Git v2]
+
+## Git 基础
+
+Git 是一个分布式版本管理系统，与集中式版本管理系统不同，Git 几乎所有的操作都在本地进行，可以在本地进行提交更新等操作而无须联网；在 clone Git 仓库时，实际是将整个仓库镜像克隆下来，镜像包含了所有的历史提交记录，这意味着即使远程仓库丢失或损坏了，也可以轻易的通过本地仓库重建远程仓库。
+
+Git 只关注数据整体的变化，而不是文件内容的具体差异：将变化的文件作快照后，记录在一个微型的文件系统中。每次提交更新时，Git 计算所有文件的指纹信息，存储文件快照，将文件对应的指纹作为引用指向文件快照。如果文件没有变化，Git 不会再次保存，只是链接到对应的文件快照。
+
+<Image url="http://qkc148.bvimg.com/18470/b10acca5ec70f4f0.png" width={500} height={222} alt='git 工作示例的图片' />
+
+Git 在每次更新提交时，对每个文件进行校验计算，这意味着不会出现文件被修改但 Git 毫无所知的情况，最大程度的保证了文件的完整性。
+
+Git 中文件只有三种状态：
+
+- 已提交（committed）表示文件已安全的保存到本地数据库中
+- 已修改（modified）表示修改了某个文件，还没有提交保存
+- 已暂存（staged）表示把已修改的文件放在下次提交时要保存的清单中
+
+三种状态对应 Git 的三个工作区域：工作区，暂存区域，以及本地仓库
+
+- 工作区是从本地仓库中取出的某个版本的所有文件和目录，实际是从 Git 目录中的压缩对象数据库中提取的
+- 暂存区域是个简单的文件，一般都放在 `.git/objects` 目录中
+
+## Git 简单结构
+
+Git 通过 `HEAD` 文件保存当前的分支，查看 `.git/HEAD` 中的内容：
+
+<Image url="http://qkc148.bvimg.com/18470/883c1606755f79f4.png" width={381} height={162} alt='head 的图片' />
+
+这表明当前分支是 `.git/refs/heads/master`，查看对应的文件内容：
+
+<Image url="http://qkc148.bvimg.com/18470/27e0c900cd4722b5.png" width={412} height={127} alt='分支指向的图片' />
+
+这是一个 40 位的指纹信息，引用到具体的文件；Git 以 40 位指纹的前两位作为目录名，剩余的 38 位作为文件名存储文件快照，这些文件都存放在 `.git/objects` 中：
+
+<Image url="http://qkc148.bvimg.com/18470/2e6e083b2edfe102.png" width={699} height={398} alt='指纹信息的图片' />
+
+Git 使用 zlib 的 `Deflate` 算法压缩内容，需要解压才能看到有意义的文件内容，使用 nodejs 解压上面的 `1d/7f00bcdea10b04ceab0d243d181f09a971bcd0` 文件：
+
+<Image url="http://qkc148.bvimg.com/18470/b0df9d2a149ca14b.png" width={796} height={294} alt='压缩信息解压的代码图片' />
+
+得到的内容如下：
+
+<Image url="http://qkc148.bvimg.com/18470/07f08684c2cc3d3c.png" width={438} height={100} alt='压缩信息解压后的图片' />
+
+Git 将他表示为一个 commit 对象，为了直观的感受，以 js 对象表示：
+
+```js
+({
+  /** 对象类型 */
+  type: "commit",
+  /** 后续内容包含的字节数 */
+  contentByteLenght: 178,
+  /** 指向 root tree 对象 */
+  tree: "87f0a1ed873d2b2836c5454462d938d874504aec",
+  /** 指向上一次的提交对象，如果是第一次 commit 则不存在 */
+  parent?: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  /** 作者 */
+  author: {
+    name: "yuanyxh",
+    email: "xxxx@xxx.xxx",
+    timestamp: 1705569456,
+    reviseTime: "+0800",
+  },
+  /** 提交者 */
+  committer: {
+    name: "yuanyxh",
+    email: "xxxx@xxx.xxx",
+    timestamp: 1705569456,
+    reviseTime: "+0800",
+  },
+  /** 提交时的描述信息 */
+  description: "feat: add a new.txt",
+})
+```
+
+Git 在每次提交更新时都会创建一个新的的 commit 对象，包含了 tree 和 parent 的指向。当我们使用 `git reset --hard [args]` 命令时，Git 只是简单的将分支文件中的指向更新为对应的 commit 对象的指纹 id，并根据 commit 对象给出的信息重建工作区。
+
+这里我们继续查看上述 commit 对象中 tree 所指向的内容：
+
+<Image url="http://qkc148.bvimg.com/18470/776bfa9f90cb333f.png" width={411} height={68} alt='tree 信息的图片' />
+
+这是一个 tree 对象，最后的乱码其实是 `new.txt` 的文件指纹，无法被转化为有效的 `utf-8` 编码，以 js 对象表示是这样的：
+
+```js
+({
+  /** 对象类型 */
+  type: "tree",
+  /** 后续内容包含的字节数 */
+  contentByteLenght: 35,
+  /** 与文件类型和读写权限有关 */
+  mode: 100644,
+  /** 子树或子文件 */
+  children: [
+    {
+      name: "new.txt",
+      blob: "56b6510f1d6b862ca30ce2e7c05b48760ba28fd7"
+    }
+  ]
+})
+```
+
+这说明在工作区根目录下应该有个 `new.txt` 文件，文件快照存放在 `.git/objects/56/b6510f1d6b862ca30ce2e7c05b48760ba28fd7`，当然 tree 还能引用其他 tree 对象，表示为当前 tree 对应目录的子目录：
+
+```js
+({
+  /** 对象类型 */
+  type: "tree",
+  /** 后续内容包含的字节数 */
+  contentByteLenght: xxxx,
+  /** 与文件类型和读写权限有关 */
+  mode: 40000,
+  /** 子树或子文件 */
+  children: [
+    {
+      name: "subfolder",
+      tree: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  ]
+})
+```
+
+我们继续解压 `.git/objects/56/b6510f1d6b862ca30ce2e7c05b48760ba28fd7`，查看它的内容：
+
+<Image url="http://qkc148.bvimg.com/18470/6c2fabd0668fb9e4.png" width={354} height={35} alt='blob 信息的图片' />
+
+以 js 对象表示为：
+
+```js
+({
+  /** 对象类型 */
+  type: "blob",
+  /** 后续内容包含的字节数 */
+  contentByteLenght: 5,
+  /** 对象内容 */
+  content: "11111"
+})
+```
+
+注意，上述全部示例中，字节长度和后面的内容看起来是紧连在一起的：
+
+<Image url="http://qkc148.bvimg.com/18470/9714e8176a1ce2c8.png" width={437} height={83} alt='blob 展示信息的图片' />
+
+但其实中间间隔了一个不可见字符 `\x00`：
+
+<Image url="http://qkc148.bvimg.com/18470/151adb38028f6a4d.png" width={826} height={462} alt='不可见字符的图片' />
+
+最后是分支，通过上面的内容我们知道了分支只是一个文件引用了一个 commit 对象，假设我们通过 `git checkout -b test` 新建一个 test 分支，Git 会新建一个 `.git/refs/heads/test` 文件，并写入一个 commit 对象，然后 `master` 和 `test` 分支可以同时提交更新互不打扰，只需要在需要的时候合并两个分支的代码就可以了，这都得益于 Git 的机制（内容寻址文件系统）。
+
+可以查看下述帮助理解的图片，均来源于 [Pro Git v1]：
+
+分支：
+
+<Image url="http://qkc148.bvimg.com/18470/2221866ba2c431b5.png" width={445} height={310} alt='分支展示的图片' />
+
+<Image url="http://qkc148.bvimg.com/18470/fce2a9a0da20f2c2.png" width={392} height={310} alt='分支展示的图片2' />
+
+<Image url="http://qkc148.bvimg.com/18470/4cc64f4f3f73bcb5.png" width={500} height={287} alt='分支展示的图片3' />
+
+commit 对象：
+
+<Image url="http://qkc148.bvimg.com/18470/77f61e9c7379af83.png" width={500} height={338} alt='commit 展示的图片' />
+
+<Image url="http://qkc148.bvimg.com/18470/174c1b8cf2be4e51.png" width={500} height={223} alt='commit 展示的图片2' />
+
+<Image url="http://qkc148.bvimg.com/18470/9ac0c83c065057f7.png" width={500} height={251} alt='commit 展示的图片3' />
+
+## Git 服务器
+
+Git 远程仓库通常是一个裸仓库，即没有工作区的仓库，即只有一个 .git 目录存放仓库的所有内容，通过以下命令可以创建一个裸仓库：
+
+```shell
+git init --bare
+```
+
+Git 使用四种主要协议传输内容：
+
+1. 本地协议，即远程仓库在本地文件系统中，比如 NFS
+2. SSH 协议，拥有读写权限，支持验证授权等功能
+3. Git 协议，包含在 Git 软件包中的特殊守护进程；它会监听一个提供类似于 SSH 服务的特定端口（9418）
+4. http/https 协议，只需要把 Git 的裸仓库文件放在 HTTP 的根目录下，配置一个特定的 post-update 挂钩（hook）就可以搞定
+
+## Git 内部原理
+
+Git 是如何存储内容的，粗略来说，Git 使用 SHA-1 加密获得 40 位的指纹信息，加密内容为文件的头信息和具体内容，以前两位作为目录名，剩余 38 位作为文件名在 `.git/objects` 目录下创建文件，最后通过 zlib 的 `Deflate` 算法压缩内容并写入文件，具体步骤如下：
+
+```js
+const zlib = require("zlib");
+const crypto = require("crypto");
+
+/** 实际内容 */
+const content = "test generate blob object";
+
+/**
+ *
+ * 构造 header
+ * blob 表示是一个 blob 对象
+ * 注意这里的 content.length 表示后续的字节数, 因为是全英文, 所以 content.length 得到结果是正确的
+ * 最后需要添加一个不可见字符，实体表示为 \x00
+ * */
+const header = `blob ${content.length}\x00`;
+
+/** 拼接获取需要操作的内容 */
+const store = header + content;
+
+/** 计算指纹 */
+const hash = crypto.createHash("sha1");
+hash.update(store);
+const hex = hash.digest("hex");
+
+/** 目录名称 */
+const folderName = hex.slice(0, 2);
+/** 文件名称 */
+const fileName = hex.slice(2);
+
+/** 压缩内容 */
+zlib.deflate(store, (err, result) => {
+  /** 获取目录路径 */
+  const dir = path.resolve(__dirname, `./.git/objects/${folderName}`);
+
+  /** 目录不存在则递归创建 */
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  /** 写入压缩内容 */
+  const write = fs.createWriteStream(dir + `/${fileName}`);
+  write.write(result);
+});
+```
+
+这样我们就手动构建了一个 blob 对象，可以通过类似的方式构建 commit 和 tree 对象，它们之间的关系如下图：
+
+<Image url="http://qkc148.bvimg.com/18470/5470b6dfd363e21d.png" width={500} height={339} alt='关系展示的图片3' />
+
+当然最后会有一个 commit 对象指向 root tree，以此可以构建完整的工作区内容。
+
+## Git References（Git 引用）
+
+`.git/refs/heads/*` 保存着所有分支，如 master 分支路径为：`.git/refs/heads/master`，分支文件中保存着当前分支指向的 commit 对象引用。
+
+`.git/HEAD` 文件保存着当前分支的引用，假设当前分支为 `master`，则 HEAD 文件内容为：`ref: refs/heads/master`。
+
+`.git/refs/tags/*` 保存着所有的标记文件，通过 `git tag [args]` 命令可以给对象打上标记。
+
+`.git/remotes/*/` 保存着与远程仓库交互有关的信息。
+
+## Packfiles
+
+Git 保存每个文件每次更新的快照，为防止磁盘占用过多，Git 会时不时地将这些对象打包至一个叫 packfile 的二进制文件以节省空间并提高效率，存储在 `.git/objects/pack/*` 中。
+
+Git 通过查找命名及尺寸相近的文件，只打包保存文件不同版本的 ***差异*** 内容，生成 `.pack` 压缩文件和 `.idx` 索引文件。
+
+Git 在 `push` 时或手动执行 `git gc` 命令时会进行打包操作，我们执行 `git gc` 后，会发现 `.git/` 目录下的大部分对象文件都不见了，而多出了下面几个文件：
+
+<Image url="http://qkc148.bvimg.com/18470/1ad946da5c379cbf.png" width={699} height={379} alt='多出来的文件的图片' />
+
+<Image url="http://qkc148.bvimg.com/18470/3cc9c37a033dc7a7.png" width={699} height={386} alt='多出来的文件的图片2' />
+
+<Image url="http://qkc148.bvimg.com/18470/55fb84a618a643e0.png" width={699} height={385} alt='多出来的文件的图片3' />
+
+其中，`.git/packed-refs` 保存了所有分支及对应的 commit 引用；`.git/objects/info/packs` 保存了所有 `.pack` 文件的引用；`.git/objects/pack/pack-*.[idx|pack]` 就是压缩后的 `.pack` 文件和对应的索引文件。
+
+对于 packfiles 的文件格式，推荐阅读以下文章：
+
+- [Git Pack Idx 格式]
+- [一文讲透 Git 底层数据结构和原理]
+
+[一文讲透 Git 底层数据结构和原理] 讲的很详细，可惜的是没有讲解如何将多个差异对象进行合并，找到了一个用于 nodejs 的合并库：
+
+- [git-apply-delta]
+
+以及两篇文章，不过个人还不能理解：
+
+- [pack-heuristics]
+- [How Git compresses files]
+
+## Git 传输过程
+
+以 `http/https` clone 仓库请求为列：
+
+1. 获取 `/info/refs`，内容包含全部分支及分支指向的 commit 对象
+2. 获取 `/HEAD`，得到当前分支引用
+3. 获取分支对应的 `commit` 对象，解压得到明文内容，请求 root tree 对象，然后可以据此不断请求构建本地 Git 仓库
+4. 如果没有找到对应的 tree 或 blob 对象，表明对象可能在替代仓库或打包文件中
+   1. 请求 `/objects/info/http-alternates`，列举所有替代仓库
+   2. 如果返回为空继续请求 `objects/info/packs` 获取所有打包的 `.pack` 引用
+   3. 请求 `/objects/pack/pack-*.idx` 获取指定 `.pack` 文件的索引文件
+
+-- end
+
+## 后话
+
+最近为了实现自己的想法，需要在 node.js、Android 等环境中集成 Git 功能，首先在自己更熟悉的 js 中查找有没有对应实现的库，找到了这篇文章：
+
+- [最佳实践：Node.js 集成 Git 方案梳理]
+
+因为需要不依赖于外部的 Git，所以文章中列举出的只有三种方案合适，经过测试发现都不能满足需求：
+
+- [dugite]，太老且提供的接口简陋
+- [nodegit] 虽然支持 ssh，但测试无法正常连接，折腾一天后放弃
+- [isomorphic-git] 不支持 ssh
+
+Android 中找到了 [MGit] 这个开源应用，实现了基本的 Git 功能，查看源码发现是使用的 eclipse 的 [jgit] 包，因为是打包后的产物，反编译有点麻烦，所以放弃。
+
+在查找解决方案的过程中，收集了一些可能有用的资料：
+
+- [Git实现原理]
+- [深入理解 Git 底层实现原理]
+- [当你 git push 时，极狐GitLab上发生了什么？]
+
+[最佳实践：Node.js 集成 Git 方案梳理]: https://juejin.cn/post/7310554208230850623
+[dugite]: https://github.com/desktop/dugite
+[nodegit]: https://github.com/nodegit/nodegit
+[isomorphic-git]: https://isomorphic-git.org/
+[MGit]: https://github.com/maks/MGit
+[jgit]: https://www.eclipse.org/jgit/
+[Git实现原理]: https://huweicai.com/git-implementation/
+[深入理解 Git 底层实现原理]: http://chuquan.me/2022/05/21/understand-principle-of-git/
+[当你 git push 时，极狐GitLab上发生了什么？]: https://gitlab.cn/blog/2022/09/23/git-push/
+[Pro Git v1]: https://git-scm.com/book/zh/v1%20
+[Pro Git v2]: https://git-scm.com/book/zh/v2
+[Git Pack Idx 格式]: https://notfound.cn/posts/git-pack-idx-format/
+[一文讲透 Git 底层数据结构和原理]: https://blog.51cto.com/u_15707676/5768966
+[git-apply-delta]: https://github.com/chrisdickinson/git-apply-delta
+[How Git compresses files]: https://www.aviator.co/blog/how-git-compresses-files/
+[pack-heuristics]: https://git-scm.com/docs/pack-heuristics

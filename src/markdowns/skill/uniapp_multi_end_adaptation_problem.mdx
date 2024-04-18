@@ -1,0 +1,1541 @@
+---
+title: 入职一个月，总结下 uniapp 多端项目遇到的一些问题与解决方案
+date: 2023-11-12 21:11:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/3a6e04cb2d739750.jpg
+description: 记录在一个 uniapp 多端项目中遇到的一些问题及解决方法或思路。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+最近入职了一家公司，做的是房屋租赁平台；技术栈是 uniapp 做多端，包含 Android、IOS，两个端都需要做 H5、微信 H5 和 APP，总共是 6 个端。
+
+项目是已经上线运行的，目前主要的工作是解决一些历史遗留的 Bug，完善项目的可用性；在解决这些 Bug 的时候也学到了很多东西，也遇到了很多难以解决的问题，在这里做个总结。
+
+## 输入框 Emoji 渲染
+
+这个问题应该有很多成熟的插件可以实现，但是询问了同事，告知找了很多 uniapp 的插件都不能满足需求；目前项目对于这个功能是分 Android 和 IOS 做不同适配，Android 中使用 editor 渲染，而 IOS 中使用 textarea，然后将 emoji 转换为 `[哭脸]` 这样的方式去渲染，为什么 IOS 不用 editor 的原因没有去深究。
+
+我也找了很多相关的插件，比较友好的一种方式是将项目的 emoji 图片转化为字体，通过字体的方式去渲染，在多端中也能保持一致。
+
+但是实际操作下来，在 IOS 端会有问题，见下图对比：
+
+Android
+
+<Image url='http://qkc148.bvimg.com/18470/a91e750a3e749afd.jpg' width={1080} height={1118} alt='Android 展示 emoji 的图片' />
+
+IOS
+
+<Image url='http://qkc148.bvimg.com/18470/7c0bb10a14c53d63.jpg' width={750} height={721} alt='iOS 展示 emoji 的图片' />
+
+可以发现 IOS 中 emoji 实在是太小了，与字体大小不匹配，造成的视觉落差比较大。
+
+我有尝试过使用 `unicode-range` + `size-adjust`（见 [使用CSS size-adjust和unicode-range改变任意文字尺寸]）来单独控制 emoji 的大小，在最新版 Chrome 中是有效的，但在 safari 中不能正常渲染，原因在于 `size-adjust` 的兼容性不好。到这里也没有再继续研究。
+
+## uniapp picker 组件的一些问题
+
+uniapp 的 picker 不能定制样式，而项目对多端统一的要求比较高，以往在 APP 端是通过修改基座源码来改变 picker 样式的，因为麻烦，而且之前有过忘了修改基座源码而导致多端样式不一致的问题，所以目前需求是使用插件或自定义组件来实现。
+
+使用封装组件的方式，利用 `uni-popup` 做弹出控制，`picker-view` 做 picker 的渲染控制，模拟实现 picker 组件；同时在自定义组件统一解决项目中关于 picker 组件的问题，代码如下：
+
+```html
+<template>
+  <div
+    class="uarea-picker"
+    :class="{ hidden: hidden }"
+    v-bind="$attrs"
+    v-on="$listeners"
+    @tap="openPicker"
+  >
+    <!-- 默认插槽，实现类 picker 结构 -->
+    <slot name="default"></slot>
+
+    <!-- picker 选择器弹出控制 -->
+    <uni-popup
+      ref="picker"
+      class="uarea-picker-popup"
+      :style="{ zIndex: zIndex }"
+      type="bottom"
+      :is-mask-click="false"
+      @maskClick="handleMaskClick"
+    >
+      <!-- 选择器容器 -->
+      <view
+        class="picker-view-container"
+        :style="{ height: normalizeHeight }"
+        @tap.stop=""
+      >
+        <!-- 顶部操作栏 -->
+        <view class="operator-container">
+          <slot name="operator">
+            <!-- 取消按钮 -->
+            <view class="picker-view-operator">
+              <button
+                class="picker-view-btn"
+                type="default"
+                :plain="true"
+                @tap="cancel"
+              >
+                {{ cancelText }}
+              </button>
+
+              <!-- 确认按钮 -->
+              <button
+                class="picker-view-btn"
+                type="default"
+                :plain="true"
+                @tap="complete"
+              >
+                {{ confirmText }}
+              </button>
+            </view>
+          </slot>
+        </view>
+
+        <!-- picker-view -->
+        <picker-view
+          class="picker-view"
+          :value="normalizeValue"
+          @change="handleDataChange"
+        >
+          <template v-for="(column, index) in getRange(range)">
+            <!-- v-if 为了解决多列时, 滑动某一列快速滑动当前列后的列表时出现的视图错乱问题 -->
+            <!-- v-if 后使用 $nextTick 重新 render, 视图不会抖动 -->
+            <picker-view-column
+              v-if="afterChangeIndexs.includes(index) === false"
+              :key="index"
+            >
+              <view
+                class="picker-view-item"
+                v-for="(row, index) in column"
+                :key="getKey(row, index)"
+              >
+                {{ getDisplayText(row) }}
+              </view>
+            </picker-view-column>
+          </template>
+        </picker-view>
+      </view>
+    </uni-popup>
+  </div>
+</template>
+
+<script>
+import Vue from "vue";
+
+/**
+ * TODO:
+ *
+ * 组件使用 uni-popup + picker-view 实现, 为了满足样式需求及集中处理需要解决的问题。
+ * 使用组件时需要注意, 如果组件被含有 transform 属性的元素包裹, 则组件样式可能会出现问题
+ * uni-popup 使用 fixed 固定定位实现遮罩功能, fixed 遇到含有 transform 属性的父元素时, 相对于该元素偏移
+ * 如果出现这种情况, 可以将组件放置在最外层, 通过自定义的元素调用组件的 openPicker 方法 `$refs.picker.openPicker()`
+ *
+ * */
+
+/**
+ * FIXME:
+ *
+ * 修复 BUG:
+ *
+ * 1. 死循环
+ *   - 实测发现滑动到多列时, 频繁滑动到边界, 此时会触发 normalizeRange 的侦听器
+ *   - 侦听器中对所有列进行了判断, 如果当前列选择的索引大于当前列, 则将索引重置为 0
+ *   - 此时出现无限死循环, 原因未知
+ *   - 实测发现 rerender 后所有列都会重置为 0 (需要修改, 体验优化), 所以侦听器目前无效, 暂先注释
+ *
+ * 2. 滑动选择后, 不确认关闭 picker, 再次打开不滑动直接确认, 此时选中变为上一次滑动后的结果
+ *    - 关闭时未重置 cancheData 导致的
+ *
+ * 3. 多列选择器, 快速滑动时, 触发列改变事件, 此时外界修改 range, 如果列数发生改变, 此时快速点击确认, value 个数和 range 列数不匹配
+ *
+ * 4. rerender 后, 后续列被重置为 0, 但数据不确定是否被修改
+ *    - 默认重置当前 change 列后面的所有列选择索引为 0
+ *
+ * 体验优化:
+ *
+ * 1. 选中前一列后, 不管后一列选择索引是否超过列长度都会重置为 0
+ */
+
+/**
+ * 事件类型
+ */
+const eventType = {
+  /** change */
+  CHANGE: "change",
+  /** cancel */
+  CANCEL: "cancel",
+  COLUMN_CHANGE: "columnchange",
+};
+
+/**
+ * 模式
+ */
+const modeType = {
+  SELECTOR: "selector",
+  MULTI_SELECTOR: "multiSelector",
+};
+
+export default Vue.extend({
+  name: "uarea-picker",
+  props: {
+    /** picker 高度 */
+    height: {
+      type: [String, Number],
+      default: "554rpx",
+    },
+    /** popup 层级 */
+    zIndex: {
+      type: Number,
+      default: 99
+    },
+    /** 选中数据 */
+    value: {
+      type: [Number, String, Array],
+      required: true,
+    },
+    /** 模式，只支持单列 selector 和多列 multiSelector */
+    mode: {
+      type: String,
+      default: "selector",
+    },
+    /** 选择列表 */
+    range: {
+      type: Array,
+      required: true,
+    },
+    /** 当每列的数据项是 object 时, rangeKey 用于选择视图展示对象中的哪个属性 */
+    rangeKey: {
+      type: String,
+    },
+    /** 是否隐藏 */
+    hidden: {
+      type: Boolean,
+      default: false,
+    },
+    /** 是否禁用 */
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    /** 取消文字 */
+    cancelText: {
+      type: String,
+      default: "取消",
+    },
+    /** 确认文字 */
+    confirmText: {
+      type: String,
+      default: "确认",
+    },
+  },
+  data() {
+    return {
+      /** 规整化 value */
+      normalizeValue: [],
+      /** change 数据 */
+      cancheData: [],
+      /** 点击完成 */
+      clickIntoComplete: false,
+      /** 防止频繁点击 */
+      disabledClick: false,
+      /** 记录当前列改变时后面列的索引 */
+      afterChangeIndexs: []
+    };
+  },
+  watch: {
+    /** 侦听 value 变化, 变化后规整化数据 */
+    value: {
+      handler(val) {
+        if (this.mode === modeType.MULTI_SELECTOR) {
+          return (this.normalizeValue = this.transform(val));
+        }
+
+        this.normalizeValue = Array.isArray(val) ? val.slice(0) : [val];
+      },
+      immediate: true,
+      deep: true,
+    }
+  },
+  computed: {
+    /**
+     * @description 规整化 height
+     */
+    normalizeHeight() {
+      if (typeof this.height === "string") {
+        return this.height;
+      }
+      return this.height + "px";
+    },
+  },
+  methods: {
+    /**
+     *
+     * @description 添加定时器，防止频繁触发事件
+     * @param {number} timer 禁止其他事件触发的时长
+     */
+    preventFrequentClicks(timer = 300) {
+      if (this.disabledClick === false) {
+        this.disabledClick = true;
+
+        setTimeout(() => {
+          this.disabledClick = false;
+        }, timer);
+      }
+    },
+    /**
+     *
+     * @description 统一调度事件处理程序
+     * @param {Function} cb 回调
+     */
+    runIn(cb) {
+      if (this.disabledClick === false) {
+        this.preventFrequentClicks();
+
+        cb && cb();
+      }
+    },
+    /**
+     * @description 打开 picker
+     */
+    open() {
+      if (this.disabled) return;
+
+      this.clickIntoComplete = false;
+
+      if (this.$refs.picker) {
+        this.runIn(() => this.$refs.picker.open());
+      }
+    },
+    /**
+     * @description 关闭 picker
+     */
+    close() {
+      if (this.$refs.picker) {
+        this.runIn(() => this.$refs.picker.close());
+      }
+    },
+    /**
+     * @description open 别名
+     */
+    openPicker() {
+      this.open();
+    },
+    /**
+     *
+     * @description 消息传递
+     * @param {string} type
+     * @param {any} data
+     */
+    emit(type, data) {
+      this.$emit(type, data);
+    },
+    /**
+     *
+     * @description 规整化 range
+     * @param {Array} range
+     */
+    getRange(range) {
+      return this.mode === modeType.MULTI_SELECTOR ? range : [range];
+    },
+    /**
+     *
+     * @description 计算 key 值
+     * @param {string|object} row
+     * @param {number} index
+     */
+    getKey(row, index) {
+      if (this.rangeKey !== null && this.rangeKey !== undefined) {
+        return row[this.rangeKey] + index;
+      }
+
+      return row + index;
+    },
+    /**
+     *
+     * @description 获取展示文本
+     * @param {string|object} row
+     */
+    getDisplayText(row) {
+      if (
+        typeof row === "object" &&
+        this.rangeKey !== null &&
+        this.rangeKey !== undefined
+      ) {
+        return row[this.rangeKey];
+      }
+
+      return row;
+    },
+    /**
+     *
+     * @description 创建自定义事件对象
+     * @param {object} detail
+     */
+    createCustomEvent(detail) {
+      return { detail: detail };
+    },
+    /**
+     *
+     * @description 转换数据
+     * @param {number|Array} val
+     */
+    transform(val) {
+      let result = val;
+
+      result = Array.isArray(val) ? val.slice(0) : [val];
+
+      result = result.map((int) => Math.max(parseInt(int), 0));
+
+      return result;
+    },
+    /**
+     *
+     * @description columnchange 事件在 change 事件之前, 发送的数据可能会改变列数, change 事件时的 value 值便不对了, 需要加以限制
+     * @param {Array} value
+     * @param {Array} range
+     */
+    preventOverflow(value, range) {
+      let multiValue = value.slice(0, range.length);
+
+      multiValue = multiValue.concat(new Array(range.length - multiValue.length).fill(0));
+
+      for (let i = 0; i < multiValue.length; i++) {
+        if (multiValue[i] >= range[i].length) {
+          multiValue[i] = 0;
+        }
+      }
+
+      return multiValue;
+    },
+    /**
+     *
+     * @description 处理选择数据改变事件处理函数
+     * @param {CustomEvent} e
+     */
+    handleDataChange(e) {
+      const value = e.detail.value;
+
+      this.cancheData = value.slice(0);
+
+      if (this.mode === modeType.MULTI_SELECTOR) this.handleColumnChange(value);
+
+      if (this.clickIntoComplete) {
+        this.confirm();
+      }
+    },
+    /**
+     *
+     * @description 某列改变时触发
+     * @param {Array} val
+     */
+    handleColumnChange(val) {
+      const nValue = val.slice(0);
+      const oValue = this.normalizeValue.slice(0);
+
+      let changeColumnIndex = -1;
+
+      /** 获取改变后的列所在索引 */
+      for (let i = 0; i < oValue.length; i++) {
+        if (oValue[i] !== nValue[i]) {
+          changeColumnIndex = i;
+          break;
+        }
+      }
+
+      if (changeColumnIndex < 0) return;
+
+      this.emit(
+        eventType.COLUMN_CHANGE,
+        this.createCustomEvent({
+          column: changeColumnIndex,
+          value: nValue[changeColumnIndex],
+        })
+      );
+
+      /** 如果改变的不是最后一列, 则后面列需要进行视图刷新 */
+      if (changeColumnIndex !== nValue.length - 1) {
+        const needResetColumn = [];
+
+        for (let i = changeColumnIndex + 1; i < nValue.length; i++) {
+          needResetColumn.push(i);
+
+          // 默认重置后续列为 0, 如果不重置会导致很多 bug
+          this.emit(eventType.COLUMN_CHANGE, this.createCustomEvent({ column: i, value: 0 }));
+        }
+
+        this.afterChangeIndexs = needResetColumn;
+
+        this.$nextTick(() => {
+          this.afterChangeIndexs = [];
+        });
+      }
+    },
+    /**
+     * @description 点击遮罩事件处理程序
+     */
+    handleMaskClick() {
+      this.cancel();
+    },
+    /**
+     * @description 点击确认按钮的事件处理程序
+     */
+    complete() {
+      this.clickIntoComplete = true;
+      this.confirm();
+    },
+    /**
+     * @description 点击取消按钮的事件处理程序
+     */
+    cancel() {
+      this.close();
+
+      this.emit(eventType.CANCEL, this.createCustomEvent({}));
+
+      this.cancheData = [];
+      this.clickIntoComplete = false;
+    },
+    /**
+     * @description 确认事件处理程序
+     */
+    confirm() {
+      this.close();
+
+      if (this.cancheData.length) {
+        this.emit(
+          eventType.CHANGE,
+          this.createCustomEvent({
+            value:
+              this.mode === modeType.MULTI_SELECTOR
+                ? this.preventOverflow(this.cancheData, this.range)
+                : this.cancheData[0],
+          })
+        );
+
+        this.clickIntoComplete = false;
+        this.cancheData = [];
+      } else {
+        this.emit(
+          eventType.CHANGE,
+          this.createCustomEvent({ value: this.normalizeValue.slice(0) })
+        );
+      }
+
+      this.clickIntoComplete = false;
+    }
+  }
+});
+</script>
+```
+
+这个组件因为使用了 `uni-popup` 做弹出控制，所以样式可能会被含有 `transform` 属性的父元素干扰，我去翻过 picker 组件的源码，主要是通过分端实现，在 H5 中直接使用 DOM API 将元素挂载到 `root` 元素下，而在 APP 端通过 [HTML5+] API 创建 webview 视图来实现（PS：有时间研究下 [HTML5+] 和 uniapp 源码还是挺好的，可以知其然而知其所以然）。
+
+## fixed 注意事项
+
+因为项目主要是移动端，所以做了宽度限制，在宽屏（PC 或平板横屏）中项目展示区域可能不会使用到所有可视区域，此时会在两边留有空白区域，如果按平常的固定定位写法：
+
+```css
+.fixed {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  /* or */
+  inset: 0;
+}
+```
+
+<Image url='http://qkc148.bvimg.com/18470/5ad854c2d983a0ec.png' width={1366} height={521} alt='在 pc 上的布局图片' />
+
+会出现上图中的问题，此时正确的写法应该是加上 uniapp 官方提供的上下左右边距：
+
+```css
+.fixed {
+  position: fixed;
+  top: var(--window-top);
+  right: var(--window-right);
+  bottom: var(--window-bottom);
+  left: var(--window-left);
+}
+```
+
+<Image url='http://qkc148.bvimg.com/18470/6fab4c889ad83d01.png' width={1366} height={528} alt='修复 pc 上的布局问题图片' />
+
+## ios H5 阻尼滚动
+
+项目用到滚动的地方基本都是用 scroll-view（虽然性能不好，但当时好像也是为了解决 ios 微信 H5 的一个 bug 才使用的，可以说是填了一个坑又来一个坑），在 scroll-view 滚动时可能会触发页面的滚动，因为 ios 是自带有阻尼回弹效果的，当页面滚动到边界时触发阻尼效果，此时 scroll-view 的滚动会失效，出现页面无法滑动的假象，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/756781ca9cc5bef5.jpg' width={750} height={1334} alt='iOS 阻尼回弹图片' />
+
+可以看到触发了页面的滚动，而 scroll-view 的滚动无法触发，导致出现滑不动的情况，需要等待几秒后才能继续滑动。
+
+这个问题目前还没有好的解决方案，如果需要处理最好是使用页面的滚动行为，对于性能也会更好一点。
+
+## ios H5 输入框聚焦后底部出现留白
+
+这其实是正常的现象，因为 ios H5 会在输入框聚焦软键盘弹出时给底部添加一块空白区域来让页面上推，防止有区域被软键盘遮挡，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/19ed420928e13979.jpg' width={750} height={971} alt='iOS 底部空白问题的图片' />
+
+虽然是正常现象，奈何老板有命，不得不从。
+
+为了看不到这个空白区域，一个简单的想法是空白区域即将出现在可视区时，阻止页面继续滑动，为此我们需要知道两个关键的变量：
+
+- 软键盘的高度
+- 软键盘弹出时页面卷上去的高度（也就是底部空白块的高度）
+
+然后就可以愉快的侦听页面滚动和触摸事件了，因为页面滚动是无法取消的，所以这里的做法是每次滚动超出时回滚页面，而触摸事件则可以阻止默认的行为，代码如下：
+
+```html
+<template>
+  <input @focus="handleFocus" />
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      keyboardHeight: 0,
+      blackAreaHeight: 0,
+      isFocus: false
+    }
+  },
+  mounted() {
+    // #ifdef H5
+    if (this.isIos && this.isWXBrower === false) {
+      // window.resize 无法侦听到 ios 软键盘挤压页面的事件，只能用 window.visualViewport
+      window.visualViewport.addEventListener("resize", this.handleResize);
+
+      // 软键盘弹出底部块顶起页面时会触发 scroll，此时获取 window.scrollY 即可知道底部空白块的高度
+      window.addEventListener("scroll", this.handleScrollGetBlackAreaHeight);
+
+      // 滚动无法阻止，只能回滚页面
+      window.addEventListener("scroll", this.handleScroll);
+
+      window.addEventListener("touchstart", this.handleTouchStart, {
+        passive: false,
+      });
+      window.addEventListener("touchmove", this.handleTouchMove, {
+        passive: false,
+      });
+      window.addEventListener("touchend", this.handleTouchEnd, {
+        passive: false,
+      });
+    }
+    // #endif
+  },
+  methods: {
+    handleFocus() {
+      // focus 时软键盘即将弹出
+      this.isFocus = true;
+      this.blackAreaHeight = 0;
+
+      setTimeout(() => {
+        this.isFocus = false;
+      }, 500);
+    },
+    // window.resize 无法侦听到 ios 软键盘挤压页面的事件，只能用 window.visualViewport
+    handleResize(e) {
+      // 获取键盘高度
+      this.keyboardHeight = window.innerHeight - e.target.height;
+    },
+    // 软键盘弹出底部块顶起页面时会触发 scroll，此时获取 window.scrollY 即可知道底部空白块的高度
+    handleScrollGetBlackAreaHeight(e) {
+      if (this.isFocus) {
+        // 获取底部空白块高度
+        this.blackAreaHeight = window.scrollY;
+        this.isFocus = false;
+      }
+    },
+    // 滚动无法阻止，只能回滚页面
+    handleScroll(e) {
+      if (window.scrollY >= this.keyboardHeight + this.scrollTop || 0) {
+        window.scrollTo(0, this.keyboardHeight + this.scrollTop || 0);
+      }
+    },
+    handleTouchStart(e) {
+      this.startY = e.touches ? e.touches[0].screenY : e.screenY;
+    },
+    handleTouchMove(e) {
+      if (window.scrollY >= (this.keyboardHeight + this.scrollTop || 0) - 5) {
+        const endY = e.touches ? e.touches[0].screenY : e.screenY;
+        if (this.startY > endY) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    },
+    handleTouchEnd(e) {
+      this.startY = 0;
+    },
+  },
+}
+</script>
+```
+
+上述代码虽然有效，但还有几个需要解决的地方：
+
+- `window.visualViewport` 在 ios 13 中才开始支持，需要找到其他兼容性更好的方式获取软键盘高度
+- 如果触发滚动时手指缓慢滑动至边界且不松手，此时会频繁触发 **滚动溢出 ${`<->`} 回滚** 而导致页面抖动
+- 在两个输入框中进行切换，且输入框类型不相同（普通输入框和密码输入框），如果两个输入框高度不一致，此时获取到的键盘高度是不正确的
+
+## ios H5 侧滑返回
+
+这个问题可能不常见，但是触发比较简单。只要从页面 A 进入页面 B，页面 B 中的路由阻止了路由跳转事件（`next(false)`），此时通过其他方式是不能离开页面 B 的，但是通过侧滑返回可以返回到页面 A。这个时候如果你去操作页面 A 会发现非常卡顿，且等待一段时间后又会回到页面 B。
+
+关于这个问题主要是看具体的需求，这里我的需求就是侧滑返回时操作页面不能卡顿，所以在页面路由中进行了判断，如果是 ios H5 的侧滑返回则不阻止它跳转。
+
+## Android App 请求权限问题
+
+因为项目有做推流、黑名单之类的功能，所以需要用户的设备信息来识别身份，不可避免的使用到 [HTML5+] 的 `getInfo`、`getOAID` API 获取设备 id，但是目前主流的 Android 版本对于这些信息都要求要用户授权才能获取。
+
+因为项目在启动时是默认调用相关 API 的，就会导致频繁的向用户请求授权，同时还要考虑用户永久拒绝权限的情况，可能需要通过其他方式来识别用户设备身份。
+
+## 阻尼回弹
+
+老板要多端同步实现阻尼回弹效果，还要非常丝滑的那种。找到了一个老牌 js 滚动插件 [iscroll]，研究了它滚动部分的源码，然后照猫画虎写了一个适配 uniapp 的组件，在 H5 端效果还是可以的，APP 端如果只是简单的展示列表也比较丝滑，可惜放在项目中就一个字：卡！！！
+
+下面是写的组件源码，无法在实际项目中使用，但研究下思路进行完善也是可以的：
+
+```html
+<template>
+  <view
+    id="scroller-container"
+    class="scroller-container"
+    :style="{ width: width, height: height }"
+
+    :scroll-x="scrollX"
+    :change:scroll-x="bounce.updateScrollX"
+    :scroll-y="scrollY"
+    :change:scroll-y="bounce.updateScrollY"
+    :scrollLeft="scrollLeft"
+    :change:scrollLeft="bounce.updateScrollLeft"
+    :scrollTop="scrollTop"
+    :change:scrollTop="bounce.updateScrollTop"
+
+    :width="width"
+    :height="height"
+    :change:width="bounce.updateScrollerContainerRect"
+    :change:height="bounce.updateScrollerContainerRect"
+
+    @touchstart="bounce.handleStart"
+    @touchmove="bounce.handleMove"
+    @touchend="bounce.handleEnd"
+    @touchcancel="bounce.handleCancel"
+
+    @mousedown="bounce.handleStart"
+    @mousemove="bounce.handleMove"
+    @mouseup="bounce.handleEnd"
+  >
+    <view id="scroller" class="scroller" @transitionend="bounce.handleTransitionend">
+      <slot name="default"></slot>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  data() {
+    return {};
+  },
+  props: {
+    /** 滚动容器宽度 */
+    width: {
+      type: [String, Number]
+    },
+    /** 滚动容器高度 */
+    height: {
+      type: [String, Number],
+      require: true
+    },
+    /** x 轴滚动 */
+    scrollX: {
+      type: Boolean,
+      default: false
+    },
+    /** y 轴滚动 */
+    scrollY: {
+      type: Boolean,
+      default: false
+    },
+    /** x 轴滚动距离 */
+    scrollLeft: {
+      type: Number,
+      default: 0
+    },
+    /** y 轴滚动距离 */
+    scrollTop: {
+      type: Number,
+      default: 0
+    }
+  },
+  methods: {
+    /**
+     *
+     * @description 向父组件发送消息
+     * @param {string} type
+     * @param {any} payload
+     */
+    emit(type, payload) {
+      this.$emit(type, payload);
+    },
+    /**
+     *
+     * @description 统一事件管理
+     * @param {CustomEvent} e
+     */
+    handleEvent(e) {
+      this.emit(e.type, e);
+    }
+  }
+};
+</script>
+
+<script module="bounce" lang="renderjs">
+/** 回弹动画时长 */
+export const BOUNCE_TIME = 600;
+
+/** 事件类型 */
+export const eventType = {
+  /**
+   * @description 触摸事件类型 1
+   */
+  touchstart: 1,
+  touchmove: 1,
+  touchend: 1,
+  touchcancel: 1,
+
+
+  /**
+   * @description 鼠标事件类型 2
+   */
+  mousedown: 2,
+  mousemove: 2,
+  mouseup: 2,
+
+  /**
+   * @description 指针事件类型 3
+   */
+  pointerdown: 3,
+  pointermove: 3,
+  pointerup: 3,
+
+  /**
+   * @description IE 指针事件类型 4
+   */
+  MSPointerDown: 3,
+  MSPointerMove: 3,
+  MSPointerUp: 3,
+
+  /**
+   * @description  app 端 onTouch 事件类型 5
+   */
+  onTouchstart: 4,
+  onTouchmove: 4,
+  onTouchend: 4,
+  onTouchcancel: 4
+};
+
+/** start 事件类型 */
+export const startEventType = ['touchstart', 'mousedown', 'pointerdown', 'MSPointerDown', 'onTouchstart'];
+
+/** 暴露的事件 */
+export const event = {
+  SCROLL_TO_UPPER: 'scrolltoupper',
+  SCROLL_TO_LOWER: 'scrolltolower',
+  SCROLL: 'scroll',
+  ON_SCROLL: 'onScroll',
+  REFRESHER_PULLING: 'refresherpulling',
+  REFRESHER_REFRESH: 'refresherrefresh',
+  REFRESHER_RESTORE: 'refresherrestore',
+  REFRESHER_ABORT: 'refresherabort'
+}
+
+/** 默认回弹动画事件函数 */
+export const circular = {
+  style: "cubic-bezier(0.1, 0.57, 0.1, 1)",
+  fn: function(k) {
+    return Math.sqrt(1 - --k * k);
+  },
+};
+
+/** 特定回弹动画事件函数 */
+export const quadratic = {
+  style: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+  fn: function(k) {
+    return k * (2 - k);
+  },
+};
+
+
+let timerId = 0;
+/**
+ * @param {number} time
+ * @param {Function} fn
+ */
+export function debounce(time, fn) {
+  if (timerId) {
+    clearTimeout(timerId);
+  }
+
+  timerId = setTimeout(() => {
+    timerId = 0;
+    fn.apply(this, Array.from(arguments).slice(2));
+  }, time);
+}
+
+let ownnerPos = {
+  x: 0,
+  y: 0
+}
+
+/** 滚动容器 */
+let scrollerContainer = null;
+/** 滚动目标 */
+let scroller = null;
+/** 滚动容器 rect */
+let scrollerContainerRect = {
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0
+};
+/** 滚动目标 rect */
+let scrollerRect = {
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0
+};
+/** x 轴最大滚动距离 */
+let maxScrollX = 0;
+/** y 轴最大滚动距离 */
+let maxScrollY = 0;
+/** 允许 x 轴滚动 */
+let hasHorizontalScroll = false;
+/** 允许 y 轴滚动 */
+let hasVerticalScroll = false;
+/** 是否在过渡中 */
+let isInTransition = false;
+/** 开始时间 */
+let startTime = 0;
+/** 结束时间 */
+let endTime = 0;
+/** 当前事件类型，同属一组的事件数据一致，(touchstart, touchmove, touchend) */
+let initiated = 0;
+/** 是否移动中 */
+let moved = false;
+/** x 点 */
+let x = 0;
+/** y 点 */
+let y = 0;
+/** 开始 x 点 */
+let startX = 0;
+/** 开始 y 点 */
+let startY = 0;
+/** 页面 x 点 */
+let pointX = 0;
+/** 页面 y 点 */
+let pointY = 0;
+/** 区域 x 点 */
+let distX = 0;
+/** 区域 y 点 */
+let distY = 0;
+/** 方向 x 点 */
+let directionX = 0;
+/** 方向 y 点 */
+let directionY = 0;
+
+export default {
+  data() {
+    return {
+      bounceScrollX: false,
+      bounceScrollY: false,
+      bounceScrollLeft: 0,
+      bounceScrollTop: 0,
+    };
+  },
+  watch: {
+    bounceScrollX() {
+      this.refresh();
+    },
+    bounceScrollY(val) {
+      this.refresh();
+    },
+    bounceScrollLeft(val) {
+      this.scrollTo(val, this.bounceScrollTop);
+    },
+    bounceScrollTop(val) {
+      this.scrollTo(this.bounceScrollLeft, val);
+    }
+  },
+  /** init */
+  mounted() {
+    scrollerContainer = document.getElementById('scroller-container');
+    scroller = document.getElementById('scroller');
+
+    this.updateScrollerContainerRect();
+    this.updateScrollerRect();
+
+    this.setTransitionTime(circular.style);
+
+    this.refresh();
+
+    this.scrollTo(this.bounceScrollLeft, this.bounceScrollTop);
+  },
+  methods: {
+    /**
+     *
+     * @description 设置过渡时长
+     * @param {number} time
+     */
+     setTransitionTime(time) {
+      scroller.style['transitionDuration'] = time + 'ms';
+    },
+    /**
+     *
+     * @description 设置过渡时间线函数
+     * @param {string} easing
+     */
+    setTransitionTimingFunction(easing) {
+      scroller.style['transitionTimingFunction'] = easing;
+    },
+    /**
+     *
+     * @description 设置转换
+     * @param {number} _x
+     * @param {number} _y
+     */
+    setTransForm(_x, _y) {
+      scroller.style['transform'] = `translate(${_x}px, ${_y}px) translateZ(0)`;
+    },
+    /**
+     * @description 更新滚动容器矩形
+    */
+    updateScrollerContainerRect() {
+      if (scrollerContainer) {
+        scrollerContainerRect = scrollerContainer.getBoundingClientRect();
+      }
+    },
+    /**
+     * @description 更新滚动目标矩形
+    */
+    updateScrollerRect() {
+      if (scroller) {
+        scrollerRect = scroller.getBoundingClientRect();
+      }
+    },
+    /**
+     * @description 更新 x 轴是否可滚动
+    */
+    updateScrollX(n) {
+      this.bounceScrollX = n;
+    },
+    /**
+     * @description 更新 x 轴距离
+    */
+    updateScrollLeft(n) {
+      this.bounceScrollLeft = n;
+    },
+    /**
+     * @description 更新 y 轴距离
+    */
+    updateScrollTop(n) {
+      this.bounceScrollTop = n;
+    },
+    /**
+     * @description 更新 y 轴是否可滚动
+    */
+    updateScrollY(n) {
+      this.bounceScrollY = n;
+    },
+    /**
+     *
+     * @description 计算当前位置
+    */
+    getComputedPosition() {
+      let matrix = window.getComputedStyle(scroller, null);
+
+      let _x = 0;
+      let _y = 0;
+
+      matrix = matrix['transform'].split(")")[0].split(", ");
+
+      _x = +(matrix[12] || matrix[4]);
+      _y = +(matrix[13] || matrix[5]);
+
+      return { x: _x, y: _y };
+    },
+    /**
+     * @description 更新数据
+    */
+    refresh() {
+      this.updateScrollerContainerRect();
+      this.updateScrollerRect();
+
+      maxScrollX = scrollerContainerRect.width - scrollerRect.width;
+      maxScrollY = scrollerContainerRect.height - scrollerRect.height;
+
+      hasHorizontalScroll = this.bounceScrollX && maxScrollX < 0;
+      hasVerticalScroll = this.bounceScrollY && maxScrollY < 0;
+
+      if (hasHorizontalScroll === false) {
+        maxScrollX = 0;
+        // this.scrollerWidth = this.wrapperWidth;
+      }
+
+      if (hasVerticalScroll === false) {
+        maxScrollY = 0;
+        // this.scrollerHeight = this.wrapperHeight;
+      }
+
+      endTime = 0;
+      directionX = 0;
+      directionY = 0;
+
+      this.resetPosition(0);
+    },
+    /**
+     *
+     * @description 统一运行环境
+     * @param {string} type
+     * @param {Function} fn
+     */
+    async runIn(type, fn) {
+      if (initiated === 0 && startEventType.includes(type)) {
+        initiated = eventType[type];
+      }
+
+      if (initiated !== eventType[type]) {
+        return;
+      }
+
+      fn.apply(this, Array.from(arguments).slice(2));
+    },
+    /**
+     *
+     * @description 重置 (回弹) 位置
+     * @param {number} time
+     */
+    resetPosition(time = 0) {
+      let _x = x;
+      let _y = y;
+
+      if (hasHorizontalScroll === false || x > 0) {
+        _x = 0;
+      } else if (x < maxScrollX) {
+        _x = maxScrollX;
+      }
+
+      if (hasVerticalScroll === false || y > 0) {
+        _y = 0;
+      } else if (y < maxScrollY) {
+        _y = maxScrollY;
+      }
+
+      if (_x === x && _y === y) {
+        return false;
+      }
+
+      this.scrollTo(_x, _y, time, circular);
+
+      return true;
+    },
+    /**
+     *
+     * @description 计算目标点及到底目标点应该使用的时间
+     * @param {number} current
+     * @param {number} start
+     * @param {number} time
+     * @param {number} lowerMargin
+     * @param {number} wrapperSize
+     */
+    momentum(current, start, time, lowerMargin, wrapperSize) {
+      // 距离
+      let distance = current - start;
+      // 目的地
+      let destination = 0;
+      // 时长
+      let duration = 0;
+
+      // 阻尼系数
+      const deceleration = 0.0006;
+      // 速度
+      const speed = Math.abs(distance) / time;
+
+      destination =
+        current +
+        ((speed * speed) / (2 * deceleration)) * (distance < 0 ? -1 : 1);
+
+      duration = speed / deceleration;
+
+      if (destination < lowerMargin) {
+        destination = wrapperSize
+          ? lowerMargin - (wrapperSize / 2.5) * (speed / 8)
+          : lowerMargin;
+        distance = Math.abs(destination - current);
+        duration = distance / speed;
+      } else if (destination > 0) {
+        destination = wrapperSize ? (wrapperSize / 2.5) * (speed / 8) : 0;
+        distance = Math.abs(current) + destination;
+        duration = distance / speed;
+      }
+
+      return {
+        destination: Math.round(destination),
+        duration: duration,
+      };
+    },
+    /**
+     *
+     * @description 移动元素
+     * @param {number} _x
+     * @param {number} _y
+     */
+    translate(_x, _y) {
+      _x = Math.round(_x);
+      _y = Math.round(_y);
+
+      this.setTransForm(_x, _y);
+
+      x = _x;
+      y = _y;
+
+      ownnerPos = {
+        x: _x,
+        y: _y
+      };
+    },
+    /**
+     *
+     * @description 滚动到目标
+     * @param {number} _x
+     * @param {number} _y
+     * @param {number} time
+     * @param {object} easing
+     */
+    scrollTo(_x, _y, time = 0, easing) {
+      isInTransition = time > 0;
+
+      if (easing) {
+        this.setTransitionTimingFunction(easing.style);
+      }
+
+      this.setTransitionTime(time);
+
+      this.translate(_x, _y);
+    },
+    /**
+     *
+     * @description 对比两者相差距离是否小于一定量
+     * @param {number} num
+     * @param {number} num2
+     */
+    compared(num, num2) {
+      const MAXIMUM_ALLOWABLE_VALUE = 10;
+
+      return Math.abs(num - num2) <= MAXIMUM_ALLOWABLE_VALUE;
+    },
+    /**
+     *
+     * @description 事件开始处理程序
+     * @param {MouseEvent|TouchEvent} e
+     */
+    handleStart(e) {
+      this.runIn(e.type, () => {
+        // 获取触摸点
+        const point = e.touches ? e.touches[0] : e;
+
+        // 未移动
+        moved = false;
+
+        // 每次移动的距离
+        distX = 0;
+        distY = 0;
+
+        // 计算方向
+        directionX = 0;
+        directionY = 0;
+
+        // 获取开始时间
+        startTime = Date.now();
+
+        // 如果在滚动中，取消滚动
+        if (isInTransition) {
+          this.setTransitionTime(0);
+
+          isInTransition = false;
+
+          // 获取当前位置，以便暂停滚动，防止完全回弹
+          // #ifdef APP-PLUS
+          const pos = ownnerPos;
+          // #endif
+
+          // #ifdef H5
+          const pos = this.getComputedPosition();
+          // #endif
+
+          this.translate(pos.x, pos.y);
+
+          // scrollEnd 滚动结束
+        }
+
+        // 开始点
+        startX = x;
+        startY = y;
+
+        // 此次事件点在页面上的位置
+        pointX = point.pageX;
+        pointY = point.pageY;
+
+        // beforeScrollStart 滚动即将开始
+      });
+    },
+    /**
+     *
+     * @description 移动中事件处理程序
+     * @param {MouseEvent|TouchEvent} e
+     */
+    handleMove(e) {
+      this.runIn(e.type, () => {
+        // 当前点
+        const point = e.touches ? e.touches[0] : e;
+
+        // 距上次的偏移
+        let deltaX = point.pageX - pointX;
+        let deltaY = point.pageY - pointY;
+
+        // 当前时间
+        const timestamp = Date.now();
+
+        // 新的位置
+        let newX = 0;
+        let newY = 0;
+
+        // 绝对距离
+        let absDistX = 0;
+        let absDistY = 0;
+
+        // 点在页面上的位置
+        pointX = point.pageX;
+        pointY = point.pageY;
+
+        // 累计距离加上本次移动距离
+        distX += deltaX;
+        distY += deltaY;
+
+        // 绝对偏移距离
+        absDistX = Math.abs(distX);
+        absDistY = Math.abs(distY);
+
+        // 结束时间到现在必须大于 300ms, 且移动距离超过 10 像素
+        if (timestamp - endTime > 300 && absDistX < 10 && absDistY < 10) {
+          return;
+        }
+
+        // 判断是否需要锁定某个方向
+        deltaX = hasHorizontalScroll ? deltaX : 0;
+        deltaY = hasVerticalScroll ? deltaY : 0;
+
+        // 新的位置
+        newX = x + deltaX;
+        newY = y + deltaY;
+
+        if (newX > 0 || newX < maxScrollX) {
+          newX = x + deltaX / 3;
+        }
+
+        if (newY > 0 || newY < maxScrollY) {
+          newY = y + deltaY / 3;
+        }
+
+        // 当前方向
+        directionX = deltaX > 0 ? -1 : deltaX < 0 ? 1 : 0;
+        directionY = deltaY > 0 ? -1 : deltaY < 0 ? 1 : 0;
+
+        // 未移动
+        if (moved === false) {
+          // scrollStart 滚动开始
+        }
+
+        // 开始移动
+        moved = true;
+
+        // 改变位置
+        this.translate(newX, newY);
+
+        // 设置数据
+        if (timestamp - startTime > 300) {
+          startTime = timestamp;
+          startX = x;
+          startY = y;
+        }
+      });
+    },
+    /**
+     *
+     * @description 结束事件处理程序
+     * @param {MouseEvent|TouchEvent} e
+     */
+    handleEnd(e) {
+      this.runIn(e.type, () => {
+        // 获取点
+        const point = e.changedTouches ? e.changedTouches[0] : e;
+
+        // 持续时长
+        const duration = Date.now() - startTime;
+
+        // 新的点
+        let newX = Math.round(x);
+        let newY = Math.round(y);
+
+        // 距离
+        const distanceX = Math.abs(newX - startX);
+        const distanceY = Math.abs(newY - startY);
+
+        // 时长
+        let time = 0;
+
+        // 时间线函数
+        let easing = undefined;
+
+        // 距上次移动偏移
+        let momentumX = 0;
+        let momentumY = 0;
+
+        // 非过渡状态
+        isInTransition = false;
+
+        // 重置事件
+        initiated = 0;
+
+        // 获取结束时间
+        endTime = Date.now();
+
+        // 如果重置位置
+        if (this.resetPosition(BOUNCE_TIME)) {
+          return;
+        }
+
+        // 滚动到新位置
+        this.scrollTo(newX, newY);
+
+        if (!moved) {
+          // scrollCancel 滚动取消事件
+          return;
+        }
+
+        // 持续时长小于 300ms
+        if (duration < 300) {
+          momentumX = hasHorizontalScroll
+            ? this.momentum(
+                x,
+                startX,
+                duration,
+                maxScrollX,
+                scrollerContainerRect.width
+              )
+            : {
+                destination: newX,
+                duration: 0,
+              };
+
+          momentumY = hasVerticalScroll
+            ? this.momentum(
+                y,
+                startY,
+                duration,
+                maxScrollY,
+                scrollerContainerRect.height
+              )
+            : {
+                destination: newY,
+                duration: 0,
+              };
+
+          newX = momentumX.destination;
+          newY = momentumY.destination;
+
+          time = Math.max(momentumX.duration, momentumY.duration);
+
+          isInTransition = true;
+        }
+
+        if (newX !== x || newY !== y) {
+          if (newX > 0 || newX < maxScrollX || newY > 0 || newY < maxScrollY) {
+            easing = quadratic;
+          }
+
+          this.scrollTo(newX, newY, time, easing);
+
+          return;
+        }
+        // scrollEnd 滚动结束事件
+      });
+    },
+    /**
+     *
+     * @description 事件中断处理程序
+     * @param {MouseEvent|TouchEvent} e
+     */
+    handleCancel(e) {
+      this.handleEnd(e);
+    },
+    /**
+     *
+     * @description 过渡结束事件处理程序
+     * @param {Event} e
+     */
+    handleTransitionend(e) {
+      if (isInTransition === false) {
+        return;
+      }
+
+      this.setTransitionTime(0);
+
+      if (this.resetPosition(BOUNCE_TIME) === false) {
+        isInTransition = false;
+
+        // scrollEnd 滚动结束事件
+      }
+    },
+  }
+}
+</script>
+```
+
+目前想要实现较为丝滑的阻尼回弹效果可能需要替换为 nvue 页面，使用官方的 list 组件来完成了。
+
+## 输入框的一些问题
+
+这个没什么好说的，多端适配一堆问题，很多都不好解决。总结下项目中遇到的：
+
+- 输入框 emoji 渲染
+- 多端软键盘弹出的差异（见 uniapp [关于软键盘弹出的逻辑说明]）
+  - 关于软键盘弹出，比较多的问题是软键盘弹出回弹导致的布局异常
+  - 在 Android 中，软键盘弹出页面顶起是没有过渡的，会比较生硬；ios 会丝滑一点
+  - 软键盘弹起时是否会顶起页面，使输入框可见。（一个思路是屏蔽原生的顶起效果，使用过渡来实现平滑上移下移效果）
+- 快速操作时的 bug
+  - 快速双击输入框可能会导致软键盘闪现
+  - 在 Android APP 下使用状态控制输入框时，聚焦后快速点击空白处使其失焦大概率会频繁的触发聚焦失焦事件（见 [【报Bug】Android App 下，输入框会频繁聚焦失焦！！！]）
+- 软键盘收起页面底部偶现出现空白
+- ios 输入框聚焦后快速点击 `picker` 类组件从底部弹起，页面底部出现空白
+
+还有一些问题与多端适配无关，比如输入框需要过滤特殊字符防止 xss 攻击，这个还是要重视的（[Cross-site scripting（跨站脚本攻击）]）。
+
+上述问题基本都没有得到有效解决，后续可能需要封装组件进行统一的处理，也欢迎各位大佬提出自己的想法。
+
+-- end
+
+[使用CSS size-adjust和unicode-range改变任意文字尺寸]: https://www.zhangxinxu.com/wordpress/2022/03/css-size-adjust-font-unicode-range/
+[HTML5+]: https://www.html5plus.org/doc/h5p.html
+[iscroll]: https://github.com/cubiq/iscroll
+[关于软键盘弹出的逻辑说明]: https://zh.uniapp.dcloud.io/component/input.html#%E5%85%B3%E4%BA%8E%E8%BD%AF%E9%94%AE%E7%9B%98%E5%BC%B9%E5%87%BA%E7%9A%84%E9%80%BB%E8%BE%91%E8%AF%B4%E6%98%8E
+[【报Bug】Android App 下，输入框会频繁聚焦失焦！！！
+]: https://ask.dcloud.net.cn/question/181250
+[Cross-site scripting（跨站脚本攻击）]: https://developer.mozilla.org/zh-CN/docs/Glossary/Cross-site_scripting

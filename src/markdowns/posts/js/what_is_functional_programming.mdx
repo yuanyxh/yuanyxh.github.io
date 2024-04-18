@@ -1,0 +1,651 @@
+---
+title: 什么是函数式编程
+date: 2023-01-04 13:54:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/a0bfbf882e472c54.webp
+description: 理解什么是函数式编程，并了解为什么使用函数式编程、它给我们带来了什么好处；除此之外还需要知道与函数式编程相关的知识，如：柯里化、偏函数、组合与管道以及函子等。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 什么是函数式编程
+
+关于函数式编程，我们可以参考数学中的函数定义
+
+```math
+f(X) = Y
+```
+
+这段语句可以被解释为：一个函数 `f` 接收一个参数 `X`，并根据 `X` 计算返回一个结果 `Y`。
+
+这样的函数被称为**一元函数**，即接收一个参数的函数，相应的接收两个参数的函数被称为**二元函数**；函数式编程借鉴了大量数学函数的思想，通过数学函数的定义我们能够窥见函数式编程的本质。
+
+关于数学函数，我们需要知道几个关键点：
+
+- 函数必须接收一个参数
+- 函数必须返回一个值
+- 函数应该基于给定的参数运行，不能依赖于外部环境
+- 对于相同的参数 `X`，总是返回相同的结果 `Y`
+
+看完数学函数的定义，我们来看看 `JavaScript` 中的函数
+
+```js
+const global = 2;
+
+function add(num) {
+  return num + global;
+}
+
+add(10);
+```
+
+上述代码中 `add` 不是真正意义上的函数，因为它违背了函数定义中的**不能依赖外部环境**，它依赖了外部变量 `global`，但我们将它改造一下就能得到符合函数式编程的 `JavaScript` 代码
+
+```js
+const global = 2;
+
+function add(num, num2) {
+  return num + num2;
+}
+
+add(10, global);
+```
+
+现在 `add` 函数就是一个真正意义上的函数了，它的执行只取决于入参，最终计算结果是可通过参数推测出来的。
+
+### 声明式与命令式
+
+函数式编程主张**声明式**编程和编写**抽象**的代码，什么意思呢？我们看看下述示例。
+
+给定一个数组，我们想要打印出每一个数组元素
+
+```js
+// data
+const arr = [1, 2, 3, 4];
+```
+
+使用命令式完成时代码是这样的
+
+```js
+for (let i = 0; i < arr.length; i++) {
+  console.log(arr[i]);
+}
+```
+
+而使用声明式代码则如下所示
+
+```js
+arr.forEach((ele) => console.log(ele));
+```
+
+可以看到，使用命令式编程完成时，我们一步一步的告诉程序应该怎么做，比如获取数组长度、循环获取数组元素、打印数组元素等；命令式编程是不利于测试与代码复用的。
+
+而声明式编程我们只是告诉程序想要做什么（`ele => console.log(ele)`），将具体的操作抽象到了函数（`forEach`）内部，我们并不关心这个函数具体会怎么做。
+
+### 引用透明性
+
+函数是具有**引用透明性**[^1]的，根据函数的定义能够发现：**相同的输入总是得到相同的输出**，这就是引用透明性，比如
+
+```js
+const double = (i) => i * 2;
+
+double(2); // 4
+```
+
+上面的 `double` 函数只是简单的将入参乘以 2 并返回，我们能够很轻易的通过入参推断出结果是什么。
+
+引用透明性是一个非常重要的特性，它有两个优点：
+
+- 代码可读性：引用透明增加了代码的可读性，一个好的函数名称能够让我们知道它做了什么，而引用透明则让我们在不知道函数内部代码的情况下通过入参知道结果。
+- 编译优化：对于一些 `JS` 引擎来说，如果一个函数是 [纯函数](#纯函数)，那么它可能在编译代码时进行一些优化，比如
+
+  ```js
+  // source code
+  console.log(double(2) + 1);
+
+  // after compilation
+  console.log(4 + 1);
+
+  // or
+  console.log(5);
+  ```
+
+对于上述代码来说，因为 `double` 是一个纯函数，所以 `JS` 引擎可能直接将 `console.log(double(2) + 1)` 编译成 `console.log(4 + 1)`，甚至直接编译为 `console.log(5)`，这并不会影响程序的运行，我们将这样的行为称为**替换模型**。
+
+### 纯函数
+
+纯函数只是一个普通函数，但它需要满足两个条件：
+
+- 相同的输入产生相同的输出
+- 没有副作用
+
+条件 1 意味着纯函数是符合引用透明性的，而条件 2 中的副作用指的是改变外部状态，改变外部状态包括但不限于以下操作：
+
+- 修改外部变量
+- 打印/log
+- 网络请求
+- DOM 操作
+
+以下代码中的函数都是**不纯的**，因为它们改变了外部的状态
+
+```js
+// 使用 console.log 改变了浏览器的状态
+const fun = (i) => {
+  console.log(i);
+  return i;
+};
+
+// 假设入参 obj 是引用类型，这个函数改变了外部数据
+const fun2 = (obj, name) => {
+  obj.name = name;
+  return obj;
+};
+```
+
+## 函数式编程有什么好处
+
+我们已经简单了解了函数式编程，那么函数式编程到底有什么好处值得我们去学习呢？
+
+其实函数式编程的大部分好处都是与纯函数息息相关的，它带给我们的好处有：
+
+- 易于测试的代码
+- 并发执行
+- 可缓存
+
+### 易于测试的代码
+
+为什么说纯函数是易于测试的呢？其实从它的定义中就可窥见一斑：
+
+> 纯函数永远产生与输入相对应的输出
+
+我们通过这个特性能够很容易的编写出测试代码
+
+```js
+const double = (value) => value * 2;
+
+double(2) === 4;
+double(3) === 6;
+```
+
+而不纯的函数是难以测试的
+
+```js
+let base = 2;
+
+const double2 = (value) => value * base;
+
+double(2) === 4;
+
+// base 被改为 3，这条测试能通过吗？
+double(3) === 6;
+```
+
+从示例中我们就能发现对于纯函数来说，编写测试代码是轻松的，而对于不纯的函数来说，结果可能不如我们所愿。
+
+### 并发执行
+
+我们知道，`JavaScript` 从诞生之初就被决定为是单线程的，这其中的原因可能是为了避免多个线程间同时修改一个 `DOM` 元素，从而导致竞态问题的出现。
+
+但这样的问题对于纯函数来说是不存在的，因为纯函数的执行只依赖于传入的参数，且不会产生副作用，也就是说我们可以并发的执行多个纯函数，它们之间不会相互影响，从而避免了竞态问题，也不再需要任何锁机制了。
+
+### 可缓存
+
+纯函数对于相同的入参总是会返回相同的结果，那么我们可以针对这个特性编写一个带有缓存功能的函数，从而避免重复的计算消耗。
+
+比如我们定义一个计算给定参数 `n` 的阶乘函数，我们很容易编写出这样的代码
+
+```js
+function factorial(n) {
+  if (n === 1) {
+    return 1;
+  }
+
+  return factorial(n - 1);
+}
+```
+
+这样的代码逻辑上没什么问题，但我们能做的更好，让我们编写一个带有缓存功能的 `factorial` 函数
+
+```js
+const cache = {};
+
+function factorial(n) {
+  if (n === 1) {
+    return 1;
+  }
+
+  return cache[n] != undefined ? cache[n] : (cache[n] = n * factorial(n - 1));
+}
+```
+
+上述代码中我们定义了一个缓存对象，通过这个对象缓存了所有入参 `n` 对应的阶乘结果，这样对于重复的入参 `n` 调用来说我们就能直接返回被缓存的值，避免了重复计算。
+
+你可能会说：这个缓存版本的阶乘函数修改了外部的状态 `cache`，它还是一个纯函数吗？
+
+如果这个外部状态是与这个函数强绑定的，只被这个函数所访问，且函数没有违背**相同的输入总是得到相同的输出**这条定义，那么是没有问题的，利用闭包能够轻易的做到这一点
+
+```js
+const factorial = (function (cache) {
+  return function (n) {
+    if (n === 1) {
+      return 1;
+    }
+
+    return cache[n] != undefined ? cache[n] : (cache[n] = n * factorial(n - 1));
+  };
+})({});
+```
+
+## 高阶函数
+
+高阶函数，即：对函数进行操作的函数。它的概念在函数式编程中是非常重要的，未了解过的读者可看笔者以往的文章：[JavaScript 概念 - 高阶函数]，这里不再详述。
+
+利用高阶函数，我们能够实现很多功能，还记得之前带有缓存功能的阶乘函数吗，如果我们拥有很多需要实现缓存的函数，难道我们对这些函数一个个的进行改造吗？
+
+当然不是！我们可以实现一个工具函数 `memoized`，作用是将普通函数转换为带有缓存的函数。
+
+### memoized
+
+```js
+function memoized(fn) {
+  const cache = {};
+
+  return function (args) {
+    return cache[args] || (cache[args] = fn.call(this, args));
+  };
+}
+```
+
+这样我们就实现了 `memoized` 函数，但是仔细观察一下，你会发现我们只能对接收一个参数的函数进行缓存转换，有什么办法打破这个限制吗？
+
+对于多参数函数的缓存虽然需要注意的情况很多，但并不需要我们考虑，我们可以扩展 `memoized` 函数，将这一部分的决议交由使用者去决定
+
+```js
+function memoized(fn, hasher) {
+  if (fn.length > 1 && typeof hasher != 'function') {
+    throw Error(
+      `if you need to cache for the multi -parameter function,
+       you must provide the hasher function`
+    );
+  }
+
+  const cache = {};
+  return function (...args) {
+    let key = fn.length > 1 ? hasher(...args) : args[0];
+
+    return cache[key] || (cache[key] = fn.apply(this, args));
+  };
+}
+```
+
+### 柯里化
+
+柯里化也是一个重要的概念，它的定义为：
+
+> 将一个多参数的函数转换为一系列嵌套的一元函数的过程
+
+比如
+
+```js
+const add = (a, b) => a + b;
+```
+
+我们再定义一个 `curry` 函数，用于将二元函数转化为嵌套的一元函数
+
+```js
+const curry = function (fun) {
+  return function (a) {
+    return function (b) {
+      return fun(a, b);
+    };
+  };
+};
+```
+
+那么我们就能这样使用 `curry` 函数将 `add` 函数转化
+
+```js
+const curriedAdd = curry(add);
+
+curriedAdd(1)(3); // 4
+```
+
+那么函数柯里化到底有什么用呢？我们看一个示例：
+
+如果我们需要一个检测数据类型的函数
+
+```js
+function isTypeOfData(type, data) {
+  return typeof data === type;
+}
+```
+
+我们会发现，实际开发过程中入参 `type` 可能在很多时候都是相同的，这时我们就能发挥出函数柯里化的优势
+
+```js
+const isString = curry(isTypeOfData)('string');
+const isNumber = curry(isTypeOfData)('number');
+const isBoolean = curry(isTypeOfData)('boolean');
+
+isString('yuanyxh'); // true
+isNumber('yuanyxh.com'); // false
+isBoolean(false); // true
+```
+
+可能你会觉得为所有数据类型专门创建一个检测函数是不必要的，但这样却能够拥有更强的语义，也没有增加开发者的负担。
+
+明白了函数柯里化能够帮我们做些什么后，再思考一下，上面的 `curry` 函数只能对二元函数进行转化，如果我们需要对任意参数的函数进行转化呢？那我们就需要完善 `curry` 函数
+
+```js
+function curry(fn) {
+  return function curriedFun(...args) {
+    if (args.length < fn.length) {
+      return function (...inner_args) {
+        return curriedFun.apply(this, args.concat(inner_args));
+      };
+    }
+    return fn.apply(this, args);
+  };
+}
+```
+
+### 偏函数
+
+思考 `isTypeOfData` 函数的定义，我们将入参 `type` 放在 `data` 的前面，这是有意为之的，如果将它们的顺序对换再使用 `curry` 函数进行转换，会发现转换后的函数无法正常运行。
+
+这是因为 `curry` 函数会按调用时的顺序将参数传递给真正需要执行的函数，如下
+
+```js
+// 将参数的顺序对换
+function isTypeOfData(data, type) {
+  return typeof data === type;
+}
+
+// 这个函数无法正常工作
+const isString = curry(isTypeOfData)('string');
+
+// 这条语句相当于 isTypeOfData('string', 'test')
+isString('test'); // false
+```
+
+那么有什么办法实现相同的功能还能控制参数的传递顺序吗？有的，那就是**偏函数**（partial），它的实现如下
+
+```js
+function partial(fun, ...partialArgs) {
+  const args = partialArgs;
+
+  return function (...innerArgs) {
+    let arg = 0;
+
+    for (let i = 0; i < args.length && arg < innerArgs.length; i++)
+      if (args[i] === undefined) {
+        args[i] = innerArgs[arg++];
+      }
+
+    return fun.apply(this, args);
+  };
+}
+```
+
+我们可以像下面代码一样使用它
+
+```js
+// 将参数的顺序对换
+function isTypeOfData(data, type) {
+  return typeof data === type;
+}
+
+// 使用偏函数
+const isString = partial(isTypeOfData, undefined, 'string');
+
+// 现在正常了！
+isString('test'); // true
+```
+
+上面的 `partial` 函数其实还有一个 `bug`，读者可自行检查并尝试修复。
+
+## 组合与管道
+
+在函数式编程中：**函数应该尽可能的小，且只做一件事，并把它做好**。
+
+如果我们需要实现一个复杂的函数，可以将多个函数组合在一起，比如
+
+```js
+const map = (arr, fun) => {
+  return arr.map(fun);
+};
+
+const filter = (arr, fun) => {
+  return arr.filter(fun);
+};
+
+const books = [
+  { id: 001, name: 'book1', score: 7.8 },
+  { id: 002, name: 'book2', score: 4.4 },
+  { id: 003, name: 'book3', score: 6.9 }
+];
+```
+
+我们想要获取 `books` 中每个元素的 `name` 及 `score`，并获取其中评分大于 5 的元素，我们可以这样做
+
+```js
+filter(
+  map(books, ({ name, score }) => ({ name, score })),
+  (ele) => ele.score > 5
+);
+```
+
+这样是符合 `UNIX` 理念的，即：
+
+> 一个程序的输出应该是另一个未知程序的输入
+
+配合上述代码理解，可以发现 `map` 的输出被当作 `filter` 的输入。
+
+`UNIX` 中的命令也都满足它的理念，如 `cat` 命令用于在控制台显示文本文件的内容，它接收一个参数并产生一个输出
+
+```sh
+cat test.txt
+
+# 控制台输出 Hello World
+```
+
+而 `grep` 命令用于检索并返回匹配的内容，同样的，它也会产生一个输出
+
+```sh
+grep 'World' test.txt
+
+# 控制台输出 Hello World
+```
+
+我们可以使用管道符 `|` 合并两个命令并产生一个新的命令
+
+```sh
+cat test.txt | grep 'World'
+
+# 控制台输出 Hello World
+```
+
+使用管道符我们将 `cat` 命令的输出当作 `grep` 命令的输入，它们是从左至右运行的。
+
+### compose
+
+像之前示例中组合 `filter` 和 `map` 函数固然能够创造出功能更强大的函数，但手动组合的方式并不理想，如果有十几个甚至几十个函数需要组合，那么编写出来的代码可以想象是难以阅读的，为此我们需要一个 `compose` 函数帮助我们完成这些工作
+
+```js
+function compose(...funs) {
+  return (value) => funs.reduceRight((prev, curr) => curr(prev), value);
+}
+```
+
+仔细观察上面的 `compose` 函数，它接收任意多个函数参数，并返回一个新的函数，当我们执行这个函数时，它会不断执行 `funs` 中的函数并将返回值当作下一个即将执行的函数的输入，注意我们使用了 `reduceRight`，这意味着这些函数是从右到左执行的。
+
+[redux] 中间件的实现也依赖了compose 函数，个人觉得设计非常巧妙，感兴趣的读者可自行研究。
+
+### pipe
+
+`pipe` 的作用与 `compose` 相同，唯一的区别在于：`compose` 是从右至左执行的，而 `pipe` 是从左到右执行的
+
+```js
+function pipe(...funs) {
+  return (value) => funs.reduce((prev, curr) => curr(prev), value);
+}
+```
+
+### 配合柯里化/偏函数
+
+使用组合与管道配合柯里化或偏函数能够实现任何功能，我们使用之前的 `books` 示例进行演示
+
+```js
+// 使用偏函数包装 map 与 filter
+const partialMap = partial(map, undefined, ({ name, score }) => ({
+  name,
+  score
+}));
+const partialFilter = partial(filter, undefined, (ele) => ele.score > 5);
+
+// 组合两个包装后的 map 与 filter 函数
+const mapAndFilterBooks = compose(partialFilter, partialMap);
+```
+
+然后我们就能正常使用这个函数了
+
+```js
+mapAndFilterBooks(books); // [{ name: 'book1', score: 7.8 }, { name: 'book3', score: 6.9 }]
+```
+
+## 函子
+
+接下来我们再来学习函数式编程中处理错误的方式：函子。
+
+函子的定义为：
+
+> 一个普通对象，具有 map 方法，在遍历对象值时应返回新对象
+
+光看定义可能有点晦涩，其实可以简单的理解函子是一个带有 `map` 方法的容器对象
+
+```js
+function Container(value) {
+  this.value = value;
+}
+
+Container.prototype.map = function map() {};
+```
+
+这样就实现了一个工厂函数用于创造函子，我们还可以根据需求添加自己的静态/实例方法，比如添加一个 `of` 静态方法用于代替 `new` 创建函子
+
+```js
+Container.of = function of(value) {
+  return new Container(value);
+};
+```
+
+现在的函子并没有什么逻辑，而且根据定义，在遍历对象值的时候需要返回新对象，为此我们需要完善 `map` 方法
+
+```js
+Container.prototype.map = function map(fun) {
+  return Container.of(fun(this.value));
+};
+```
+
+`map` 方法接收一个函数参数，用于消费当前函子的值，返回一个新的函子，我们可以这样使用它
+
+```js
+const double = (i) => i * 2;
+
+Container.of(3)
+  .map(double) // 6
+  .map(double); // 12
+```
+
+因为 `map` 返回的是一个新的函子，所以我们可以实现链式调用。
+
+### Maybe
+
+`Maybe` 也是一个函子，能够以函数式编程的方式处理异常，它与普通函子的区别在于 `map` 方法的处理
+
+```js
+function Maybe(value) {
+  this.value = value;
+}
+
+Maybe.of = function (value) {
+  return new Maybe(value);
+};
+
+Maybe.prototype.isNothing = function isNothing(value) {
+  return value == null;
+};
+
+Maybe.prototype.map = function map(fun) {
+  return this.isNothing(this.value)
+    ? Maybe.of(null)
+    : Maybe.of(fun(this.value));
+};
+```
+
+仔细观察 `map` 方法，它的核心代码只有一句
+
+```js
+this.isNothing(this.value) ? Maybe.of(null) : Maybe.of(fun(this.value));
+```
+
+`map` 方法的实现会在当前函子存在有效值的情况下才会调用传入的函数，否则直接返回一个存储值为 `null` 的函子。
+
+这有什么用呢？我们看一个简单示例：
+
+```js
+Maybe.of({})
+  .map((data) => data[children])
+  .map((children) => {
+    map(children, ({ id, title }) => ({ id, title }));
+  });
+```
+
+在上述示例中，我们创建了一个函子，并访问其存储的数据，根据数据以及我们的操作来看，这部分代码应该抛出错误，因为对应的数据并没有 `children` 属性，但实际代码并没有抛出错误。
+
+这都要归功于之前改造的 `map` 方法，它在不存在有效值的情况下并不会调用我们传入的函数，从而避免了对无效数据的误操作，同时后续的所有操作都会被无视。
+
+### Monad
+
+`Monad` 也是一个函子，它与 `Maybe` 相似，但添加了 `join` 方法，主要是为了解决函子嵌套的问题。
+
+什么是函子嵌套呢？思考一下：在开发过程中可能会出现函子存储的数据也为函子的情况。这时如果手动解构函子的值那函子就失去了存在的意义，于是 `join` 方法诞生了
+
+```js
+Maybe.prototype.join = function join() {
+  return this.isNothing(this.value) ? Maybe.of(null) : this.value;
+};
+```
+
+可以这样使用它
+
+```js
+Maybe.of(Maybe.of({}))
+  .join()
+  .map((data) => console.log(data));
+```
+
+另外，我们还能添加一个 `chain` 方法，归并 `map` 与 `join` 方法
+
+```js
+Maybe.prototype.chain = function chain(fun) {
+  return this.map(fun).join();
+};
+```
+
+## 结语
+
+`JavaScript` 是多范式的语言，函数式编程只是其中可选的一种编程方式，但毫无疑问，`JavaScript` 是非常适合函数式编程的，本篇文章就对函数式编程的相关知识进行讲解。
+
+我们学习了什么是函数式编程，并就函数式编程的优点进行了讨论，同时还介绍了高阶函数、柯里化、偏函数等知识，还了解了如何使用组合与管道合并多个函数以实现更加复杂的功能，最后，我们学习了如何以函数式编程的方式优雅的处理异常。
+
+## 参考资料
+
+- 《JavaScript ES8 函数式编程实践入门（第 2 版）》
+
+[JavaScript 概念 - 高阶函数]: ../js/js_pro_func.mdx
+[redux]: https://redux.js.org/
+
+[^1]: 引用透明：表示句子中的上下文是引用透明的，即：使用另一个相同实体的词语替换上下文中的一个词语并不会改变原来的语义。

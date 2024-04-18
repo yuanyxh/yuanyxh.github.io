@@ -1,0 +1,224 @@
+---
+title: Boss 文章自动上传
+date: 2024-02-22 13:40:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/3a74af32b33652e5.jpg
+description: 解析 Boss 直聘文章上传协议，实现文章自动批量发布上传，不必使用 Boss 难用的富文本编辑器。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+最近在找工作，想着把自己写过的博客文章发布到 boss 上提高一点曝光度，但是使用下来发现它的编辑器不是很好用，不是 Markdown 编辑器，导致我写的 Markdown 不能通过简单的复制粘贴来快速发布文章，还需要进行手动编辑。
+
+文章数量虽然不多就 2、30 篇，但是每篇都需要手动编辑的话还是很麻烦的，所以就想写个 boss 文章自动发布文章的工具。
+
+## 确认接口与接口参数
+
+想要实现自动发布文章，那肯定需要 boss 发布文章使用的接口，以及这个接口对应的一些参数，我们直接预发布一篇文章并观察浏览器 network 面板就能得到这些信息。
+
+<Image url='http://qkc148.bvimg.com/18470/71caa7ef10c87a8a.png' width={1366} height={458} alt='展示加密参数的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/fb3dda7b491e99f6.png' width={1366} height={458} alt='展示加密参数的图片2' />
+
+观察记录的请求信息，可以发现文章发布是一个 post 接口，需要携带一个查询参数 `_`，参数值是一个时间戳；同时需要一个 FormData，观察发现 FormData 包含 5 个数据：
+
+```ts
+({
+  name: string;
+  cover: string;
+  content: string;
+  rawText: string;
+  encryptId: string;
+})
+```
+
+上述数据和我们输入的文章数据对比可以很容易发现：name 是标题、cover 是上传的封面图片链接、content 是经过转换的 html 字符串、rawText 是原文本。只有 encryptId 不知道是如何生成的，因此我们需要知道 encryptId 的生成规则。
+
+在此之前，我们先将记录的文章发布请求保存，避免后续需要查看时频繁请求 boss 接口。
+
+<Image url='http://qkc148.bvimg.com/18470/d7bcc2aa7b30163e.png' width={1366} height={359} alt='如何在 chrome 中保存完整请求的图片' />
+
+## 确认 encryptId 生成规则
+
+在浏览器中要确认一个请求参数是如何生成的，最好的方式就是 xhr/fetch 断点，并沿调用堆栈向前追溯，我们使用 sources 面板的 xhr/fetch breakpoints 功能，添加需要断点的请求 url：
+
+<Image url='http://qkc148.bvimg.com/18470/08a5c35e37e0e1cc.png' width={1366} height={361} alt='如何在 chrome 添加网络断点的图片' />
+
+然后再次发布文章，就会发现代码执行被断在了对应的 xhr/fetch 请求上面，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/fe4117bc5c6f559e.png' width={1366} height={387} alt='chrome 网络请求断点成功的图片' />
+
+然后就可以沿着调用堆栈进行代码分析了，在这里发现 encryptId 来源于另一个接口：
+
+<Image url='http://qkc148.bvimg.com/18470/4a4d32a14b45488d.png' width={1366} height={408} alt='加密参数 encryptId 接口的图片' />
+
+根据测试，这个接口的作用是保存草稿，在每次编辑器内容变化时就会触发，接口参数与发布文章的接口参数大致相同，只是 FormData 不需要 encryptId 这个参数。
+
+## 确认 Markdown 转换格式
+
+既然是发布文章到 boss，那肯定需要以 boss 的文章格式来进行 markdown 转换，我们直接在 boss 上进行文章编辑，查看对应生成的 html 元素：
+
+<Image url='http://qkc148.bvimg.com/18470/66ff57e8ccd02c84.png' width={1366} height={554} alt='chrome 元素面板对应的元素树图片' />
+
+这里可以发现 boss 使用的是 quill 这个开源的富文本编辑器，且并没有预定义类名，只是对标签预定义了对应的样式，我们使用 markdown-it 来将自己的 markdown 内容渲染为 html 字符串，并将字符串替换至 boss 查看样式：
+
+<Image url='http://qkc148.bvimg.com/18470/35af5d66cccd8e59.png' width={1212} height={679} alt='元素树中的 quill 元素图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/f32fba25737fc204.png' width={1366} height={563} alt='生成 html 后替换到 boss 上的效果图' />
+
+<Image url='http://qkc148.bvimg.com/18470/e9b8b84dc1d90b50.png' width={1366} height={559} alt='生成 html 后替换到 boss 上的效果图2' />
+
+可以看到效果是还可以的，同时我们还可以使用 highlight.js 这个库来对代码块高亮，boss 网站已经加载了 highlight.js 所需要的类名，只需要对 markdown-it 进行如下配置即可：
+
+```js
+const hljs = require("highlight.js");
+const md = require("markdown-it")({
+  /** 配置代码块高亮 */
+  highlight(str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return (
+          /** boss 文章对于最外部的 pre 有预定义的 class, 我们需要添加 */
+          '<pre class="ql-syntax"><code>' +
+          /** boss 文章使用 hljs 来进行代码高亮, 我们可以直接使用, boss 网站已经预加载了 hljs 的 class 文件 */
+          hljs.highlight(str, { language: lang }).value +
+          "</code></pre>"
+        );
+      } catch (__) {}
+    }
+
+    /** 兜底 */
+    return '<pre class="ql-syntax"><code>' + md.utils.escapeHtml(str) + "</code></pre>";
+  },
+});
+```
+
+## 接口请求身份认证
+
+这个比较简单，在请求信息的 headers 里拿到自己的 cookie 和 token，在请求时加上就行了：
+
+<Image url='http://qkc148.bvimg.com/18470/046fdbffad2557bc.png' width={1366} height={458} alt='chrome 网络请求头图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/ebb52dc6f5eaa55e.png' width={1366} height={458} alt='chrome 网络请求头图片2' />
+
+## 图片转存
+
+到这里基本需要的参数都准备完成了，但如果就这样编写接口的话，你会发现返回的请求信息是
+
+<Image url='http://qkc148.bvimg.com/18470/01712ea7c10c35ab.png' width={986} height={216} alt='接口请求失败的图片' />
+
+这是因为 markdown 里包含了三方图片链接，我们需要将这些图片上传至 boss 并将链接替换：
+
+```js
+/** 从图床获取文件数据 */
+function getPicture(url) {
+  return axios({
+    url: url,
+    method: "get",
+    responseType: "arraybuffer",
+    headers: {
+      Host: "xxx",
+      Referer: "xxx",
+    },
+  });
+}
+
+/** 上传图片数据到 boss */
+function uploadPicture(file) {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("source", "get");
+  data.append("multipartType", 0);
+
+  return axios.post("boss 图片上传接口", data, {
+    headers: {
+      ...headers,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+}
+
+/** 转存图片到 boss */
+async function transferPicture(url) {
+  try {
+    // 获取文件数据并上传至 boss
+    const originPicture = await getPicture(url);
+    return uploadPicture(new Blob([originPicture.data], { type: "image/png" }));
+  } catch (err) {
+    console.log(err.message);
+    process.exit(-1);
+  }
+}
+```
+
+转存操作我们可以在 markdown-it 的图片渲染钩子里完成，这里可以获取到 markdown 中的所有图片：
+
+```js
+const image = md.renderer.rules.image;
+
+/** 记录图片数量 */
+let count = 0;
+/** 记录需要转存的图片链接, key = 原图床链接, value = 转存后的 boss 图片链接 */
+const imageMap = new Map();
+/** 通过自定义 image render 函数来实现图片转存操作 */
+md.renderer.rules.image = function (tokens, idx, options, env, slf) {
+  /** 图片链接 */
+  const src = tokens[idx].attrs[tokens[idx].attrIndex("src")][1];
+
+  /** 如果链接不是来源于 boss, 且没有被处理过就执行转存操作 */
+  if (!src.startsWith("https://img.bosszhipin.com/") && !imageMap.has(src)) {
+    count++;
+    imageMap.set(src, "");
+
+    transferPicture(src)
+      .then((res) => {
+        count--;
+        imageMap.set(src, res.data.zpData.url);
+
+        if (res.data.code === 4) {
+          return Promise.reject(new Error(res.data.message));
+        }
+
+        /** 全部转存完毕, 发布文章 */
+        if (count <= 0) publish();
+      })
+      .catch((error) => {
+        console.log(error.message);
+        console.log("图片转存失败! src: " + src);
+        process.exit(-1);
+      });
+  } else {
+    /** 渲染图片 */
+    return `<img src="${imageMap.get(src) || src}" />`;
+  }
+
+  return image.call(this, tokens, idx, options, env, slf);
+};
+
+/** 预渲染一次, 触发自定义 image render 函数来转存图片 */
+md.render(body);
+```
+
+需要注意的是，boss 的图片上传接口调用次数过多的话，可能会提示频繁，这时候应该结束进程，因为后续的所有操作都不会成功。
+
+## 自动上传流程
+
+1. 读取文章信息
+2. 解析标题
+3. 上传封面图片
+4. 预渲染，触发转存图片的逻辑
+5. 正式渲染，此时图片链接应该是 boss 提供的
+6. 调用接口获取 encryptId，参数 name、cover、content、rawText 和一个时间戳
+7. 发布文章，参数 name、cover、content、rawText、encryptId 和一个时间戳
+8. 判断是否发布成功，发布成功在 boss 文章那会显示审核中
+
+## 注意事项
+
+1. 文章上传不是百分比成功的，如果文章内有类似脚本加载之类的代码块，可能会被 boss 的网关判定为攻击，这时候会返回 405
+2. 转换后的部分代码块格式化可能会有问题，会挤在一起，没有换行和缩进
+3. 因为 boss 文章编辑并没有支持 markdown 的所有语法，部分 markdown 转换后的 html 可能在 boss 中没有样式
+4. 如果有多篇文章，建议间隔一定时间上传一篇，实测并行上传接口会崩，同时应该在产生错误的地方结束任务进程，防止刷接口。

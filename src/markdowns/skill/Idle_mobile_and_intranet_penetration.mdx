@@ -1,0 +1,352 @@
+---
+title: 【折腾向】闲置手机 + 内网穿透 + caddy + rclone = ？
+date: 2024-03-10 17:20:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/6516a9300533ca12.png
+description: 通过 frp 内网穿透将闲置手机暴露至公网，并使用 caddy 搭建 webdav 服务，客户端使用 rclone 实现 webdav 挂载，达到类坚果云的效果。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+通过 frp 内网穿透将闲置手机暴露至公网，并使用 caddy 搭建 webdav 服务，客户端使用 rclone 实现 webdav 挂载，达到类坚果云的效果。
+
+**要有公网 IP！要有公网 IP！要有公网 IP！**
+
+## 前置条件
+
+- 公网 IP 或者一台 VPS，这里我用的是阿里轻量，新加坡（没有特殊需求还是建议选国内）。
+- Android 手机
+
+## termux 配置
+
+[termux] 是 Android 手机可用的终端管理器，功能强大，这里我们使用它来完成服务端（闲置手机）的配置。
+
+首先将仓库源更换为国内速度更客观的 USTC，输入 `termux-change-repo` 后出现下图界面：
+
+<Image url='http://qkc148.bvimg.com/18470/6a51e165ea2323d3.jpg' width={1080} height={2340} alt='termux 换源的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/3f819cf6139f5991.jpg' width={1080} height={2340} alt='termux 换源的图片2' />
+
+空格选择，回车确认。
+
+然后更新默认的包管理器和已安装的包，防止部分包过旧无法使用，输入：
+
+```sh
+pkg update
+pkg upgarde
+```
+
+开启存储权限，输入 `termux-setup-storage` 并同意权限申请，这一步是为了访问外部存储并将部分公用文件夹映射到 termux 的私有目录，所以不要手动开启 termux 的存储权限：
+
+<Image url='http://qkc148.bvimg.com/18470/bdc46520a9034ede.jpg' width={1080} height={2340} alt='termux 开启存储的图片' />
+
+开启后通过 ls 命令列举根目录的文件夹会出现 storage：
+
+<Image url='http://qkc148.bvimg.com/18470/f0c58604a680b3bb.jpg' width={1080} height={2340} alt='termux 开启存储后的文件列表图片' />
+
+安装 vim：
+
+```sh
+pkg install vim
+```
+
+要注意 termux 对它内置的所有文件都进行了跟踪校验，如果你的手机有 root 并在外部文件管理器对 termux 内置的文件进行了编辑，之后所有在 termux 内对该文件的操作都会报权限不足的错误。
+
+## frp 内网穿透配置
+
+[frp] 是开源的反向代理工具，通过在服务器中部署 frps，在内网机器中部署 frpc 可以实现内网穿透的功能，frps 会将访问服务器的流量转发到部署了 frpc 的内网机器上。
+
+我们下载机器 CPU 对应的版本，这里我下载 linux_arm64：
+
+<Image url='http://qkc148.bvimg.com/18470/d948fc5a4917a17f.png' width={748} height={573} alt='github frp 列表的图片' />
+
+右键复制链接，在服务器中通过 `wget` 命令下载：
+
+```sh
+wget https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_arm64.tar.gz
+```
+
+在闲置手机中，我们先将文件下载到 `/storage/emulated/0/Download/` 目录下，此时 `termux` 内的 `storage/downloads` 下也会出现对应的文件：
+
+<Image url='http://qkc148.bvimg.com/18470/732c559fdfdb03b2.jpg' width={1080} height={2340} alt='文件列表的图片' />
+
+通过 `mv` 命令移动到私有目录：
+
+```sh
+mv ~/storage/downloads/frp_0.54.0_linux_arm64.tar.gz ~/frp
+```
+
+<Image url='http://qkc148.bvimg.com/18470/1e0dc5d0df86d525.jpg' width={1080} height={2340} alt='文件列表的图片2' />
+
+两端对压缩文件进行解压：
+
+```sh
+tar -zxvf /path/to/frp
+```
+
+cd 到解压出来的目录中，结构应该如下：
+
+- LICENSE    开源协议
+- frpc       内网客户端机器使用，二进制可执行文件
+- frpc.toml  内网客户端机器使用的配置
+- frps       服务器使用，二进制可执行文件
+- frps.toml  服务器使用的配置
+
+frps.toml 配置：
+
+```toml
+# 用于 frps 和 frpc 通信的 tcp 端口
+bindPort = 7000 # 端口可以自定义，服务器防火墙需要放行对应的端口
+```
+
+frpc.toml 配置：
+
+```toml
+# 服务器公网 IP
+serverAddr = "8.8.8.8"
+# 用于 frps 和 frpc 通信的 tcp 端口，和 frps 的 bindPort 保持一致
+serverPort = 7000
+
+# 代理配置
+[[proxies]]
+name = "webdav"        # 自定义
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8888       # 本地侦听的端口
+remotePort = 8888      # 服务器侦听的端口，防火墙需放行
+```
+
+上述的代理配置表示将访问 `8.8.8.8:8888` 的流量转发到 `127.0.0.1:8888`。
+
+使用 `chmod` 命令赋予执行权限：
+
+```sh
+chmod +x path/to/file
+```
+
+启动命令分别是：
+
+```sh
+./frps -c ./frps.toml
+./frpc -c ./frpc.toml
+```
+
+当然也可以配置后台运行：
+
+```sh
+nohup ./frps -c ./frps.toml &
+nohup ./frpc -c ./frpc.toml &
+```
+
+## caddy 配置
+
+[caddy] 是一个像 Apache、nginx 的 web 服务器，我们使用它的 webdav 模块来搭建服务。
+
+下载 CPU 对应的二进制可执行文件：
+
+<Image url='http://qkc148.bvimg.com/18470/7cc83a2bbae02ef4.png' width={1350} height={696} alt='github caddy 的列表图片' />
+
+将二进制文件移动到 termux 的私有目录中，创建需要等下用的密码：
+
+```sh
+./caddy hash-password --plaintext yourpassword
+```
+
+<Image url='http://qkc148.bvimg.com/18470/6f12fc1d63c1b75c.jpg' width={1080} height={2340} alt='创建 caddy 密码的图片' />
+
+使用 `touch` 命令在同级目录创建 caddy 配置文件：
+
+```sh
+touch Caddyfile
+```
+
+使用 vim 写入以下配置：
+
+```yaml
+{
+  order webdav before file_server
+}
+
+:8888 # 侦听 8888 端口，frpc.toml 中对应的 localPort
+basicauth {
+  # 用户名 # 刚刚创建的密码
+  yuanyxh $2a$14$UUqrsAY7ckh2hIbRRq4dPu1K/M9G0K4QTp2j9NE6fvJThuhN4ucG.
+}
+# 根路径为 /data/data/com.termux/files/home/test 需要自己创建对应的文件夹
+root * /data/data/com.termux/files/home/test
+
+route {
+  # 重写路径
+  rewrite /test /test/
+  # 开启 webdav，可访问 /test/ 下的文件
+  webdav /test/* {
+    # 访问该 webdav 服务的路径 http://8.8.8.8:8888/test
+    prefix /test
+  }
+  # 允许在浏览器中访问
+  file_server browse
+}
+```
+
+运行 caddy：
+
+```sh
+./caddy run --config ./Caddyfile
+```
+
+然后就可以访问自己的 webdav 服务了，或者直接在浏览器中访问 `http://公网 IP:映射端口/webdav 路径`
+
+## 进程保活
+
+为了防止服务挂掉，我们需要做一层保护，可以使用 [termux-services] 对我们运行的服务进行守护，做到进程拉起的功能。
+
+安装 termux-services：
+
+```sh
+pkg install termux-services
+```
+
+创建对应服务的目录：
+
+```sh
+mkdir -p $PREFIX/var/service/frp/log
+mkdir -p $PREFIX/var/service/caddy/log
+```
+
+链接到 termux-services:
+
+```sh
+ln -sf $PREFIX/share/termux-services/svlogger $PREFIX/var/service/frp/log/run
+ln -sf $PREFIX/share/termux-services/svlogger $PREFIX/var/service/caddy/log/run
+```
+
+然后在 `$PREFIX/var/service/<pkg>/run` 文件中写入启动服务的命令：
+
+```sh
+# frp
+#!/data/data/com.termux/files/usr/bin/sh
+path/to/frpc -c path/to/frpc.toml
+
+# caddy
+#!/data/data/com.termux.files/usr/bin/sh
+path/to/caddy run --config path/to/Caddyfile
+```
+
+最后启动对应的服务：
+
+```sh
+sv up frp
+sv up caddy
+```
+
+## rclone 挂载本地文件夹
+
+[rclone] 是一个用于管理云存储上的文件的命令行程序，我们用它来挂载 webdav 服务到本地。
+
+下载需要的可执行文件：
+
+<Image url='http://qkc148.bvimg.com/18470/4639e981345f005f.png' width={1366} height={607} alt='github rclone 的图片' />
+
+运行：
+
+```sh
+path/to/rclone config --config=rclone.conf
+```
+
+根据提示输入自己的 webdav 服务器信息，然后就会在 `rclone` 的同级目录下创建一个 rclone.conf 的配置文件。
+
+继续输入以下命令执行挂载：
+
+```sh
+path/to/rclone mount test: E:\test --cache-dir %cd%\temp --log-file %cd%\logs\log.txt --allow-other --vfs-cache-mode full --vfs-cache-max-age 72h --vfs-cache-poll-interval 10m  --allow-non-empty
+```
+
+参数：
+
+- `test: E:\test`：
+   - test 是上一步中你创建 webdav 服务时输入的别名，`test:` 表示 webdav 远程根目录
+   - E:\test 是挂载到的本地路径
+- `--cache-dir %cd%\temp`：
+   - --cache-dir 是已加载文件的缓存目录
+   - %cd%\temp 中的 `%cd%` 表示程序运行所在目录
+- `--log-file %cd%\logs\log.txt`：
+  - --log-file 输出的日志文件
+- `--allow-other`：允许除 rclone 的其他进程访问
+- `--vfs-cache-mode full`：vfs 缓存模式，读取文件时进行缓存
+- `--vfs-cache-max-age 72h`：设置文件缓存允许的最大时间
+- `--vfs-cache-poll-interval 3m`：轮询检查文件是否有更改
+- `--allow-non-empty`：允许在非空目录上挂载，windows 中不支持
+
+通过这些设置，只要没有大文件，基本上可以像访问本地文件一样访问 webdav 服务器中的文件了。
+
+最后我们可以通过 vbs 脚本无感知的运行 rclone：
+
+```vbs
+# rclone.vbs
+CreateObject("WScript.Shell").Run "cmd /c %cd%\rclone.bat",0
+```
+
+```bat
+# rclone.bat
+rclone.exe mount test: E:\test --cache-dir %cd%\temp --log-file %cd%\logs\log.txt --allow-other --vfs-cache-max-age 72h --vfs-cache-poll-interval 10m --vfs-cache-mode full --allow-non-empty
+```
+
+将 rclone.vbs 的快捷方式放到 `C:\Users\[username]\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup` 就可以实现开机启动（windows 端）。
+
+## 扩展
+
+### ssh 登录手机
+
+`termux` 下载 openssh，生成 key `ssh-keygen -A`，运行 `sshd`。
+
+frpc.toml 添加代理
+
+```toml
+[[proxies]]
+name = "ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8022  # termux 中的 openssh 默认侦听 8022 端口
+remotePort = 8044 # 服务器放行 8044 端口
+```
+
+查看用户 `whoami`，设置密码 `passwd`，也可以添加私钥，然后用公钥访问。
+
+### 私有 git 仓库
+
+termux 安装 git，`pkg install git`，初始化裸仓库 `git init --bare`。
+
+远端 clone 仓库， `git clone ssh://username@ip:port/path/to/git`。
+
+也可以使用 termux 中的 gitea 包来快速搭建完善的私有 git 服务。
+
+### 远程桌面
+
+电脑开启允许远程协助，并指定允许远程协助的本地用户（需要设置密码），同时运行 frpc 穿透到公网，配置如下：
+
+```toml
+serverAddr = "8.8.8.8"
+serverPort = 7000
+
+# 代理配置
+[[proxies]]
+name = "remote_desktop"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 3389       # windows 远程桌面默认侦听的端口是 3389
+remotePort = 9833      # 服务器侦听的端口，防火墙需放行
+```
+
+将电脑锁屏（win + L），在另一台客户端中使用远程桌面连接
+
+<Image url='http://qkc148.bvimg.com/18470/70ba551fbacd8b77.png' width={473} height={605} alt='远程连接面板的图片' />
+
+注意：电脑不能进入休眠状态。
+
+[termux]: https://github.com/termux/termux-app
+[frp]: https://github.com/fatedier/frp
+[caddy]: https://github.com/caddyserver/caddy
+[termux-services]: https://github.com/termux/termux-services
+[rclone]: https://github.com/rclone/rclone

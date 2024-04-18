@@ -1,0 +1,230 @@
+---
+title: ES6 新特性详解 - 解构赋值
+date: 2022-10-23 19:54:03
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/f16d7ca84cf00b68.jpg
+description: 详解 JavaScript ES6 新的语言特性 - 解构赋值
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 内容简述
+
+理解并详细讲述 `ES6+` 新特性：解构赋值，内容有误欢迎指正。
+
+## 对象解构赋值
+
+对对象进行解构，提取内部属性，语法如下
+
+```javascript
+const obj = { name: 'yuanyxh', age: 22 };
+
+// 解构
+const { name } = obj;
+console.log(name); // yuanyxh
+
+// 类似于
+const name = obj.name;
+console.log(name); // yuanyxh
+```
+
+上述操作提取了 `obj` 对象身上的指定属性 `name`。此外，解构赋值还支持对属性重命名及连续解构。
+
+```javascript
+const obj = {
+  name: 'yuanyxh',
+  age: 22,
+  blog: { addr: 'yuanyxh.com' }
+};
+
+// 解构并重命名
+const { name: myName } = obj;
+console.log(myName); // yuanyxh
+
+// 类似于
+const myName = obj.name;
+console.log(myName); // yuanyxh
+
+// --------------------
+
+// 连续解构
+const {
+  blog: { addr }
+} = obj;
+console.log(addr); // yuanyxh.com
+
+// 类似于
+const addr = obj.blog.addr;
+console.log(addr); // yuanyxh.com
+```
+
+在解构对象上不存在的属性时， `JS` 引擎并不会报错，而是与变量声明未赋值时一样，变量值为 `undefined`
+
+```javascript
+const obj = { name: 'yuanyxh', age: 22 };
+
+// 解构
+const { linkIn } = obj;
+console.log(linkIn); // undefined
+
+// 类似于
+const linkIn = obj.linkIn;
+console.log(linkIn); // undefined
+```
+
+在不确定指定属性是否存在目标对象上时，可以给指定属性一个默认值
+
+```javascript
+const obj = { name: 'yuanyxh', age: 22 };
+
+// 解构并赋默认值
+const { name = '无名氏', linkIn = 'github.com/yuanyxh' } = obj;
+console.log(name); // yuanyxh
+console.log(linkIn); // github.com/yuanyxh
+
+// 相当于
+const name = obj.name !== undefined ? obj.name : '无名氏';
+console.log(name); // yuanyxh
+const linkIn = obj.linkIn !== undefined ? obj.linkIn : 'github.com/yuanyxh';
+console.log(linkIn); // github.com/yuanyxh
+```
+
+函数参数同样支持解构操作
+
+```javascript
+function concat({ name, age, linkIn = 'github.com/yuanyxh' }) {
+  return (
+    'my name is ' +
+    name +
+    ', ' +
+    'I am ' +
+    age +
+    ' years old this year, ' +
+    'you can go to my github homepage to meet me: ' +
+    'https://' +
+    linkIn
+  );
+}
+
+const introduce = concat({ name: 'yuanyxh', age: 22 });
+console.log(introduce); // my name is yuanyxh...
+```
+
+解构会对目标数据进行 `ToObject` 操作，这意味着我们也能对基本数据类型进行结构，但不包括 `null` 和 `undefined`
+
+```javascript
+// 解构字符串
+const { length } = '123456';
+console.log(length); // 6
+
+// 类似于
+const length = '123456'.length;
+console.log(length); // 6
+```
+
+我们还可以使用 `ES6` 新语法 `...target` 将剩余属性重新收集为一个新对象或新数组
+
+```javascript
+const obj = {
+  name: 'yuanyxh',
+  age: 22,
+  linkIn: 'github.com/yuanyxh',
+  hobby: '编程，书籍，逆向...'
+};
+
+// 收集剩余属性
+const { name, age, ...other } = obj;
+console.log(other); // { linkIn: 'github.com/yuanyxh', hobby: '编程，书籍，逆向...' }
+```
+
+## 数组解构赋值
+
+数组的解构与对象解构语法类似
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+// 解构
+const [a, b] = arr;
+console.log(a, b); // 1 2
+
+// 类似于
+const iter = arr[Symbol.iterator]();
+const a = iter.next().value;
+const b = iter.next().value;
+console.log(a, b); // 1 2
+```
+
+数组解构还支持跳过特定元素获取后面的元素值
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+// 解构
+const [a, , , b] = arr;
+console.log(a, b); // 1 4
+
+// 类似于
+const iter = arr[Symbol.iterator]();
+const a = iter.next().value;
+iter.next();
+iter.next();
+const b = iter.next().value;
+console.log(a, b); // 1 4
+```
+
+同时，数组解构与对象解构一样支持 `默认值`、`函数参数解构` 与 `收集剩余数据` 操作，不支持 `连续解构`，以 `默认值` 举例
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+// 默认值
+const [a, , , , e, f = 6] = arr;
+console.log(a, e, f); // 1 5 6
+
+// 相当于
+const iter = arr[Symbol.iterator]();
+const a = iter.next().value;
+iter.next();
+iter.next();
+iter.next();
+const e = iter.next().value;
+const f = iter.next().value !== undefined ? iter.next().value : 6;
+console.log(a, e, f); // 1 5 6
+```
+
+虽然数组的解构与对象解构语法类似，且 [MDN] 文档上也称之为解构赋值，但我个人认为两者是不同的，`[element] = iterator` 解构语法不仅能够解构数组，而且能够解构一切被标识为 `iterable` 的对象
+
+```javascript
+// 自定义可迭代对象
+function createIterator() {
+  let i = 0;
+  return {
+    [Symbol.iterator]() {
+      return {
+        next() {
+          return { done: i > 5, value: i++ };
+        }
+      };
+    }
+  };
+}
+const [a, b, c, d, e, f, g = 6] = createIterator();
+console.log(a, b, c, d, e, f, g); // 1 2 3 4 5 6
+```
+
+关于 `iterable` 可迭代对象，以后会详解解析，也可自行搜索答案，现在只需要知道可迭代对象必须具有以下几个特点
+
+- 能够识别自身为 `iterator`，即具有 `Symbol.iterator` 方法
+- `Symbol.iterator` 必须返回一个对象，且对象拥有 `next` 方法
+- `next` 方法必须返回一个具有 `done` 属性和 `value` 属性的对象，`done` 标识这个迭代器是否被消耗完毕，`value` 为产出的值。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN#JavaScript][MDN]
+
+[MDN]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript

@@ -1,0 +1,39 @@
+{
+  "react-ts": {
+    "prefix": "rts",
+    "body": [
+      "interface I${0:App}Props {}",
+      "",
+      "const ${0:App}: React.FC<Readonly<I${0:App}Props>> = (props) => {",
+      "  return <div>${0:App}</div>;",
+      "};",
+      "",
+      "export default ${0:App};"
+    ],
+    "description": "react-ts"
+  },
+  "react-ts-children": {
+    "prefix": "rtsc",
+    "body": [
+      "interface I${0:App}Props extends ChildrenComponent {}",
+      "",
+      "const ${0:App}: React.FC<Readonly<I${0:App}Props>> = (props) => {",
+      "  return <div>${0:App}</div>;",
+      "};",
+      "",
+      "export default ${0:App};"
+    ],
+    "description": "react-ts"
+  },
+  "react-ts-noprops": {
+    "prefix": "rtsn",
+    "body": [
+      "const ${0:App} = () => {",
+      "  return <div>${0:App}</div>;",
+      "};",
+      "",
+      "export default ${0:App};"
+    ],
+    "description": "react-ts"
+  },
+}

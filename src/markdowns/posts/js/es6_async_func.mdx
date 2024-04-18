@@ -1,0 +1,223 @@
+---
+title: ES6 新特性详解 - 异步函数
+date: 2022-11-29 10:15:19
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/ebe7642f4f6d4328.png
+description: 详解 JavaScript ES6 异步函数
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+在学习 `JavaScript` 的过程中，理解并灵活运用异步相关知识是一件不容易的事情，这体现在代码可读性、健壮性上，好在 `ES6` 出现后挽回了这一局面，我们不再需要编写可读性不高的回调嵌套，也不用为了代码的健壮性而处处小心，这得益于 `Promise` 与 `async Function`，它们给我们带来了更优秀的异步方案，今天我们就来学习异步函数相关知识。
+
+学习异步函数前，要求读者熟悉 `Promise` 与 生成器，如果未了解过，可以看看读者的文章
+
+- [ES6 新特性详解 - Promise][Promise]
+- [ES6 新特性详解 - 迭代器与生成器][迭代与生成]
+
+## async Function
+
+虽然 `Promise` 对于传统的异步编程而言已经足够优秀，但精益求精的前辈们仍觉不足，`Promise` 的代码执行顺序对于开发者而言依然不够直观，为次，`ES6` 又提出了异步函数的相关概念。
+
+异步函数，即一个特殊函数，通过在函数声明前添加 `async` 关键字标识
+
+```javascript
+async function () {}
+
+// or
+
+const asyncArrow = async () => {}
+```
+
+在异步函数中，能够使用关键词 `await`，它期待一个 `Promise` 值，并等待它决议，此时会暂停当前的程序并返回，控制权交还给主线程去执行其他任务
+
+```javascript
+async function asyncFun() {
+  await Promise.resolve();
+
+  console.log('end');
+}
+
+asyncFun();
+console.log('start');
+```
+
+上述代码中的正确执行顺序是 `start`、`end`，这意味着函数调用后异步函数内的程序被暂停了，所以首先输出 `start`，然后输出 `end`，它的行为如下
+
+1. 调用异步函数
+2. 等待一个立即完成的 `Promise`
+3. 给立即完成的 `Promise` 添加一个微任务
+4. 返回
+5. 输出 `start`
+6. 微任务执行，`asyncFun` 程序恢复执行
+
+`await` 虽然期待一个 `Promise` 值，但这不是必须的，它可以等待任何值，此时浏览器会将这个值包装为一个 `Promise`
+
+```javascript
+async function asyncFun() {
+  await 1;
+
+  // 类似于
+  await Promise.resolve(1);
+}
+```
+
+`await` 还能够获取到 `Promise` 的完成值
+
+```javascript
+async function asyncFun() {
+  const result = await Promise.resolve('fulfilled');
+
+  console.log(result);
+}
+
+asyncFun(); // fulfilled
+```
+
+如果等待的 `Promise` 被拒绝，那么就会在程序停止的位置抛出异常，我们能够通过 `try...catch` 进行异常捕获
+
+```javascript
+async function asyncFun() {
+  try {
+    await Promise.reject('出错了');
+  } catch (err) {
+    console.log(err); // 出错了
+  }
+}
+
+asyncFun();
+```
+
+异步函数的返回值会被包装成一个 `Promise`，如果没有显式的返回一个值，那么 `Promise` 完成值就是隐式返回的 `undefined`
+
+```javascript
+async function asyncFun() {
+  return 'complete';
+}
+
+asyncFun().then((value) => {
+  console.log(value); // complete
+});
+```
+
+看到这里，其实异步函数的一些特性就讲完了，但是你有没有发现异步函数与生成器有很多相像的地方呢？
+
+```javascript
+// async
+async function asyncFun() {
+  await Promise.resolve();
+}
+
+// generator
+function* generator() {
+  yield Promise.resolve();
+}
+```
+
+异步函数通过 `async` 来标识，而生成器通过在 `function` 关键字后添加 `*` 来标识，且它们都有各自的关键字能用于暂停程序的执行，但仅仅如此吗？看一下下面的代码
+
+```javascript
+function* generator() {
+  const result = yield Promise.resolve('generator');
+
+  console.log(result); // generator
+}
+
+function run(exec) {
+  // 假设 exec 必定是一个生成器
+  // 获取生成器对象
+  const g = exec();
+
+  // 启动生成器，获取 yield、return 出的值
+  const p = g.next();
+
+  // 假设 p.value 必定是一个 Promise
+  p.value.then(
+    (value) => g.next(value),
+    (err) => g.throw(err)
+  );
+}
+
+run(generator);
+```
+
+上述代码中，我们添加了一个 `run` 函数，用于控制生成器的执行，`run` 函数利用 `yield` 双向数据传递的特性，接受生成器返回的值，这里我们假定为 `Promise` 值，并给它添加一个 `then` 处理回调，当这个 `Promise` 完成时在成功回调中调用生成器对象的 `next` 方法并将完成值注入到上一个导致程序暂停的 `yield` 身上，如果失败则调用 `throw` 方法并注入失败原因。
+
+现在你发现了吗？其实异步函数只是一个语法糖，基于 `Promise` + 生成器我们也能实现完全相同的功能，所缺的只是一个控制生成器执行流程的执行器而已。
+
+## 实现执行器
+
+我们已经了解了异步函数其实只是 `Promise` + 生成器的语法糖，但还缺少了一个关键的执行器函数，以下是摘抄自 《你不知道的JavaScript》 的实现
+
+```javascript
+function run(exec, ...args) {
+  // 调用生成器函数并传递参数
+  const it = exec.apply(this, args);
+
+  return Promise.resolve().then(function handleNext(value) {
+    // 不断处理 next 调用
+    const next = it.next(value); // 获取 next 返回值
+
+    // 立即执行函数，传递 next 返回值
+    return (function handleResult(next) {
+      if (next.done) {
+        // 执行完毕直接返回
+        return next.value;
+      } else {
+        // 未执行完毕则给 yield 出的 Promise 添加then处理回调
+        // 同时避免 yield 非 Promise 值，需要进行一层 resolve 包装
+        return Promise.resolve(next.value).then(
+          handleNext, // 成功回调，继续调用 handleNext 获取下一个值
+          function handleErr(err) {
+            // 失败回调
+            return Promise.resolve(
+              it.throw(err) // 注入异常，如果异常在生成器内部被处理则继续调用 handleResult
+            ).then(handleResult);
+          }
+        );
+      }
+    })(next);
+  });
+}
+```
+
+拥有了这个执行器函数，我们就能够基于 `Promise` + 生成器来模拟异步函数的行为了
+
+```javascript
+function* generator() {
+  try {
+    const result = yield Promise.reject('出错啦');
+  } catch (err) {
+    console.log(err); // 出错啦
+  }
+
+  const data = yield Promise.resolve('data');
+  console.log(data);
+
+  return 'complete';
+}
+
+run(generator).then((value) => {
+  console.log(value); // complete
+});
+
+// 出错啦
+// data
+// complete
+```
+
+## 结语
+
+本文讲述了异步函数的相关概念，并了解了异步函数其实只是语法糖，我们完全能够自己实现相同的功能，可以看到，生成器在这中间充当了非常重要的角色，以后可能还会基于生成器出现更多强大的模式。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+
+[Promise]: ../js/es6_promise.mdx
+[迭代与生成]: ../js/es6-iterator.mdx

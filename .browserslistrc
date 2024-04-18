@@ -1,0 +1,8 @@
+# Browsers that we support
+
+Chrome >= 87
+Firefox >= 78
+Safari >= 14
+Edge >= 88
+Opera >= 80
+defaults and fully supports es6-module

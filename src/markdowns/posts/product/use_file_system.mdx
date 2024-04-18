@@ -1,0 +1,465 @@
+---
+title: 利用 FileSystem API 实现一个 web 端的残缺版文件管理器
+date: 2023-08-19 17:15:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/9230f3c07bdc6557.jpg
+description: 通过实现一个简易的 web 文件管理器来了解 FileSystem 文件系统 API，知晓 web 文件处理的方式。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+在写这篇文章时本来是准备写 [File_System_API] 相关内容的，但写到一半发现内容好像跟抄 [MDN] 文档一样，毕竟现在文件系统相关的 API 还不能算是完整的，已有的内容也没有太多的细节可以深究，所以放弃了单纯写 API 的想法，而是实现了一个残缺的 web 文件管理系统，想以此为切入点去讲解相关的内容。
+
+这是这个文件系统的简单页面：
+
+<Image url='http://qkc148.bvimg.com/18470/e4b425a9c688d018.png' width={1366} height={619} alt='web 文件管理系统的图片' />
+
+以下内容是这个文件管理系统的具体实现和实现过程中的思考。
+
+## 根目录
+
+想要实现一个文件管理系统，必然需要一个根目录，就像常见的文件系统一般，所有的文件操作都在这个根目录中完成，在 web 中，我们可以通过 [window.showDirectoryPicker][MDN#showDirectoryPicker] 获取到 [目录句柄][FileSystemDirectoryHandle]，将之作为我们的文件系统的根目录，因为文件系统必然存在读写操作，所以我们在调用方法时可以传入一个含有 `mode` 属性值为 `readwrite` 的对象，来请求这个目录的所有读写操作：
+
+```js
+const openDirectory = async () => {
+  const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
+};
+```
+
+需要注意的是，这个方法必须通过用户交互触发，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/d0e4a28d514f1d3d.gif' width={1364} height={728} alt='调用方法打开文件选择器的图片' />
+
+## 当前目录与目录列表
+
+在设计这个文件管理系统时，为了避免文件层次过深消耗性能的问题，所以并没有在根目录确定时就去递归生成目录树，而是分为了当前目录和当前目录内列表这样的结构，我们只需要在当前目录变更的时候去重新获取此目录下的文件列表即可。
+
+为了获取到当前目录下的文件列表，我们可以使用 [FileSystemDirectoryHandle] 实例的 `entries` 方法，此方法返回一个异步迭代器，通过这个迭代器可以获取当前目录的子文件或子目录：
+
+```js
+const getDirectoryList = async () => {
+  const asyncIterator = currentDirectory.entries();
+
+  const directorys: DirectoryHandle[] = [];
+  const files: FileHandle[] = [];
+
+  for await (const [key, value] of asyncIterator) {
+    if (value.kind === 'directory') {
+      directorys.push({ type: 'directory', name: key, handle: value });
+    } else if (value.kind === 'file') {
+      files.push({ type: 'file', name: key, handle: value });
+    }
+  }
+
+  return directorys.concat(files);
+}
+```
+
+因为迭代器返回的文件顺序可能是乱序的，和我们想要的先目录后文件的常规顺序不一致，所以我们可以通过 `kind` 属性进行分类，等迭代器消耗完后再连接为一个顺序可预测的列表，完成的功能如下：
+
+<Image url='http://qkc148.bvimg.com/18470/12b897bb35f978a8.gif' width={1364} height={728} alt='渲染当前目录的图片' />
+
+我们在双击的时候判断双击目标是不是一个目录，如果是则将当前目录设置为双击目标来更新文件列表。
+
+## 目录历史记录
+
+接下来我们需要完成目录历史记录的功能，以便我们可以快速的回退到最近的目录中，这里我参考浏览器的 `History API`，实现了一个自己的全局 `history` 对象，用它来管理这个文件系统的目录历史记录：
+
+```js
+class FileSystemHistory {
+  stack;
+  forwardStack;
+
+  constructor(init) {
+    this.stack = [init];
+    this.forwardStack = [];
+  }
+
+  push(path) {
+    return this.stack.push(path);
+  }
+
+  pop() {
+    return this.stack.pop();
+  }
+
+  back() {
+    if (this.stack.length === 1) return this.stack[this.stack.length - 1];
+
+    const back = this.stack.pop();
+
+    const last = this.forwardStack[this.forwardStack.length - 1];
+
+    if (
+      (this.forwardStack.length === 0 && back) ||
+      (back && last.isSameEntry(back))
+    ) {
+      this.forwardStack.push(back);
+    }
+
+    return this.stack[this.stack.length - 1];
+  }
+
+  forward() {
+    const forward = this.forwardStack.pop();
+
+    if (forward) {
+      this.stack.push(forward);
+    }
+
+    return forward;
+  }
+}
+```
+
+在这个 `history` 实例中维护了两个栈，当我们进入某个下级目录时，往 `stack` 中添加一条记录；当我们返回某个上级目录时，`stack` 弹出一条记录，并将这个记录压入 `forwardStack` 栈中。通过 `history` 实例我们可以实现简单的前进后退功能，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/92a9e2ca77961d76.gif' width={1364} height={728} alt='跳转历史的图片' />
+
+这里可以注意到地址栏右侧的输入框在每次目录变更时都会变化，显示当前目录的路径，这是通过 [FileSystemDirectoryHandle] 实例的 `resolve` 方法实现的，该方法返回指定 [FileSystemHandle] 实例相对于当前实例的路径数组。
+
+## 文件选择
+
+在我们操作文件之前，我们首先需要知道哪些文件是需要被处理的，因此我们需要一个状态来存储需要被处理的文件，而选择文件也有单选、多选、框选等多种方式，单选不用多说，多选我们只需要判断点击时事件对象的 `ctrlKey` 值是否为 `true` 就能区分：
+
+```js
+let select = [];
+
+const clickHandle = (e) => {
+  if (e.ctrlKey) {
+    // 多选，将选中条目添加进选中状态中
+    return select.push(/* target */);
+  }
+
+  // 单选，替换选中状态
+  select = [/* target */];
+}
+```
+
+框选实现的细节比较繁琐，但原理还是比较简单的：声明一个标识变量，在指定区域触发 `mousedown` 时标识变量设置为 `true` 表示框选开始，同时记录当前鼠标坐标，`mouseup` 事件触发时重置标识变量表示框选结束，在 `mousemove` 事件中改变框选元素的大小，同时判断文件或目录是否与框选元素相交来决定是否需要选中，代码如下：
+
+```js
+// 标识是否框选状态
+let isFrameSelection = false;
+// 开始偏移
+let startX = 0;
+let startY = 0;
+// 结束偏移
+let endX = 0;
+let endY = 0;
+
+// 创建原生元素的接口，自实现的类 JQuery 对象
+const $frame = createPort('frame');
+
+// 开始框选
+const startSelect: React.MouseEventHandler<HTMLDivElement> = (e) => {
+  isFrameSelection = true;
+
+  // 获取已滚动上去的高度
+  const { scrollTop } = e.target as HTMLDivElement;
+
+  startX = e.nativeEvent.offsetX;
+  startY = scrollTop + e.nativeEvent.offsetY;
+
+  // 显示框选元素
+  $frame.show();
+};
+
+// 取消框选
+const cacheSelect = () => {
+  if (!isFrameSelection) return;
+
+  isFrameSelection = false;
+
+  // 隐藏框选元素
+  $frame.hide();
+  $frame.css('width', 0);
+  $frame.css('height', 0);
+
+  // 重置偏移
+  startX = 0;
+  startY = 0;
+  endX = 0;
+  endY = 0;
+};
+
+// 框选中
+const frameSelection = (e) => {
+  if (!isFrameSelection) return;
+
+  // 不断改变结束偏移为当前鼠标位置
+  endX = (endX === 0 ? startX : endX) + e.movementX;
+  endY = (endY === 0 ? startY : endY) + e.movementY;
+
+  // 通过开始与技术计算框选元素的大小
+  const left = Math.min(startX, endX);
+  const top = Math.min(startY, endY);
+  const right = Math.max(startX, endX);
+  const bottom = Math.max(startY, endY);
+  // 改变框选元素的大小
+  $frame.css('left', left + 'px');
+  $frame.css('top', top + 'px');
+  $frame.css('width', Math.abs(startX - endX) + 'px');
+  $frame.css('height', Math.abs(startY - endY) + 'px');
+
+  const children = frameRef.current.parentElement?.children;
+
+  if (!children) return;
+
+  // 计算每个元素是否与框选元素相交
+  for (let i = 0; i < children.length; i++) {
+    const curr = children[i];
+
+    if (curr.classList.contains(style['frame'])) continue;
+
+    const name = curr.getAttribute('data-name') || '';
+
+    // 判断元素是否相交
+    const mouse = new Rectangle(
+      right - left,
+      bottom - top,
+      left + (right - left) / 2,
+      top + (bottom - top) / 2
+    );
+
+    const isIntersect = Rectangle.from(
+      curr as HTMLElement
+    ).intersectRectangle(mouse);
+
+    if (isIntersect) {
+      // 元素相交，添加选中类
+      curr.classList.add(itemStyle['is-select']);
+    } else {
+      // 元素不相交，不管三七二十一删除选中类
+      curr.classList.remove(itemStyle['is-select']);
+    }
+  }
+};
+```
+
+这是判断元素是否相交的辅助类，是否相交的判定方式来自 [js判断两个块元素的相交与否]：
+
+```js
+class Rectangle {
+  width;
+  height;
+  center;
+  middle;
+
+  constructor(width, height, center, middle) {
+    this.width = width;
+    this.height = height;
+    this.center = center;
+    this.middle = middle;
+  }
+
+  intersectRectangle(target) {
+    const horizontalIntersection =
+      Math.abs(this.center - target.center) < (this.width + target.width) / 2;
+    const verticalIntersection =
+      Math.abs(this.middle - target.middle) < (this.height + target.height) / 2;
+
+    return horizontalIntersection && verticalIntersection;
+  }
+
+  static from(el) {
+    const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = el;
+
+    return new Rectangle(
+      offsetWidth,
+      offsetHeight,
+      offsetLeft + offsetWidth / 2,
+      offsetTop + offsetHeight / 2
+    );
+  }
+}
+```
+
+得到的效果如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/b522832e0da8867e.gif' width={1364} height={728} alt='多选效果的图片' />
+
+我在实现框选功能时碰到了两个坑点需要注意：
+
+我在一开始设置当前的结束偏移是通过获取 `event.offsetX` 和 `event.offsetY` 的值来完成的，这两个值是鼠标相对于 `event.target` 内填充边的偏移，当我移入某个条目时，`event.target` 被设置为这个条目元素，此时拿到的偏移值就不对了，得到的效果如下：
+
+<Image url='http://qkc148.bvimg.com/18470/09fbc1cdaed9176d.gif' width={1364} height={728} alt='bug 展示的图片' />
+
+解决办法是不通过鼠标的绝对坐标去设置当前结束偏移，而是通过相对偏移去不断累加来改变，`event.movementY` 和 `event.movementY` 就是相对于上一次 `mousemove` 事件时鼠标位置的偏移量。
+
+第二个坑点还是关于鼠标偏移的，不过是开始框选时记录的开始坐标，现象是当文件列表过长出现滚动条时，如果我们往上滚动一段距离然后开始框选，会发现框选的坐标与预定的坐标偏离了一段距离，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/d538114172c41a26.gif' width={1364} height={728} alt='bug 展示的图片 2' />
+
+`bug` 的原因是记录开始偏移时没有加上元素滚上去的高度，导致计算的偏移出现了偏差，解决也很简单，我们只需要给开始偏移加上 `event.target.scrollTop` 的高度就 ok 了。
+
+## 删除文件
+
+[FileSystemDirectoryHandle] 提供了 `removeEntry` 方法，这个方法接收需要删除子条目名称，同时支持传入一个含有 `recursive` 属性值为 `true` 的可选对象参数，表示应该递归删除此条目：
+
+```js
+const remove = async () => {
+  let handle;
+
+  // 删除已被选中的条目
+  while ((handle = select.shift())) {
+    const name = handle.name;
+
+    // currentDirectory：当前目录，默认递归删除
+    await currentDirectory.removeEntry(name, { recursive: true });
+  }
+};
+```
+
+效果如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/71d29d793480321f.gif' width={1364} height={728} alt='展示删除效果的图片' />
+
+## 剪切板
+
+要实现移动复制功能，不可避免的会遇到复制、剪切、粘贴等逻辑，虽然浏览器原生支持 `clipboard` 对象，但通过浏览器 API 实现还是比较麻烦的，所以我实现了一个自己的简易 `clipboard` 对象，主要用于全局共享被复制或剪切的文件：
+
+```js
+class FileSystemClipboard {
+  state;
+  datatransfer;
+  update;
+
+  constructor() {
+    this.datatransfer = [];
+  }
+
+  copy(val) {
+    this.state = 'copy';
+    this.datatransfer = val;
+  }
+
+  cut(val) {
+    this.state = 'cut';
+    this.datatransfer = val;
+  }
+
+  paste() {
+    const val = this.datatransfer;
+    this.datatransfer = [];
+
+    return val;
+  }
+}
+```
+
+因为普通元素是没有 `copy`、`cut`、`paste` 事件的，所以为了能够通过键盘完成复制粘贴操作，我们需要一个看不见的 `input` 元素，并让它处于焦点状态；这里我本来是想通过给整个内容区域的 `div` 容器添加 `contenteditable` 来让它能够响应剪切板事件的，但实践下来坑点比较多：元素变得可编辑，`input` 事件不能被阻止，要阻止输入同时不影响剪切事件需要做额外判断。
+
+## 移动复制文件
+
+[File_System_API] 目前是没有移动和复制相关的接口的，但是提供了删除、创建、写入这些功能，通过这些 API 我们完全可以直接模拟实现一个文件移动或复制的功能，以下代码就是一个移动复制的实现：
+
+```js
+// 粘贴操作
+const onPaste = () => {
+  const { state } = clipboard;
+  const datatransfer = clipboard.paste();
+
+  forEach(datatransfer, async (value) => {
+    if (state === 'copy') {
+      // 复制操作
+      move(currentDirectory, value);
+    } else {
+      // 找到父条目
+      const parent = await getParent(root, value);
+
+      if (parent) {
+        // 剪切操作
+        move(currentDirectory, value, {
+          discard: true,
+          origin: parent
+        });
+      }
+    }
+  });
+};
+
+// 移动操作
+const move = async (
+  target,
+  value,
+  options = { discard: false }
+) => {
+  const { discard } = options;
+
+  if (discard === false) {
+    // 复制
+    return _move(target, value);
+  }
+
+  // 粘贴
+  await _move(target, value);
+
+  // 删除源文件
+  return options.origin.removeEntry(value.name, { recursive: true });
+};
+
+// 内部移动操作函数
+const _move = async (target, value) => {
+  // 在将要移动到的位置创建新条目
+  const handle = await create(target, value);
+
+  if (value.type === 'directory' && handle.kind === 'directory') {
+    // 如果是目录则需要递归创建文件内容
+    for await (const [key, val] of value.handle.entries()) {
+      move(handle, {
+        type: val.kind,
+        name: key,
+        handle: val
+      });
+    }
+  } else {
+    // 如果是文件则需要将源文件内容写入到新条目中
+    const file = await value.handle.getFile();
+    const writable = await handle.createWritable();
+
+    await writable.write(new Blob([file]));
+    await writable.close();
+  }
+};
+
+// 创建目录或文件
+const create = (handle, { name, type }) => {
+  if (type === 'directory') {
+    return handle.getDirectoryHandle(name, { create: true });
+  }
+
+  return handle.getFileHandle(name, { create: true });
+};
+```
+
+代码中我们使用了 [FileSystemDirectoryHandle] 实例的 `getDirectoryHandle` 和 `getFileHandle` 方法，分别表示获取目录或文件句柄，这两个方法都接收一个可选参数对象，对象的 `create` 属性为 `true` 时表明在条目不存在时创建一个新条目。
+
+此时创建的条目是不存在任何内容的，为了真正完成文件内容的移动，我们需要用到 [FileSystemFileHandle] 实例的 `createWritable` 方法，这个方法返回一个 [FileSystemWritableFileStream] 实例，通过它我们可以将源文件内容写入到目标文件中。
+
+通过上述的代码完成复制剪切操作，如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/14e0ab07929ca6fb.gif' width={1364} height={728} alt='展示移动效果的图片' />
+
+## 案例
+
+这篇文件中的案例代码在 [yuanyxh/illustrate][FileSystemAccess] 里，感兴趣的可以拉下来看看，因为使用了大量较新的 API，建议使用新版 Chrome 运行；同时因为用代码操作的文件不会被系统感知到，也没有实现自己的文件备份系统，所以在测试时建议不要使用重要的文件夹或做好备份。
+
+## 结语
+
+通过不断学习 web 现有的一些 API 我们会发现 web 所拥有的能力越来越多，未来也会出现更多需要使用这些 API 的场景；像操作文件系统的能力这篇文章也只是展示了一部分而已，如果继续完善下去实现一个完全的文件系统管理器也不是不可能（PS：懒），与 [File_System_API] 相关的 [Origin_private_file_system] 在未来也可能会大放异彩。
+
+[MDN]: https://developer.mozilla.org/
+[File_System_API]: https://developer.mozilla.org/en-US/docs/Web/API/File_System_API
+[MDN#showDirectoryPicker]: https://developer.mozilla.org/en-US/docs/Web/API/Window/showDirectoryPicker
+[FileSystemDirectoryHandle]: https://developer.mozilla.org/en-US/docs/Web/API/FileSystemDirectoryHandle
+[FileSystemHandle]: https://developer.mozilla.org/en-US/docs/Web/API/FileSystemHandle
+[FileSystemFileHandle]:https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle
+[FileSystemWritableFileStream]: https://developer.mozilla.org/en-US/docs/Web/API/FileSystemWritableFileStream
+[FileSystemAccess]: https://github.com/yuanyxh/illustrate/tree/master/src/pages/FileSystemAccess
+[Origin_private_file_system]: https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system
+[js判断两个块元素的相交与否]: https://www.imsry.cn/posts/fc8b3868.html

@@ -1,0 +1,141 @@
+// global layout
+
+@import './variables.less';
+
+:root {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--text-color-primary);
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizelegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#nprogress .bar {
+  background: var(--color-primary);
+}
+
+body {
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+html,
+body,
+div,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+main,
+nav,
+aside,
+header,
+section,
+footer,
+article,
+blockquote,
+pre,
+code,
+ul,
+ol,
+li,
+table,
+tr,
+th,
+td,
+tbody,
+thead {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+i {
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+ul {
+  list-style: none;
+}
+
+table {
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+// sustom scrollbar
+::-webkit-scrollbar {
+  width: 12px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #a8a8a8;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 4px;
+}
+
+@media screen and (width <= 1366px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+// use canonical syntax when ::-webkit-scrollbar is not supported
+@supports not selector(::-webkit-scrollbar) {
+  html,
+  body,
+  div,
+  main,
+  nav,
+  aside,
+  header,
+  section,
+  footer,
+  article,
+  pre,
+  code {
+    scrollbar-color: #a8a8a8 transparent;
+  }
+
+  @media screen and (width <= 1336px) {
+    html,
+    body,
+    div,
+    main,
+    nav,
+    aside,
+    header,
+    section,
+    footer,
+    article,
+    pre,
+    code {
+      scrollbar-width: thin;
+    }
+  }
+}

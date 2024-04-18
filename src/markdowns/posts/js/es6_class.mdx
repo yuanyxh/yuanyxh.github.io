@@ -1,0 +1,259 @@
+---
+title: ES6 新特性详解 - 类
+date: 2022-11-02 21:15:10
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/8fb480e2c5c77412.png
+description: 详解 JavaScript ES6 class
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 简述
+
+文章理解并讲述 `ES6` 新特性：`class`。内容有误请指出，内容有缺请补充。
+
+学习 `ES6` 类之前请先了解 `JavaScript` 中的 [原型与继承]；`ES6` 中的类并不是真正意义上的 `类`，可以理解为对原型与原型继承的一种封装，类模式在 `JavaScript` 中是一种可选的模式，而不是必须的。
+
+## 概念
+
+类，在一些面向对象语言中是非常常见的，如 `java`、`c++` 等；类可以看作是某一类事物的抽象，泛指一组拥有相同特性相同行为的数据集合，依据某个类接口构造的具体事物称之为该类的实例，是独一无二的个体。
+
+在早期的 `JavaScript` 中并没有类这样的特性，`ES6` 让 `JavaScript` 也拥有了类这样的语法，但 `JavaScript` 中的类与传统面向对象编程中的类是不同的，其本质还是原型与原型继承。
+
+## 语法
+
+类可以看作是一个特殊函数，其行为与普通函数并没有太大不同。一个类主要由以下部分组成
+
+- 构造器
+- 实例方法
+- 静态方法
+- getter、setter 方法
+- 私有、公有字段（实验特性）
+
+这些组成部分都不是必须的，一个空的类声明依旧被 `JS` 引擎认为是有效的。
+
+### 类的声明
+
+类使用关键字 `class` 声明，`class` 关键字的特性与 [let/const] 一样
+
+- 全局作用域下声明的类不会成为 `window` 的属性
+- 块作用域
+- 同一作用域不能重复声明
+- 没有声明提升
+
+同时，类中的代码都运行在严格模式下，任何严格模式下禁止的操作都会抛出错误
+
+```javascript
+// 类声明
+class Person {}
+
+// 类表达式
+const Person = class {};
+```
+
+### 构造器
+
+构造器即 `constructor` 方法，一般会在该方法内进行初始化操作
+
+```javascript
+class Person {
+  // 构造器
+  constructor(name, age) {
+    // 初始化数据
+    this.name = name;
+    this.age = age;
+  }
+}
+```
+
+### 实例方法
+
+实例方法，即定义在类原型上的方法，所有当前类的实例都能够访问
+
+```javascript
+class Person {
+  // 实例方法
+  sayHi() {
+    console.log('hi');
+  }
+}
+
+const person_1 = new Person();
+person_1.sayHi(); // hi
+
+const person_2 = new Person();
+person_2.sayHi(); // hi
+```
+
+### 静态方法
+
+静态方法，即定义在类身上的方法，通过类自身访问，静态方法通过 `static` 关键字定义
+
+```javascript
+class Person {
+  // 静态方法
+  static create() {
+    return new Person();
+  }
+}
+
+const person = Person.create();
+console.log(person); // {} 空对象
+```
+
+### getter/setter
+
+即访问器和设置器，用于设置属性访问函数与属性设置函数
+
+```javascript
+class Person {
+  // 实例属性访问器
+  get name() {
+    return this._name;
+  }
+  // 实例属性设置器
+  set name(name) {
+    this._name = name;
+  }
+
+  // 静态属性访问器
+  static get name() {
+    return this._name;
+  }
+  // 静态属性设置器
+  static set name(name) {
+    this._name = name;
+  }
+}
+
+// 实例属性
+const p1 = new Person();
+p1.name = 'yuanyxh';
+console.log(p1.name); // yuanyxh
+
+// 静态属性
+Person.name = 'jack';
+console.log(Person.name); // jack
+```
+
+### 公有、私有字段
+
+类的公有、私有字段定义目前属于实验特性，不应该直接在生产环境中使用，应该使用 `babel` 之类的编译器编译转换
+
+```javascript
+class Person {
+  // 公有字段
+  whoami = 'yuanyxh';
+
+  // 私有字段
+  #whoami = 'yuanyxh';
+}
+```
+
+字段定义所有当前类实例上拥有的数据，公有字段定义允许被外部访问并修改的数据，私有字段定义不应该被外部访问的数据
+
+### 继承
+
+面向对象编程三大特性其中之一就是继承，继承后的子类能够访问父类的属性，而要在 `JavaScript` 中实现类的继承，需要使用 `extends` 关键字，且 `extends` 不只能继承类，还可以继承函数
+
+```javascript
+// 类
+class Person {
+  // 构造器
+  constructor(name, age) {
+    // 初始化数据
+    this.name = name;
+    this.age = age;
+  }
+}
+
+// 子类 继承
+class Worker extends Person {}
+
+// -----------------------------
+
+// 函数
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+// 子类 继承
+class Worker extends Person {}
+```
+
+### super
+
+`super` 关键字用于调用父类构造函数或获取父类数据，具体行为取决于在何处使用，具体规则如下
+
+- `super` 在子类构造器中使用时，指向父类构造器，必须在 `this` 关键词前调用
+- `super` 在实例方法或实例字段中使用时，指向 **父类原型**
+- `super` 在静态方法或静态字段中使用时，指向 **父类**
+- 通过 `super` 设置属性时，属性被设置到当前 `this` 身上
+- `super` 并不是变量，不能当作变量操作
+
+```javascript
+// 类
+class Person {
+  // 构造器
+  constructor(name, age) {
+    // 初始化数据
+    this.name = name;
+    this.age = age;
+  }
+
+  // 静态方法
+  static create(...args) {
+    return new Person(...args);
+  }
+
+  // 实例方法
+  sayHi() {
+    console.log('hi');
+  }
+}
+
+// 子类 继承
+class Worker extends Person {
+  constructor(name, age, job) {
+    // 此处 super 引用父类构造器
+    // 调用父类构造器并传参
+    super(name, age);
+    this.job = job;
+  }
+
+  // 静态方法
+  static createPerson(...args) {
+    // 此处 super 引用父类本身
+    return super.create(...args);
+  }
+
+  // 实例方法
+  sayHi() {
+    // 此处 super 引用 父类原型
+    return super.sayHi();
+  }
+}
+```
+
+关于 [super]，虽然它会动态改变引用，但它并不代表 `this`，`super` 永远指向父类或父类原型。
+
+类的其他语法规则可看 [MDN#Classes][Classes]，文章只简要描述。
+
+## 结语
+
+文章只简要介绍了部分类语法，没有深入探究类的特性，究其原因还是因为 `JS` 中的类只是语法糖，若想深入了解 `JavaScript` 中的面向对象编程，还是应该学习并理解原型及原型继承，通过原型与原型继承能够模拟出很多模式，包括类。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN][MDN#JavaScript]
+
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/
+[Classes]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Classes
+[原型与继承]: ../js/js_prototype_and_inheri.mdx
+[let/const]: ../js/es6_let_and_const.mdx
+[super]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/super

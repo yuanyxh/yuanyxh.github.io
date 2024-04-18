@@ -1,0 +1,141 @@
+---
+title: 为什么我要牺牲现代浏览器用户的体验去兼容 ie8？
+date: 2023-09-17 14:38:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/01aae4b34b9facbc.jpg
+description: 对项目兼容性的探讨，以及以现代浏览器为主向下兼容的思想与可行方法的讨论。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+> Q：重构一个项目，要兼容 ie8，不能使用新语法。
+> A：为什么不能使用最新语法，即使需要兼容 ie8 也可以用现代开发的形式去兼容啊？
+> Q：你不用管那么多。还有，不能使用 CSS3 特性，一切 ie8 不支持的特性都不要使用。
+> A：？？？
+> A：这是怎么个事？要兼容 ie8 也有很多种方式啊，现在那么多 CSS 预处理器，而且很多 CSS3 特性是体验增强的，即使不支持也对用户没有影响。
+> Q：你话这么多还想不想干了，我有我自己的考虑。
+> A：。。。
+
+上述对话不是真实的，是我一个朋友最近的需求，Questions 是他对我阐述的领导需求，Answers 是我的想法，也是我想写这篇文章和大家探讨的原因。
+
+从对话中可以看出需求是重构一个旧项目，但在前端生态蓬勃发展的今天仍使用旧的开发方式进行重构。就以我个人的想法而言，是觉得这种重构是无效且无益的；以我看过的很多政府或偏政府项目来说，忽略了占据更大比例的使用现代浏览器的用户，而以 ie 这种古早浏览器为主向上兼容，而不是以现代浏览器为主去向下兼容，个人觉得是非常不合理的。
+
+当然在最近一次的面试中也和面试官聊了这个话题，他的回答感觉也是有一定道理的：
+
+> 以现代的方式来开发当然没错，但还要考虑其他因素，比如项目的开发周期和效率、开发人员对这个项目的熟悉度。
+
+感觉就是领导者和开发者的思维不同吧。
+
+这篇文章也不是为了吐槽这种需求，而是讨论如何以现代开发的方式去兼容类似 ie8 这种古早浏览器。本人是没有相关经验的，所以提出的还是一些自己的想法来和大家探讨。
+
+
+## 语法兼容
+
+像对话中说的，为了考虑 ie8 而禁止使用新语法，这是完全没有必要的。以 let、const 举例，如果我们禁止使用它而使用 var，那我们就不得不面对 var 缺失的块作用域以及变量提升所带来的烦恼；更何况还有更多有用的 js 新特性能够帮助我们大大得提升开发效率。
+
+为此，我们可以使用 [babel] 的 `babel-loader` 和 `babel-plugin-transform-es3-*` 来实现语法的兼容处理，即使是 ie8：
+
+<Image url='http://qkc148.bvimg.com/18470/9aff0231bc3ead45.png' width={1366} height={619} alt='展示 bable 编译语法的图片' />
+
+## API 兼容
+
+即使能够兼容现有语法了，但仍不能说得上方便，我们平时还会经常使用一些新的 API 来完成项目开发，比如 `Promise` 以及数组的一些常用方法等，这些对于 ie 而言默认是不支持的，为此我们需要添加支持。
+
+我们可以使用 [babel] 的 `babel-polyfill` 来帮助我们填补这些功能的缺少。
+
+`polyfill`，也就是腻子脚本，作用是填充不支持的功能。原理也很简单，对于一个不支持的功能，使用旧有特性进行模拟实现，比如：
+
+```js
+if (typeof Function.prototype.call !== 'function') {
+  Function.prototype.call = function call(self) {
+    self.__fn = this;
+    var args = [];
+    for (var i = 1; i < arguments.length; i++) {
+      args.push('arguments[' + i +  ']');
+    }
+    var callbackStr = 'self.__fn(' + args.join(',') + ')';
+    var result = eval(callbackStr);
+    delete self.__fn;
+    return result;
+  }
+}
+
+if (typeof Array.prototype.filter !== 'function') {
+  Array.prototype.filter = function filter(cb, self) {
+    var results = [];
+    for (var i = 0; i < this.length; i++) {
+      if (cb.call(self, this[i], i, this)) {
+        results.push(this[i]);
+      }
+    }
+    return results;
+  }
+}
+```
+
+这样当对应的特性不存在时我们编写的代码依然能够正常工作，也不用考虑着这个 API 不支持那个特性不能使用了。
+
+## 抹平差异
+
+除了一些语法与 API 外，其实一些特性在不同浏览器中都有对应的实现的，只是有些差异。比如目前常用的 `DOM2` 级别事件 `addEventListener` 在 ie 中可以通过 `attachEvent` 来实现类似功能，为此我们可以将两者封装为一个方法进行差异抹平：
+
+```js
+window._addEventListener = function _addEventListener(element, type, fn) {
+  function addEventListener(element, type, fn) {
+    return element.addEventListener(type, fn);
+  }
+  function attachEvent(element, type, fn) {
+    return element.attachEvent('on' + type, fn);
+  }
+  function on(element, type, fn) {
+    return element['on' + type] = fn;
+  }
+
+  if (typeof element.addEventListener === 'function') {
+    window._addEventListener = addEventListener;
+  } else if (typeof element.attachEvent === 'function') {
+    window._addEventListener = attachEvent;
+  } else {
+    window._addEventListener = on;
+  }
+
+  return window._addEventListener(element, type, fn);
+}
+```
+
+类似的还有 `ie` 中的事件对象，也可以封装一个 `getEvent(event)` 方法来抹平不同浏览器之间的差异化。
+
+## CSS 特性
+
+不光是 js，CSS3 的出现也带来了很多实用的功能。我们可以使用一些 CSS 预处理器来进行兼容处理，比如 [PostCSS]。
+
+如果差异较大的话也可以参考我的另一篇文章 [CSS 数据类型与浏览器渐进兼容处理] 里说的，利用样式层叠的特性，将被指定浏览器接受的 css 样式放在前面，符合规范的 css 样式放在后面，这样部分浏览器能够识别前面的样式而忽略后面的，符合规范的浏览器则通过层叠特性覆盖前面的样式。
+
+关于 CSS 的兼容有很多插件可以做，这里也不想过多介绍，我想介绍的关于 CSS 体验增强特性。
+
+### CSS 体验增强
+
+这个名词我是通过阅读 《CSS 新世界》 得知的，体验增强这个词很好理解，就是加强用户的体验，那么怎么做呢？
+
+以一个弹窗为例子，你认为一个弹窗是直接渲染出现带来的体验好呢，还是淡入、淡出并伴随着上至下的位移出现体验好呢？这个问题的答案很明显，对于大部分用户而言，直接渲染出现带来的印象太突兀，但加入动画后这种感觉就会很大的减少，这就是动画带来的用户体验增强。
+
+<Image url='http://qkc148.bvimg.com/18470/cc5731672913ddaf.gif' width={1364} height={728} alt='展示弹窗动画的图片' />
+
+那么现在如果我们需要兼容 ie8，意味着我们必须放弃 CSS3 中的过渡和动画吗？
+
+不，我们不需要放弃。对于 ie8 而言，即使它不支持 CSS3 过渡与动画，最大的可能也就是无法解析这两个 CSS 语句，对于程序的功能没有任何影响，但对于现代浏览器而言，它能带来的用户体验是非常高的，我们没有必要为了 ie8 而完全放弃这种体验增强特性。
+
+还有更多的其他体验增强特性如 `CSS Scroll Snap`、`sroll-behavior` 等等，都是我们可以提升用户体验又不必担心兼容问题的特性，合理掌握并运用相信可以让我们的网站交互更上一层楼。
+
+## 结语
+
+这篇文章就是我对于项目兼容的一些看法，当然是我以开发者视角来看待的，最终还是要结合实际来对项目进行规划，但不管怎么说一个 C 端项目还是希望以用户体验为主来考虑项目的设计。
+
+写这篇文章的时候也查询了一些资料，发现了一个 react 兼容 ie8 的项目例子 [react-ie8]，有需要或有兴趣的可以去看看。
+
+[babel]: https://babeljs.io/
+[CSS 数据类型与浏览器渐进兼容处理]: https://yuanyxh.com/posts/css/css%20%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E4%B8%8E%E5%85%BC%E5%AE%B9%E5%A4%84%E7%90%86.html
+[PostCSS]: https://postcss.org/
+[react-ie8]: https://github.com/xcatliu/react-ie8#cn-make-your-react-app-work-in-ie8

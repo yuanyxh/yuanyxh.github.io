@@ -1,0 +1,295 @@
+---
+title: 学习 axios 源码（一）
+date: 2023-03-07 16:42:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/1dbf569c31dd90e6.png
+description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+[axios] 版本 1.3.4，建议阅读 [axios 文档]，熟悉相关 Api 后进行学习。
+
+## 追溯 axios 初始化
+
+我们在项目中使用 `axios` 时，一般都是安装导入然后对其进行二次封装，这说明它默认导出了一个 `axios` 对象。打开 `axios` 源码的 `package.json` 文件查看 `main` 字段，可以知道它的入口文件是同路径下的 `index.js`，里面的内容不多，粗略如下：
+
+```js
+// index.js
+import axios from './lib/axios.js';
+
+const { /* omission */ } = axios;
+
+export default {
+  axios as default,
+  /* omission */
+}
+```
+
+它默认导出了一个 `axios` 对象，这个对象来自 `lib/axios.js`，里面的代码省略如下：
+
+```js
+// lib/axios.js
+import defaults from './defaults/index.js';
+
+function createInstance(defaultConfig) {
+  /* do something */
+}
+
+const axios = createInstance(defaults);
+
+export default axios;
+```
+
+可以看到我们使用的 `axios` 是由 `createInstance` 函数返回的，那么它在内部做了什么呢？
+
+```js
+// lib/axios.js
+import utils from './utils.js';
+import bind from './helpers/bind.js';
+import Axios from './core/Axios.js';
+import mergeConfig from './core/mergeConfig.js';
+
+function createInstance(defaultConfig) {
+  const context = new Axios(defaultConfig);
+  const instance = bind(Axios.prototype.request, context);
+
+  // Copy axios.prototype to instance
+  utils.extend(instance, Axios.prototype, context, { allOwnKeys: true });
+
+  // Copy context to instance
+  utils.extend(instance, context, null, { allOwnKeys: true });
+
+  // Factory for creating new instances
+  instance.create = function create(instanceConfig) {
+    return createInstance(mergeConfig(defaultConfig, instanceConfig));
+  };
+
+  return instance;
+}
+```
+
+可以看到在这个函数内部主要做了 5 件事，分别是：
+
+1. 构造一个 `Axios` 实例
+2. 调用自封装的 `bind` 函数，传入 `Axios` 原型的 `request` 方法和 `Axios` 实例，返回一个新的函数
+3. 拷贝 `Axios` 原型的自有数据至这个新函数，并将其中函数的 `this` 指向 `Axios` 实例
+4. 拷贝 `Axios` 实例的自有数据至这个新函数
+5. 给这个新函数添加一个 `create` 方法，也就是我们常用的创建 `axios` 副本方法
+
+最后返回这个函数，也就是我们使用的 `axios`；它并不是 `Axios` 实例，但存在 `Axios` 原型和 `Axios` 实例的所有数据。
+
+## 构造 Axios 实例
+
+第一步是构造 `Axios` 的实例， `Axios` 定义在 `lib/core/Axios.js` 中，它的简略代码如下：
+
+```js
+// lib/core/Axios.js
+class Axios {
+  constructor(instanceConfig) {
+    this.defaults = instanceConfig;
+    this.interceptors = {
+      request: new InterceptorManager(),
+      response: new InterceptorManager()
+    };
+  }
+
+  request() {
+    /* omission */
+  }
+
+  getUri() {
+    /* omission */
+  }
+}
+```
+
+### 配置项
+
+这里我们忽略 `Axios` 原型的 `request` 和 `getUri` 方法；可以看到在 `constructor` 方法内将传入的数据赋值给了 `defaults` 属性，这里的数据来自 `lib/defaults/index.js`；其中是默认的一些配置，比如常用的 `baseURL`、`timeout` 等；我们可以通过 `defaults` 属性修改这些配置，比如：
+
+```js
+axios.defaults.baseURL = 'https://yuanyxh.com/';
+
+// or
+const request = axios.create({
+  baseURL: 'https://yuanyxh.com/',
+  timeout: 60000
+});
+```
+
+### 拦截器
+
+添加 `defaults` 属性的下一行又添加了 `interceptors` 属性，它被赋值为一个包含 `request` 和 `response` 属性的对象，这两个属性的值是 `InterceptorManager` 的实例，`InterceptorManager` 定义在 `lib/core/InterceptorManager.js`，代码粗略如下：
+
+```js
+class InterceptorManager {
+  constructor() {
+    this.handlers = [];
+  }
+
+  use(fulfilled, rejected, options) {
+    /* omission */
+  }
+
+  eject(id) {
+    /* omission */
+  }
+
+  clear() {
+    /* omission */
+  }
+
+  forEach(fn) {
+    /* omission */
+  }
+}
+```
+
+有没有觉得很熟悉？这其实就是我们常用的请求、响应拦截器；`InterceptorManager` 原型方法的作用分别如下：
+
+- `use`: 注册一个请求或响应拦截器，将 `fulfilled`、 `rejected`, `options` 合并为一个对象并添加至 `handlers` 数组，返回索引。
+- `eject`: 从 `handlers` 数组中清除指定索引的请求或响应拦截器
+- `clear`: 重置 `handlers` 数组
+- `forEach`: 遍历数组并将数组项传入 `fn` 回调中
+
+所以我们才能通过 `axios.interceptors.(request | response).use` 注册拦截器并处理请求或响应数据。
+
+### 请求别名
+
+在 `Axios` 类外部，还给 `Axios` 原型添加了我们常用的 `get`、`post` 等方法：
+
+```js
+// lib/core/Axios.js
+utils.forEach(
+  ['delete', 'get', 'head', 'options'],
+  function forEachMethodNoData(method) {
+    Axios.prototype[method] = function (url, config) {
+      return this.request(
+        mergeConfig(config || {}, {
+          method,
+          url,
+          data: (config || {}).data
+        })
+      );
+    };
+  }
+);
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  function generateHTTPMethod(isForm) {
+    return function httpMethod(url, data, config) {
+      return this.request(
+        mergeConfig(config || {}, {
+          method,
+          headers: isForm
+            ? {
+                'Content-Type': 'multipart/form-data'
+              }
+            : {},
+          url,
+          data
+        })
+      );
+    };
+  }
+
+  Axios.prototype[method] = generateHTTPMethod();
+
+  Axios.prototype[method + 'Form'] = generateHTTPMethod(true);
+});
+```
+
+可以看到我们常用的 `get`、`post` 等方法最终都是调用了 `request` 方法，它们只是一个过渡或者说别名。
+
+## 绑定上下文
+
+构造出 `Axios` 实例后调用了自实现的 `bind` 函数并传入了 `Axios` 原型的 `request` 方法和 `Axios` 实例；`bind` 代码如下：
+
+```js
+// lib/helpers/bind.js
+function bind(fn, thisArg) {
+  return function wrap() {
+    return fn.apply(thisArg, arguments);
+  };
+}
+```
+
+`bind` 函数返回了一个新函数 `instance`，执行它时会调用 `fn` 并将它内部的 `this` 指向 `thisArg`。从代码上下文看，这里的 `fn` 是 `request` 方法，`thisArg` 是 `Axios` 实例。
+
+## 拷贝数据
+
+接下来又将 `Axios` 原型与实例的数据全部拷贝至 `instance` 身上，代码使用了 `utils.extend` 方法，实现如下：
+
+```js
+// lib/utils.js
+const extend = (a, b, thisArg, { allOwnKeys } = {}) => {
+  forEach(
+    b,
+    (val, key) => {
+      if (thisArg && isFunction(val)) {
+        a[key] = bind(val, thisArg);
+      } else {
+        a[key] = val;
+      }
+    },
+    { allOwnKeys }
+  );
+  return a;
+};
+```
+
+主要是遍历 `b` 并将其中数据全部赋值给 `a`，如果 `thisArg` 存在且遍历到的值是函数则调用 `bind` 函数改变原方法的 `this` 指向。
+
+## 添加 create 方法
+
+拷贝完数据后，代码给 `instance` 函数添加了一个 `create` 方法，内部调用了 `createInstance` 并将配置合并后传给了它，以此来创建 `axios` 副本。
+
+最后将 `instance` 返回就得到了我们所使用的 `axios`，随后还添加了一些工具，比如用于取消请求的 `CancelToken` 构造器，用于并发请求的 `all` 方法，完整列表如下：
+
+```js
+// Axios 类
+axios.Axios = Axios;
+// 取消请求的自定义 Error 对象, 继承自 AxiosError
+axios.CanceledError = CanceledError;
+// CancelToken 构造器, 用于取消请求
+axios.CancelToken = CancelToken;
+// 工具函数, 判断对应的请求是否已取消
+axios.isCancel = isCancel;
+// axios 版本
+axios.VERSION = VERSION;
+// 将对象转换为 FormData 的工具函数
+axios.toFormData = toFormData;
+// 自定义的 Error 对象，继承自 Error
+axios.AxiosError = AxiosError;
+// CanceledError 的别名
+axios.Cancel = axios.CanceledError;
+// 并发请求
+axios.all = function all(promises) {
+  return Promise.all(promises);
+};
+// apply 的语法糖
+axios.spread = spread;
+// 判断错误对象是否是 AxiosError
+axios.isAxiosError = isAxiosError;
+// 合并配置的工具函数
+axios.mergeConfig = mergeConfig;
+// headers 相关的工具类
+axios.AxiosHeaders = AxiosHeaders;
+// FormData 转换为 json 的工具函数
+axios.formToJSON = (thing) =>
+  formDataToJSON(utils.isHTMLForm(thing) ? new FormData(thing) : thing);
+// http 状态码对象
+axios.HttpStatusCode = HttpStatusCode;
+// default 指向自己
+axios.default = axios;
+```
+
+-- end
+
+[axios]: https://github.com/axios/axios
+[axios 文档]: https://axios-http.com/docs/intro

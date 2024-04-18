@@ -1,0 +1,377 @@
+---
+title: JavaScript 概念 - 原型与继承
+date: 2022-10-26 19:38:27
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/e4e9836bb70b7c6e.png
+description: 详解 JavaScript 原型与继承的概念
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 简述
+
+`JavaScript` 虽然采用面向对象的编程模式，但不同于其他基于面对对象的语言一样，拥有类的概念，`JavaScript` 是基于原型的，虽然 `ES6` 提出了类，但其本质还是原型与原型继承，`ES6` 中的类只是一个语法糖。本文将理解并讲述 `JavaScript` 中的原型与继承。
+
+## 概念
+
+原型：即原型对象 `prototype`，存在于所有非箭头函数的函数身上，而每个通过函数构造出来的实例对象身上都有一个内部 `[[Prototype]]` 属性，该属性被浏览器厂商实现为 `__proto__` 属性，指向对应函数的原型
+
+```javascript
+function Test() {}
+const t = new Test();
+
+// t.__proto__ 链接到 Test.prototype
+console.log(t.__proto__ === Test.prototype); // true
+```
+
+原型链：一个实例对象的 `__proto__` 指向构造该实例的函数的原型，该原型的 `__proto__` 指向构造该原型对象的函数的原型，级级链接形成链条。
+
+```javascript
+function A() {}
+function B() {}
+
+// a 是 A 的实例，a 的 __proto__ 链接到 A 的 prototype
+const a = new A();
+
+// 将 B 的原型设置为 a
+B.prototype = a;
+B.prototype.constructor = B;
+
+// b 是 B 的实例，b 的 __proto__ 链接到 B 的 prototype
+const b = new B();
+
+console.log(b.__proto__ === B.prototype); // true
+console.log(b.__proto__.__proto__ === A.prototype); // true
+```
+
+原型继承：访问一个对象身上不存在的属性时，会查找该对象的 `__proto__` 属性，即原型对象，未查找到时继续沿着原型对象的 `__proto__` 属性，层层向上直到 `Object` 的原型的 `__proto__`，即 `null` 身上时会返回 `undefined`，表示属性不存在。
+
+属性遮蔽：了解了原型继承，我们知道 `JS` 引擎是层层向上查找对象属性的，也就意味着当找到对应属性时就不再继续向上查找，即使原型链上层拥有相同属性。
+
+构造属性：即函数原型对象身上的 `constructor` 属性；函数、原型、实例对象的关系如下：
+
+- 函数的 `prototype` 属性指向原型
+- 原型的 `constructor` 属性指向函数
+- 实例的 `__proto__` 属性指向原型
+
+```javascript
+function Test() {}
+const t = new Test();
+
+// 实例属性与原型链接
+console.log(t.__proto__ === Test.prototype); // true
+
+// 原型属性与函数链接
+console.log(Test.prototype.constructor === Test); // true
+
+// 注意，此处是实例通过原型链访问到了原型的 constructor
+// 即 t.__proto__.constructor === Test
+console.log(t.constructor === Test); // true
+```
+
+实例与函数之间没有直接关系，实例能够通过原型的 `constructor` 属性访问函数。
+
+## 作用
+
+在创建对象时，可能需要很多相似的对象，我们通常使用构造函数[^构造函数]来创建，构造函数抽象了某一类对象的相同特性与行为，如
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+  this.sayHi = () => {
+    console.log('hi, i am' + this.name + ', nice to meet you!');
+  };
+}
+
+const me = new Person('yuanyxh', 22);
+console.log(me); // { name: 'yuanyxh', age: 22 }
+me.sayHi(); // hi, i am yuanyxh, nice to meet you!
+```
+
+上述代码创建了一个泛指 `Person` 的构造函数，每次调用都会构造出一个独一无二的 `Person` 实例，每个实例又都有 `name`、`age` 属性与 `sayHi` 方法。
+
+但是这样的代码是有问题的，在每次调用 `Person` 构造实例时都会创建出一个新的 `sayHi` 方法
+
+```javascript
+const me = new Person('yuanyxh', age);
+me.sayHi(); // hi, i am yuanyxh, nice to meet you!
+const you = new Person('unknown', 18);
+you.sayHi(); // hi, i am unknown, nice to meet you!
+
+// 两个 sayHi 方法不相等
+console.log(me.sayHi === you.sayHi); // false
+```
+
+可以看到，每个实例身上的 `sayHi` 方法都是不同的，但做的是相同的事，创建多个 `sayHi` 方法做相同的事是不必要的，我们可以通过在函数原型身上添加公有方法来避免。
+
+原型对象只是函数身上的一个属性，`JavaScript` 并没有限制我们对它进行修改，我们能够对某一个函数原型进行扩展，甚至是替换
+
+```javascript
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+// prototype 原型对象
+Person.prototype.sayHi = function () {
+  console.log('hi, i am' + this.name + ', nice to meet you!');
+};
+
+const me = new Person('yuanyxh', 22);
+me.sayHi(); // hi, i am yuanyxh, nice to meet you!
+const you = new Person('unknown', 18);
+you.sayHi(); // hi, i am unknown, nice to meet you!
+
+console.log(me.sayHi === you.sayHi); // true
+```
+
+因为原型继承，访问实例身上不存在的 `sayHi` 方法时，向上在 `Person` 的原型对象上找到了，两个实例访问的都是同一个方法。
+
+我们还可以直接替换函数原型，达到最大程度的扩展
+
+```javascript
+function Person (name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+const obj = {
+  run() {
+    console.log('runing');
+  }
+  sayHi() {
+    console.log('hi, i am' + this.name + ', nice to meet you!');
+  }
+}
+
+// 直接覆盖原型
+Person.prototype = obj;
+// 将原型的 constructor 重新指向 Person
+Person.prototype.constructor = Person;
+
+const me = new Person('yuanyxh', 22);
+me.run(); // runing
+me.sayHi(); // hi, i am yuanyxh, nice to meet you!
+```
+
+上述代码直接替换了 `Person` 的原型，但需要手动将替换后的原型 `constructor` 属性指回该函数。
+
+在扩展函数原型时，应对新增属性进行必要的限制，可以使用 `Object.defineProperty` 或 `Object.defineProperties` 进行属性 `是否可配置`、`是否可枚举`、`是否可写`、`setter`、`getter` 的配置。
+
+## 模式
+
+基于原型的继承方式虽然有用，但依旧存在一些问题，如引用数据的修改
+
+```javascript
+function Person() {}
+Person.prototype.lists = [
+  { name: 'jack', age: 34 },
+  { name: 'rose', age: 28 }
+];
+
+const a = new Person();
+const b = new Person();
+
+a.lists[0].name = 'Alexander';
+
+console.log(a.lists); // [{name: 'Alexander', age: 34}, {name: 'rose', age: 28}]
+console.log(b.lists); // [{name: 'Alexander', age: 34}, {name: 'rose', age: 28}]
+```
+
+可以看到实例 `a` 对 `lists` 的修改影响到了实例 `b`，因为他们引用的是同一个值；此外，我们无法在子构造函数中给父构造函数传参。
+
+鉴于此，一些新的实现继承的方式被研究出来用于代替原型继承，下面一一介绍。
+
+### 盗用构造函数
+
+原型继承的问题在于引用值的修改与子构造函数对父构造函数的传参，而盗用构造函数的基本思路是：子构造函数中通过 `call`、`apply` 方法对父构造函数进行调用并修改父构造函数中的 `this` 指向，并传递参数
+
+```javascript
+function Father(name, age) {
+  this.name = name;
+  this.age = age;
+}
+function Son(name, age, sex) {
+  // 修改 Father 的this 指向为当前实例，并传递参数
+  Father.call(this, name, age);
+  this.sex = sex;
+}
+
+const me = new Son('yuanyxh', 22, '男');
+console.log(me.name); // yuanyxh
+```
+
+但我们很容易发现上面的问题，这相当于直接在 `Son` 中进行数据的赋值，构造出来的 `Son` 实例的原型链上并不存在 `Father` 函数的原型，也就意味着无法共享父构造函数原型上的方法。
+
+```javascript
+function Father(name, age) {
+  this.name = name;
+  this.age = age;
+}
+// Father 原型上添加一个方法
+Father.prototype.sayHi = function () {
+  console.log('hi');
+};
+
+function Son(name, age, sex) {
+  // 修改 Father 的this 指向为当前实例，并传递参数
+  Father.call(this, name, age);
+  this.sex = sex;
+}
+
+const me = new Son('yuanyxh', 22, '男');
+// 原型链上不存在 sayHi 方法，所以报错
+me.sayHi(); // TypeError
+
+// 检测实例的原型链上是否存在对应原型
+console.log(me instanceof Father); // false
+console.log(me.__proto__.__proto__ === Father.prototype); // false
+```
+
+### 组合继承
+
+针对盗用构造函数的缺点，又衍生出了组合继承：子构造函数的原型被赋值为父构造函数的实例，这样子构造函数的实例就能够访问父构造函数的原型，再通过盗用构造函数实现引用值隔离与参数传递
+
+```javascript
+function Father(name, age) {
+  this.name = name;
+  this.age = age;
+}
+// Father 原型添加 sayHi 方法
+Father.prototype.sayHi = function () {
+  console.log('hi');
+};
+
+function Son(name, age, sex) {
+  // 修改 Father this 指向并传参
+  Father.call(this, name, age);
+  this.sex = sex;
+}
+// 覆盖原型
+Son.prototype = new Father();
+
+const me = new Son('yuanyxh', 22, '男');
+me.sayHi(); // hi
+
+// 检测实例的原型链上是否存在对应原型
+console.log(me instanceof Father); // true
+console.log(me.__proto__.__proto__ === Father.prototype); // true
+```
+
+这样就实现了子构造函数原型与父构造函数原型的链接，还实现了引用值隔离和参数传递，但组合继承依旧存在瑕疵，我们将上述代码分解查看
+
+```javascript
+function Father(name, age) {
+  this.name = name;
+  this.age = age;
+}
+// Father 原型添加 sayHi 方法
+Father.prototype.sayHi = function () {
+  console.log('hi');
+};
+
+function Son(name, age, sex) {
+  // 修改 Father this 指向并传参
+  Father.call(this, name, age);
+  this.sex = sex;
+}
+// 创建 Father 实例
+const f = new Father();
+console.log(f); // { name: undefined, age: undefined }
+
+// 覆盖原型
+Son.prototype = f;
+```
+
+查看上述代码发现，构造出来的 `Father` 实例拥有两个属性，随后该实例被赋值为 `Son` 的原型对象，但我们是不希望原型上有多余属性的，可以使用 [寄生式组合继承](#寄生式组合继承) 解决
+
+### 原型式继承与寄生式继承
+
+这两种继承方式息息相关，寄生式继承可以看作原型式继承的加强版。
+
+原型式继承：将一个临时构造函数的原型赋值为指定对象，返回这个临时构造函数的实例，这个实例能够使用指定对象的数据，又能添加属于自己的数据，实现了信息共享
+
+```javascript
+function object(o) {
+  // 临时构造函数
+  function F() {}
+  // 替换原型
+  F.prototype = o;
+  // 返回临时构造函数的实例
+  return new F();
+}
+
+const person = {
+  name: 'yuanyxh',
+  age: 22
+};
+
+const n = object(person);
+n.sex = '男';
+
+console.log(n.name); // yuanyxh
+console.log(n.__proto__ === person); // true
+```
+
+寄生式继承：即对原型式继承得到的实例进行增强
+
+```javascript
+function createAnother(original) {
+  // 利用原型式继承得到新实例
+  // 新实例 __proto__ 指向 original
+  let clone = object(original);
+  // 添加方法
+  clone.sayHi = function () {
+    console.log('hi');
+  };
+  // 返回
+  return clone;
+}
+```
+
+`ES5` 中的 `Object.create` 对原型式继承与寄生式继承进行了实现，该方法接收一个需要共享信息的对象，以及一个可选的扩展对象。
+
+### 寄生式组合继承
+
+关于组合继承，我们知道它虽然解决了很多继承相关的问题，但也有一点小瑕疵，接下来我们通过寄生式组合继承来解决。
+
+寄生式组合继承：通过寄生式继承直接复制父构造函数的原型并扩展，再使用盗用构造函数进行引用值隔离与参数传递
+
+```javascript
+function Father(name, age) {
+  this.name = name;
+  this.age = age;
+}
+Father.prototype.sayHi = function () {
+  console.log('hi');
+};
+
+function Son(name, age, sex) {
+  // 修改 Father this 指向并传参
+  Father.call(this, name, age);
+  this.sex = sex;
+}
+
+Son.prototype = Object.create(Father.prototype, { constructor: Son });
+```
+
+这样，我们不必通过创建父构造函数的实例来替换子构造函数的原型，而是直接复制父构造函数的原型，避免了子构造函数原型上多余的属性。
+
+## 结语
+
+`JavaScript` 的原型与原型继承虽然提供了强大的扩展能力，但不应该滥用，不建议扩展原生对象的原型，思考一下：如果在项目的某个位置，某个代码修改了原生对象的一些功能，而你并不知晓，当你使用这个对象出现 `bug` 时是多么痛啊:sob:。
+
+本文介绍了 `JavaScript` 中的原型与原型继承相关概念，内容有误请指出，内容有缺请补充。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN][MDN#JavaScript]
+
+[^构造函数]: `JavaScript` 中的构造函数并不是特殊的函数，任何以 `new` 调用的函数都可以看作是构造函数，构造函数应以大写字母开头。
+
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/

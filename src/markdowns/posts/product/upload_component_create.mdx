@@ -1,0 +1,320 @@
+---
+title: upload 组件封装
+date: 2023-05-01 20:26:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/d7b22a66f53f4d0a.png
+description: 封装一个简易的文件上传组件
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+前一段时间手写了一个文件上传的功能，也研究了 `HTML5` 的拖拽 Api，这次想把他们合二为一，写一个 `Upload` 组件，封装组件的思路来自 `ant design` 和 `element plus` 的 `Upload` 组件，基本就是照着官网示例结合自己的想法一步一步实现的，不涉及大文件上传等功能。
+
+使用框架是 React，组件更多的是接口层面的封装，没有对结构进行过多的处理。
+
+## 触发媒介
+
+对于只涉及本地文件上传的功能，想要获取本地文件，兼容性较好的有 `<input type="file" />`、HTML5 的拖拽和 `clipboardEvent`，这三种方式通过特定的动作获取本地文件，其中 `clipboardEvent` 要在特定区域触发比较困难，所以这里使用 `<input type="file" />` 和拖拽实现。
+
+如果想要使用 `clipboardEvent` 获取本地文件，个人的思路是使用一个 `<input type="text">` 或其他可编辑的元素，侦听它的 `paste` 事件，当点击上传元素时使可编辑元素获取焦点，此时粘贴就能触发可编辑元素的 `paste` 事件获取文件数据，为了使可编辑元素获取焦点，不能使用 `display: none` 和 `visibility: hidden` 隐藏元素。
+
+`<input type="file" />` 是常见的获取本地文件的方式，通过点击能够调起系统文件选择框，但是它默认的结构样式可能不满足开发需求，所以一般是通过 `display: none` 隐藏它，然后手动触发。
+
+```tsx
+<div onClick={triggerUpload}>
+    <input type="file" style={{ display: 'none' }} ref={fileRef} />
+</div>
+
+/** 触发点击上传 */
+const triggerUpload: React.MouseEventHandler<HTMLDivElement> = (e) => {
+  e.stopPropagation();
+  fileRef.current?.click();
+};
+```
+
+`HTML5` 的拖拽 Api 允许我们从系统中拖拽文件至 web 网页，只需要给元素添加 `dragover` 和 `drop` 事件处理程序。
+
+```tsx
+<div onDragOver={(e) => e.preventDefault()} onDrop={dropFile}></div>
+```
+
+## 上传行为统一
+
+对于 `<input type="file" />` 而言，浏览器提供了 `accept`、`disabled`、`multiple` 和 `capture` 属性可以控制选择文件时的行为，但拖拽 Api 并没有提供这样的接口，所以我们需要在上传前统一默认的行为。
+
+```tsx
+/** 处理点击上传后的文件 */
+const queryFile: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+  const files = e.target.files;
+
+  if (!files || !files.length) return;
+
+  beforeUploadHandler(files);
+
+  e.target.value = '';
+};
+
+const dropFile: React.DragEventHandler<HTMLDivElement> = function (e) {
+  stopPropagation(e);
+
+  const { files } = e.dataTransfer;
+
+  if (disabled || !files.length) return;
+
+  if (!multiple && files.length > 1)
+    return onMessage(Message.Overflow, files, clearFiles);
+
+  beforeUploadHandler(files);
+};
+```
+
+如果当前上传组件已被禁用（用户传入 `disabled` 为 `true`），则元素的 `drop` 事件不能进入下一步；如果用户没有启用多文件上传功能（`multiple` 为 `false`），则需要判断拖拽的文件是否大于 1，是则返回并通知用户（`onMessage`，可传入的回调，在文件超出限制、文件上传成功、文件上传失败时被调用）。
+
+`ant design` 的 `Upload` 组件对于不在 `accept` 属性中的文件类型是不会响应拖拽事件的，但个人目前不知道使用什么方式处理。
+
+`capture` 属性对于拖拽而言不需要处理，可以跳过。
+
+## 上传控制
+
+在文件上传前，可能希望对文件的类型、大小等进行检查，为此提供了 `limit` 和 `beforeUpload` 属性，`limit` 限制最大上传文件数，`beforeUpload` 传入当前待上传的 `File`，返回 `false` 可取消上传。
+
+```tsx
+const beforeUploadHandler = async function beforeUploadHandler(
+  files: FileList
+) {
+  if (isNumber(limit) && limit < files.length + value.length)
+    return onMessage(Message.Overflow, files, clearFiles);
+
+  forEach(files, async function (file) {
+    const pause =
+      beforeUpload && (await beforeUpload(file, strictInspection));
+
+    if (pause === false) return;
+
+    const id = generateId();
+
+    const curr: UploadFile = {
+      id,
+      status: 'loading',
+      file: file,
+      name: file.name,
+      percent: 0
+    };
+
+    change((prev) => [...prev, curr]);
+
+    uploadHandler(curr);
+  });
+};
+```
+
+调用 `beforeUpload` 时，除了传入当前待上传的 `File`，还传入了一个严格检查文件类型的函数 `strictInspection`，它的实现如下：
+
+```tsx
+/** 获取最大字节长度 */
+function getLength(types: string[]) {
+  return types.reduce((prev, curr) => {
+    const len = curr.split('0x')[1].length || 0;
+    return len > prev ? len : prev;
+  }, 0);
+}
+
+/** 读取文件数据 */
+function readAsArrayBuffer(blob: Blob) {
+  return new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+/**
+ *
+ * @description 严格检查文件类型
+ * @param files filelist 实例
+ * @param types 文件头，16 进制数据，如 jpeg 的文件头数据为 0xFFD8FF
+ * @param cb 执行回调
+ */
+async function strictInspection(file: File, types: string[]) {
+  const maxLength = getLength(types);
+
+  const buffer = await readAsArrayBuffer(file.slice(0, maxLength));
+
+  const hex = new Uint8Array(buffer).reduce(
+    (prev, curr) => (prev += curr.toString(16)),
+    '0x'
+  );
+
+  return types.some(
+    (type) =>
+      type === hex.slice(0, type.length) ||
+      type.toLowerCase() === hex.slice(0, type.length)
+  );
+}
+```
+
+主要逻辑是传入文件和允许的文件头（同一类型的文件都有固定的 meta 数据，表示当前文件类型等信息），读取文件的 meta 数据进行对比，返回一个 `boolean` 值表示是否通过检查。
+
+## 状态绑定
+
+之前 [上传控制](#上传控制) 的代码片段中还存在 `change((prev) => [...prev, curr]);` 这样的代码，对于组件而言，我们需要绑定上传的文件状态，因此需要使用者传入一个 `value` 数组和改变这个数组的 `change` 函数；由于需要考虑文件的上传状态（上传中、上传成功、上传失败）、上传进度和上传失败后的重传功能，`value` 数组元素的数据格式定义为以下格式：
+
+- `id`：文件 id，上传时自动生成，上传成功后可替换
+- `name`：文件名称
+- `status`：当前文件状态，`loading` 上传中、`success` 上传成功、`error` 上传失败
+- `percent`：上传进度
+- `file`：可选的，指向当前文件的 `File` 实例，在 `status` 为 `loading` 或 `error` 时存在，可用于上传失败后重传
+- `url`：可选的，上传成功后的文件 URL
+- `size`：可选的，文件大小
+- `type`：可选的，文件 MIME 类型
+
+通过这些数据用户可自定义文件状态、文件进度，以及文件重传功能。
+
+## 上传逻辑
+
+组件默认提供了一个 `uploader` 函数用于上传，同时也支持用户传入 `request` 自定义上传逻辑：
+
+```tsx
+/** 默认上传动作 */
+const uploader: Request = function uploader(
+  file,
+  { headers, data, onUploadProgress }
+) {
+  const formdata = new FormData();
+
+  forEach(data, (value, key) => formdata.append(key, value));
+
+  formdata.append(name, file, file.name);
+
+  return request({
+    url: action,
+    method,
+    headers,
+    data: formdata,
+    onUploadProgress
+  });
+};
+
+// 优先使用用户传入的上传函数
+const http = useMemo(
+  () => (isFun(customRequest) ? customRequest : uploader),
+  [customRequest]
+);
+```
+
+对于上传接口，提供了几个可选的属性，分别是 `method`、`headers` 和 `data`，分别对应请求方式（默认 `post`）、请求头和请求额外参数，同时要求用户必须传入一个 `transformResponse` 函数用于转换接口响应数据，以统一状态格式：
+
+```tsx
+/** 文件上传处理 */
+const uploadHandler = async function uploadHandler(curr: UploadFile) {
+  const { id, file } = curr;
+
+  if (!file)
+    throw Error(
+      'Please check the file, if the file exists, go to the https://github.com/yuanyxh/illustrate/issues feedback'
+    );
+
+  try {
+    const response = transformResponse(
+      await http(file, {
+        headers,
+        data,
+        onUploadProgress(e) {
+          const progress = e.lengthComputable
+            ? Math.floor((e.loaded / e.total) * 100)
+            : 0;
+
+          change((prev) => {
+            const index = prev.findIndex((file) => file.id === id);
+
+            if (index < 0) return prev;
+
+            prev[index].percent = progress;
+
+            return [...prev];
+          });
+        }
+      }),
+      curr
+    );
+
+    change((prev) => {
+      const index = prev.findIndex((file) => file.id === id);
+
+      if (index < 0) return prev;
+
+      prev[index] = {
+        ...response,
+        name: response.name || file.name,
+        id: response.id || curr.id,
+        status: 'done',
+        percent: 100
+      };
+
+      return [...prev];
+    });
+
+    onMessage(Message.Success, file, clearFiles);
+  } catch (err) {
+    change((prev) => {
+      const index = prev.findIndex((file) => file.id === id);
+
+      if (index < 0) return prev;
+
+      prev[index] = { ...prev[index], percent: 0, status: 'error', file };
+
+      return [...prev];
+    });
+
+    console.error(err);
+    onMessage(Message.Fail, file, clearFiles);
+  }
+};
+```
+
+## 重传
+
+用户有时可能希望在文件上传失败时进行重传，如果从头开始操作用户的体验会降低，所以组件提供了一个重传的方法并暴露了出来：
+
+```tsx
+useImperativeHandle(
+  ref,
+  () => {
+    return {
+      retry(id: string) {
+        change((prev) => {
+          const index = prev.findIndex((file) => file.id === id);
+
+          if (index < 0) return prev;
+
+          const curr = prev[index];
+
+          curr.status = 'loading';
+
+          uploadHandler(curr);
+
+          return [...prev];
+        });
+      }
+    };
+  },
+  []
+);
+```
+
+这个方法接收一个文件 `id`，在内部查找到对应的文件后进行上传，重传会跳过上传前的文件处理。
+
+这里写了一个简单的示例：[Upload 使用示例]
+
+## 参考资料
+
+- [JavaScript 如何检测文件的类型？]
+
+[Upload 使用示例]: https://github.com/yuanyxh/illustrate/blob/master/src/pages/UploadFile/UploadFile.tsx
+[JavaScript 如何检测文件的类型？]: https://juejin.cn/post/6971935704938971173
+

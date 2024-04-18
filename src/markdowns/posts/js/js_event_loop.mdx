@@ -1,0 +1,229 @@
+---
+title: JavaScript 概念 - 事件循环
+date: 2022-11-19 22:09:49
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/3440a278bbdf21bc.gif
+description: 从规范出发，使用伪代码模拟 JavaScript 事件循环机制，并详细解读 JavaScript 事件循环的重要部分。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+你可能会疑惑，关于事件循环的文章在网上已经有很多了，为什么还要写这样一篇专门解读它的文章呢？
+
+其实我本来也以为在看了网上诸多这类文章后对于事件循环的机制已经了然于胸了，但最近一次关于事件循环的讨论狠狠的打了我的脸，让我催生出了写这篇文章的想法，同时希望看到这篇文章的读者们能有所收获。
+
+## 概念
+
+`JavaScript` 是一门单线程语言，这是由最初的环境（浏览器）决定的，单线程避免了多线程竞态的问题（如：在同一时刻修改同一个 DOM 元素），但同时也带来了新的问题：单线程意味着一个网页的逻辑都由一个线程调度。
+
+如果网页的逻辑都是同步的，这没什么问题，但那是不可能的，同步执行代码会导致页面长时间无法响应，这对于用户而言是难以接受的，但是即使引入了异步任务的概念，任务的完成时间也是不确定的，那浏览器是如何合理调度任务的呢，这就是本文的主角：事件循环。
+
+## 事件循环
+
+关于事件循环，作者并不想描述太多概念性的东西，而是带领大家依据一步一步编写符合规范的伪代码，这样能够更加的深入理解事件循环的执行机制，规范地址：[JavaScript 事件循环规范]。
+
+首先，事件循环，我们可以理解为一个无限循环，那么对应的代码如下：
+
+```javascript
+// 包裹在函数内只是为了明确代码的语义
+function eventLoop() {
+  while (true) {}
+}
+```
+
+根据规范定义，如果事件循环存在，它必须不断的执行以下步骤：
+
+1、让 oldestTask 和 taskStartTime 为 null
+
+```javascript
+function eventLoop() {
+  while (true) {
+    let oldestTask /* 已经出队的任务 */ = null,
+      taskStartTime /* 任务开始事件 */ = null;
+  }
+}
+```
+
+2、如果事件循环有一个包含至少一个可运行任务的任务队列，那么：
+
+1. 让 taskQueue 成为这样一个任务队列，以实现定义的方式选择（这里也表明了任务队列可能不止一个，但在事件循环中运行的只有一个）
+2. 将 taskStartTime 设置为不安全的共享当前时间
+3. 将 oldestTask 设置为 taskQueue 中的第一个可运行任务， 并将其从 taskQueue 中移除
+4. 将事件循环的当前运行任务设置为 oldestTask
+5. 执行 oldestTask 的 setps
+6. 将事件循环的当前运行任务设置回 null
+
+```javascript
+function eventLoop() {
+  while (true) {
+    let oldestTask /* 已经出队的任务 */ = null,
+      taskStartTime /* 任务开始事件 */ = null;
+
+    // 新增--------------------------------------------
+
+    let taskQueue /* 任务队列 */ = null,
+      currentlyRunningTask /* 当前运行任务 */ = null;
+
+    // 选择任务队列，注意：selectQueue 只是一个假设函数
+    if ((taskQueue = selectQueue())) {
+      // 设置任务开始时间
+      taskStartTime = Date.now();
+
+      // 任务出队
+      oldestTask = taskQueue.shift();
+
+      // 当前运行任务设置为 oldestTask
+      currentlyRunningTask = oldestTask;
+
+      // 执行任务步骤
+      oldestTask.setps();
+
+      // 重置当前运行任务
+      currentlyRunningTask = null;
+    }
+  }
+}
+```
+
+这一步是在检查任务队列中是否有（宏）任务待处理，如果有则执行相关步骤。注意：在这一步中只会取出一个（宏）任务并执行。
+
+任务在计算机形式上表现为一个数据结构，拥有许多属性，其中 `setps` 为完成这个任务所需执行的一系列步骤，这里我们理解为一系列的函数调用。
+
+3、执行微任务检查点
+
+1. 如果事件循环执行微任务检查点为真，则返回
+2. 将事件循环的执行微任务检查点设置为 true
+3. 当事件循环的微任务队列不为空时：
+   1. 让 oldestMicrotask 成为 从事件循环的微任务队列中出队的结果
+   2. 将事件循环的当前运行任务设置为 oldestMicrotask
+   3. 运行 oldestMicrotask
+   4. 将事件循环的当前运行任务设置回 null
+4. 略。。。
+5. 略。。。
+6. 略。。。
+7. 将事件循环的执行微任务检查点设置为 false
+
+```javascript
+function eventLoop() {
+  while (true) {
+    let oldestTask /* 已经出队的任务 */ = null,
+      taskStartTime /* 任务开始事件 */ = null;
+
+    let taskQueue /* 任务队列 */ = null,
+      currentlyRunningTask /* 当前运行任务 */ = null;
+
+    // 选择任务队列，注意：selectQueue 只是一个假设函数
+    if ((taskQueue = selectQueue())) {
+      // 设置任务开始时间
+      taskStartTime = Date.now();
+
+      // 任务出队
+      oldestTask = taskQueue.shift();
+
+      // 当前运行任务设置为 oldestTask
+      currentlyRunningTask = oldestTask;
+
+      // 执行任务步骤
+      oldestTask.setps();
+
+      // 重置当前运行任务
+      currentlyRunningTask = null;
+    }
+
+    // 新增--------------------------------------------
+
+    // 执行微任务检查点
+    let hasRuningMicroTaskOpportunity /* 开关 */ = false;
+    (function () {
+      // 如果微任务队列正在执行则返回
+      if (hasRuningMicroTaskOpportunity) return;
+
+      // 开关设置为 true，防止重入调用
+      hasRuningMicroTaskOpportunity = true;
+
+      let oldestMicrotask /* 已出队微任务 */;
+
+      while ((oldestMicrotask = microTaskQueue.shift())) {
+        // 设置当前运行任务为 oldestMicrotask
+        currentlyRunningTask = oldestMicrotask;
+
+        // 执行微任务
+        oldestMicrotask.setps();
+
+        // 重置当前运行任务
+        currentlyRunningTask = null;
+      }
+
+      // ...
+
+      // 重置开关，表示微任务队列消耗完毕
+      hasRuningMicroTaskOpportunity = false;
+    })();
+  }
+}
+```
+
+在这一步中我们执行了一个 `IIFE`，并对开关变量进行了检查，如果开关变量为 `true`，则表明微任务正在执行，直接返回，防止 [重入调用]，否则不断消耗微任务队列直到队列为空。注意：在微任务队列中的任务都会在本次循环中被执行，即便是在其他任务中添加的微任务。
+
+```javascript
+Promise.resolve().then(() => {
+  Promise.resolve().then(() => console.log(2));
+});
+```
+
+上述代码中，两个微任务会在同一次循环内被执行，过程大概如下：
+
+1. 没有需要执行的（宏）任务，下一步
+2. 检查开关变量，可以执行微任务
+3. 微任务队列中存在一个微任务，取出执行
+4. 执行过程中向微任务队列添加一个微任务
+5. 微任务队列中还有一个微任务，取出执行
+6. 微任务队列消耗完毕
+7. 执行其他代码
+8. 下一次循环
+
+第三步微任务相关的逻辑执行完后，第 4、5、6 的步骤对我们理解事件循环并没有帮助，所以不会详述。
+
+第 7 步特定于窗口事件循环，所谓窗口事件循环，可以理解为引擎需要与浏览器窗口交互，在这一步中，引擎会执行更新渲染等逻辑。
+
+第 8 步同样特定于窗口事件循环，在满足以下条件时，事件循环会在时间间隔内运行，间隔上限为 50ms，未来 50ms 的上限是为了确保在人类感知的阈值内对用户输入的响应
+
+1. 这是一个窗口事件循环
+2. 此事件循环的 任务队列中没有文档完全处于活动状态的任务
+3. 这个事件循环的微任务队列是空的
+4. hasARenderingOpportunity 为假
+
+看到这里，其实有关事件循环需要我们理解的地方已经足够了，关于事件循环的执行机制，可以简述为
+
+1. 初始化数据
+2. 执行（宏）任务（如果存在）
+3. 消耗微任务队列
+4. 更新渲染
+5. 休眠（没有其他任务时）
+
+但是等等，从代码执行顺序来说，（宏）任务是比微任务更早执行的，那么为什么经常说微任务永远比（宏）任务先执行呢？下列代码的输出结果也是微任务先输出
+
+```javascript
+setTimeout(() => {
+  console.log('setTimeout');
+}, 0);
+
+Promise.resolve().then(() => console.log('Promise'));
+```
+
+其实是因为我们遗漏了一个重要的（宏）任务，那就是整段代码的执行，这一段程序其实也是一个任务，这个任务添加了一个（宏）任务和一个微任务，这个新入队的（宏）任务在下一个循环中才会执行，而微任务却在本次循环中就已经被执行了。
+
+## 结语
+
+理解 `JavaScript` 事件循环对理解代码的执行顺序是非常有帮助的，而想要深入理解，依据规范编写相同逻辑的伪代码则不失为一个好办法。
+
+## 参考资料
+
+- [JavaScript 事件循环规范]
+
+[JavaScript 事件循环规范]: https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
+[重入调用]: https://baike.baidu.com/item/%E5%8F%AF%E9%87%8D%E5%85%A5%E4%BB%A3%E7%A0%81/1955592

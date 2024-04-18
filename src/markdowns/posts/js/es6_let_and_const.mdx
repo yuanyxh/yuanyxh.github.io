@@ -1,0 +1,208 @@
+---
+title: ES6 新特性详解 - let/const
+date: 2022-10-22 13:00:22
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/b6c97384245502d8.jpg
+description: 详解 JavaScript ES6 新的定义变量的方式
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## let/const
+
+`let/const` 是 `ES6` 中提出的新的用于定义变量的方式，与 `var` 相比具有以下特性
+
+### 全局作用域下声明的变量不会成为 window 对象的属性/方法
+
+```javascript
+// 全局作用域下 var 声明的变量会自动成为 window 对象的属性/方法
+var my_github = 'github.com/yuanyxh';
+console.log(window.my_github); // github.com/yuanyxh
+
+// 全局作用域下 let/const 声明的变量不会成为 window 对象的属性/方法
+let my_name = 'yuanyxh';
+console.log(window.my_name); // undefined
+
+const MY_BLOG = 'yuanyxh.com';
+console.log(window.MY_BLOG); // undefined
+```
+
+### 块作用域
+
+`let/const` 具有块作用域，即变量作用域被限制在当前代码块，这为什么是重要的，我们看一个经典示例
+
+```javascript
+// var
+for (var i = 0; i < 5; i++) {
+  setTimeout(function () {
+    console.log(i); // 5 5 5 5 5
+  }, 0);
+}
+
+// let
+for (let j = 0; j < 5; j++) {
+  setTimeout(function () {
+    console.log(j); // 0 1 2 3 4
+  }, 0);
+}
+```
+
+可以看到，使用 `let` 定义的变量输出似乎符合预期效果，使用 `var` 定义的变量则出了问题，为什么？
+
+`JS` 引擎在内部会为每次循环迭代声明新的迭代变量，每个循环引用的都是不同的变量实例， 但因为 `var` 定义的变量没有块作用域，变量渗透到了循环体外，每个 `setTimeout` 引用的都是同一个循环体外的变量 `i`，`i` 最后一次的值是 5，不满足循环要求退出了循环，所以此时循环体外的 `i` 值为 5，执行顺序大致如下
+
+```javascript
+// 第一次循环 循环体内外 i 值为 0
+// 添加一个异步任务
+
+// 第二次循环 循环体内外 i 值为 1
+// 添加一个异步任务
+
+// 第三次循环 循环体内外 i 值为 2
+// 添加一个异步任务
+
+// 第四次循环 循环体内外 i 值为 3
+// 添加一个异步任务
+
+// 第五次循环 循环体内外 i 值为 4
+// 添加一个异步任务
+
+// 循环结束 循环体内外 i 值为 5
+
+// 消耗异步任务队列 输出 i
+```
+
+为考虑浏览器兼容性，很多编译转换工具都会将 `let/const` 声明编译为 `var` 声明，那怎么解决上述问题呢，如下
+
+```javascript
+// IIFE and closure
+for (var i = 0; i < 5; i++) {
+  (function (j) {
+    setTimeout(function () {
+      console.log(j);
+    }, 0);
+  })(i);
+}
+
+// or
+for (var i = 0; i < 5; i++) {
+  try {
+    throw i;
+  } catch (num) {
+    setTimeout(function () {
+      console.log(num);
+    }, 0);
+  }
+}
+```
+
+第一处代码利用了函数 `立即调用表达式(IIFE)`，将迭代变量传递给了 `IIFE` 的形参 `j`，`var` 是有函数作用域的，所以每个 `setTimeout` 引用的都是不同的变量实例。
+
+第二处代码利用了 `try ... catch` 中的 `catch` 块具有块作用域的特点实现了相同效果。
+
+### 暂时性死区
+
+`var` 有声明提升[^声明提升]，而 `let/const` 声明的变量不允许在词法声明前使用，即 `暂时性死区`[^暂时性死区]，如下
+
+```javascript
+// var
+// 允许，但强烈不建议
+console.log(j); // undefined
+var j = 0;
+
+// let
+// 不允许
+console.log(i); // ReferenceError
+let i = 0;
+```
+
+可以看到 `j` 的声明被提升到了顶部，但赋值操作未被提升，所以打印结果为 `undefined`，相当于
+
+```javascript
+var j;
+console.log(j); // undefined
+j = 0;
+```
+
+`let/const` 声明的变量本质上也存在声明提升，但 `JS` 引擎对其进行了词法检查，不允许 `let/const` 定义的变量在词法声明前使用。
+
+### 同一作用域不允许重复声明
+
+`let/const` 声明的变量在同一作用域内不允许重复声明
+
+```javascript
+// var
+// 允许，但不推荐
+var i = 0;
+var i = 10;
+
+// let
+// 不允许
+let j = 0;
+let j = 10; // SyntaxError
+
+// compose
+// 不允许
+var k = 0;
+let k = 10; // SyntaxError
+```
+
+另外，`var` 声明的变量，在同一作用域内重复声明且后续声明未赋值时，后面的变量声明会使用前面变量声明的值
+
+```javascript
+// var
+var i = 10;
+var i;
+
+console.log(i); // 10
+```
+
+### let 与 const 的区别
+
+- `let` 定义的变量，变量值允许改变
+- `const` 定义的变量，变量值不允许改变，且声明变量的同时必须进行初始化
+
+```javascript
+// let
+let i = 0;
+i = 10;
+
+// const
+const TEST = 0;
+TEST = 10; // TypeError
+```
+
+`const` 定义的变量不能改变的是变量对数据的引用，但数据本身是可以改变的
+
+```javascript
+// const
+const obj = { name: 'yuanyxh', blog: 'yuanyxh.com' };
+obj.name = 'jack';
+console.log(obj); // { name: 'jack', blog: 'yuanyxh.com' }
+```
+
+### 最佳实践
+
+以下给出三种变量声明方式的最佳实践，摘自阅读的书籍与个人理解
+
+- 优先使用 `let/const`
+- 对于始终不变的数据优先使用 `const`
+- 对于尚未确定是否会改变的数据优先使用 `const`，以后改变数据时代码编辑工具会报语法错误
+- 预先声明所有将要使用的变量
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [ECMAScript 规范]
+- [ECMAScript 特性兼容表]
+- [ECMAScript 规范部分译文]
+
+[^声明提升]: 声明提升：指在进入新的执行上下文时，JavaScript 引擎会先将当前执行上下文中的所有 `变量/函数` 声明提升到顶部并预先分配内存。变量只提升声明，不提升赋值；函数声明会被整体提升。
+[^暂时性死区]: 暂时性死区：指当前作用域开始到 `let/const` 变量词法声明之间的区域
+
+[ECMAScript 规范]: https://www.ecma-international.org/publications-and-standards/standards/ecma-262/
+[ECMAScript 特性兼容表]: https://kangax.github.io/compat-table/es6/
+[ECMAScript 规范部分译文]: https://ecma262.docschina.org/#sec-overview

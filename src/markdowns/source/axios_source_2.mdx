@@ -1,0 +1,247 @@
+---
+title: 学习 axios 源码（二）
+date: 2023-03-14 16:22:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/1dbf569c31dd90e6.png
+description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## axios 源码学习系列
+
+- [axios 源码学习 - axios 的初始化][axios_源码学习(一)]
+
+上次的文章说到，我们一直使用的 `axios` 其实是经过一系列操作得来的一个函数，调用这个函数时默认调用的是 `Axios` 原型的 `request` 方法，这篇文章我们就来看看它内部的请求流程。
+
+## request 请求流程
+
+`request` 方法主要是与平台无关的代码，用于转换验证数据等操作，它的签名如下：
+
+```ts
+(configOrUrl: string | object, config?: object) => Promise;
+```
+
+### 区分配置
+
+我们可以传入一到两个参数，第一个参数可以是 `url` 字符串，也可以是 `config` 配置对象；第二个可选参数必须是一个 `config` 配置对象，在 `request` 方法的开始对它们做了区分：
+
+```js
+// lib\core\Axios.js
+if (typeof configOrUrl === 'string') {
+  config = config || {};
+  config.url = configOrUrl;
+} else {
+  config = configOrUrl || {};
+}
+```
+
+### 合并校验数据
+
+随后整合了默认配置与传入配置，并对数据一些数据进行了校验：
+
+`this.defaults` 是初始化 `axios` 时传入的配置。
+
+```js
+// lib\core\Axios.js
+// 合并配置
+config = mergeConfig(this.defaults, config);
+
+// 校验数据
+const { transitional, paramsSerializer, headers } = config;
+
+if (transitional !== undefined) {
+  validator.assertOptions(
+    transitional,
+    {
+      silentJSONParsing: validators.transitional(validators.boolean),
+      forcedJSONParsing: validators.transitional(validators.boolean),
+      clarifyTimeoutError: validators.transitional(validators.boolean)
+    },
+    false
+  );
+}
+
+if (paramsSerializer !== undefined) {
+  validator.assertOptions(
+    paramsSerializer,
+    {
+      encode: validators.function,
+      serialize: validators.function
+    },
+    true
+  );
+}
+```
+
+`validator` 定义在 `lib\helpers\validator.js` 中，通过 `validator` 的 `assertOptions` 方法校验数据格式；这个方法的第一个参数是需要校验的对象，第二个参数表示需要校验对象的哪些属性并指定用于校验的函数，第三个参数表示是否允许存在除校验属性外的其他属性。
+
+`transitional` 来自 `lib\defaults\transitional.js`，在初始化时被整合进了 `defaults` 属性中，它的数据如下：
+
+```js
+// lib\defaults\transitional.js
+export default {
+  silentJSONParsing: true, // JSON 解析配置
+  forcedJSONParsing: true, // JSON 解析配置
+  clarifyTimeoutError: false // 请求异常时，是否给出超时异常
+};
+```
+
+`paramsSerializer` 是我们可传入的配置，支持我们自定义 `params` 参数的序列化操作。
+
+### 请求头配置
+
+做完这些后对请求头进行了操作，代码如下：
+
+```js
+// lib\core\Axios.js
+config.method = (config.method || this.defaults.method || 'get').toLowerCase();
+
+let contextHeaders;
+
+contextHeaders = headers && utils.merge(headers.common, headers[config.method]);
+
+contextHeaders &&
+  utils.forEach(
+    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
+    (method) => {
+      delete headers[method];
+    }
+  );
+
+config.headers = AxiosHeaders.concat(contextHeaders, headers);
+```
+
+首先是设置请求方法，如果不存在则使用默认的 `get` 请求。
+
+然后合并默认的请求头配置到 `contextHeaders`，并删除了多余数据；最后调用 `AxiosHeaders` 的 `concat` 方法合并成最终的 `headers`；`AxiosHeaders` 定义在 `lib\core\AxiosHeaders.js`，里面有很多关于请求头的方法，我们这里不讲解，只需要知道使用到的方法做了什么。
+
+### 拦截器配置
+
+之后就是我们经常使用的拦截器相关的配置了，这部分代码如下：
+
+```js
+// lib\core\Axios.js
+const requestInterceptorChain = [];
+let synchronousRequestInterceptors = true;
+this.interceptors.request.forEach(
+  function unshiftRequestInterceptors(interceptor) {
+    if (
+      typeof interceptor.runWhen === 'function' &&
+      interceptor.runWhen(config) === false
+    ) {
+      return;
+    }
+
+    synchronousRequestInterceptors =
+      synchronousRequestInterceptors && interceptor.synchronous;
+
+    requestInterceptorChain.unshift(
+      interceptor.fulfilled,
+      interceptor.rejected
+    );
+  }
+);
+
+const responseInterceptorChain = [];
+this.interceptors.response.forEach(
+  function pushResponseInterceptors(interceptor) {
+    responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+  }
+);
+```
+
+可以看到就是将请求和响应拦截器中的数据取出存到了对应的数组里，但是我们会发现在取出请求拦截器的操作中还做了一些判断，主要是判断每个请求拦截器的 `runWhen` 和 `synchronous` 属性。
+
+在上一篇文章中我们知道，在注册请求和响应拦截器时除了 `onFulfilled` 和 `onRejected` 回调还可以传入第三个参数，是个配置对象，它有两个属性， `runWhen` 和 `synchronous`。
+
+- `runWhen` 函数检查我们的请求配置，如果返回了 `false` 则不会将对应的请求拦截器添加至数组中。
+- `synchronous` 属性指示是否同步调用请求拦截器。
+
+需要注意的是只要有一个拦截器的 `synchronous` 为 `false`，那么所有的拦截器都会以异步的形式调用。
+
+### 请求
+
+在 `request` 的方法最后是有关于请求的操作，主要是调用 `dispatchRequest` 过渡函数进行请求，本章暂时不讲解关于 `dispatchRequest` 过渡函数的内容。
+
+这一部分分为两个分支，分支的走向是根据上一步中请求拦截是否应该是同步执行的来进行判断。
+
+#### 异步执行请求拦截
+
+如果 `synchronousRequestInterceptors` 为 `false`，则表示需要异步执行请求拦截器，代码如下：
+
+```js
+// lib\core\Axios.js
+let promise;
+let i = 0;
+let len;
+
+if (!synchronousRequestInterceptors) {
+  const chain = [dispatchRequest.bind(this), undefined];
+  chain.unshift.apply(chain, requestInterceptorChain);
+  chain.push.apply(chain, responseInterceptorChain);
+  len = chain.length;
+
+  promise = Promise.resolve(config);
+
+  while (i < len) {
+    promise = promise.then(chain[i++], chain[i++]);
+  }
+
+  return promise;
+}
+```
+
+代码将请求的过渡函数 `dispatchRequest` 存入了一个数组 `chain`，并将请求拦截的数组添加至 `chain` 的前面，响应拦截的数组添加至 `chain` 的后面，随后创建了一个 `Promise`，不断的链式调用，最终它们会以下图的顺序被执行：
+
+<Image url='http://qkc148.bvimg.com/18470/f2c436db9d475ae8.png' width={558} height={601} alt='展示请求拦截的演示图片' />
+
+#### 同步执行请求拦截
+
+如果 `synchronousRequestInterceptors` 为 `true`，则同步执行请求拦截器，代码如下：
+
+```js
+// lib\core\Axios.js
+len = requestInterceptorChain.length;
+
+let newConfig = config;
+
+i = 0;
+
+while (i < len) {
+  const onFulfilled = requestInterceptorChain[i++];
+  const onRejected = requestInterceptorChain[i++];
+  try {
+    newConfig = onFulfilled(newConfig);
+  } catch (error) {
+    onRejected.call(this, error);
+    break;
+  }
+}
+
+try {
+  promise = dispatchRequest.call(this, newConfig);
+} catch (error) {
+  return Promise.reject(error);
+}
+
+i = 0;
+len = responseInterceptorChain.length;
+
+while (i < len) {
+  promise = promise.then(
+    responseInterceptorChain[i++],
+    responseInterceptorChain[i++]
+  );
+}
+
+return promise;
+```
+
+其实就是将请求拦截、请求过渡函数、响应拦截分开执行了。其中以同步的形式立即执行了请求拦截器，并调用 `dispatchRequest` 获取其返回的 `Promise`，然后将响应拦截器一一添加至这个 `Promise` 的 `then` 链中。
+
+--end
+
+[axios_源码学习(一)]: ./axios_源码学习(一).md

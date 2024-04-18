@@ -1,0 +1,310 @@
+---
+title: JavaScript 概念 - 闭包
+date: 2022-11-12 12:04:03
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/879ccc71f21e0fbd.jpg
+description: 详解 JavaScript 中的闭包，并了解为什么大量使用闭包会造成内存泄漏
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 概念
+
+**_闭包_**，是存在于 `JavaScript` 世界中的重要概念，我们无时不刻不在使用闭包，单从其名字来看，闭包可以理解为与外界隔离的闭环空间，也就意味着外部无法直接修改这个空间内的状态，当我们理解闭包以后也会发现的确如此。
+
+接下来我们就开始学习闭包的相关概念，并了解使用闭包的优点与缺点。
+
+## 创建闭包
+
+了解闭包是如何产生的有助于理解闭包，关于创建闭包，我们需要先知道几个概念：作用域，作用域链，以及变量的访问规则。
+
+作用域：可以简单理解为变量的作用范围，它规定了变量在何处能够被访问。
+
+作用域链：多个嵌套的作用域相互链接形成链条。
+
+变量访问：变量以变量名为标识符进行访问，访问一个变量时会首先在当前作用域内查找，未找到则沿作用域链向上查找，在顶层作用域依旧未找到则抛出错误，找到时则直接返回对应变量的值。
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+  }
+}
+```
+
+观察上述代码
+
+在上述代码中存在三个相互嵌套的作用域：全局作用域，`outside` 函数作用域与 `inside` 函数作用域，它们的关系如下图
+
+<Image url='http://qkc148.bvimg.com/18470/53a0d59308b01bb1.png' width={271} height={201} alt='作用域嵌套' />
+
+其中
+
+- 全局作用域内的变量在应用程序的生命周期内存在，且全局作用域总是位于作用域链的最顶层，根据变量的访问规则，全局作用域下的变量能够在任何地方访问
+- 函数作用域（或块作用域）内的变量在进入作用域时被创建，在代码执行完毕离开当前作用域以后被销毁。
+
+在上述代码中，全局作用域下存在变量 `global_` 与函数 `outside`，这是除了内置 `Api` 外全局作用域下能够访问的数据； `outside` 函数中存在变量 `outside_` 与函数 `inside`，同时由于变量访问规则与作用域链，`outside` 函数内还能够访问上层作用域的变量；`inside` 函数内所能访问的变量与 `outside` 类似。
+
+这三个相互嵌套的作用域形成的作用域链如下图
+
+<Image url='http://qkc148.bvimg.com/18470/ec4e0ff3c6eab643.png' width={429} height={271} alt='作用域链' />
+
+从这些规则中可以发现，外层作用域无法直接访问内层作用域内的变量，比如示例代码中，全局作用域下无法访问变量 `outside_` 和 函数 `inside` ，`outside` 函数内无法访问 `inside` 函数内的变量 `inside_`。
+
+如果我们需要使用这些变量，则意味着我们必须进入对应的作用域内，即调用对应的函数
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+  }
+
+  // 调用 inside
+  inside();
+}
+
+// 调用 outside
+outside();
+```
+
+用文字说明上述代码的执行，可以简述为
+
+1. 程序启动，收集全局数据 `global_`、`outside`
+2. 调用 `outside`
+3. 切换执行上下文，并将当前执行上下文推入执行栈中
+4. 收集当前上下文内数据 `outside_`、`inside` 并链接上层作用域
+5. 调用 `inside`
+6. 切换执行上下文，并将当前执行上下文推入执行栈中
+7. 收集当前上下文内数据 `inside_` 并链接上层作用域
+8. `inside` 执行完毕，作用域内变量被销毁，当前执行上下文从执行栈中弹出，上下文切换至 `outside`
+9. `outside` 执行完毕，作用域内变量被销毁，当前执行上下文从执行栈中弹出，上下文切换至全局上下文
+10. 代码执行完毕，退出线程
+
+同时，我们也能通过返回内部的变量值以供外部使用
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+  }
+
+  // 调用 inside
+  inside();
+
+  // 返回 outside_ 的值
+  return outside_;
+}
+
+// 调用 outside 并保存返回值
+let $$ = outside();
+
+console.log($$); // outside
+```
+
+既然能够返回变量，也意味着能够返回函数，毕竟 `JavaScript` 中函数是一等公民
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+
+    console.log(inside_);
+  }
+
+  // 返回 inside
+  return inside;
+}
+
+// 调用 outside 并保存返回值
+let $inside = outside();
+
+console.log($inside); // f ()
+
+// 调用返回的 inside 内部函数
+$inside(); // inside
+```
+
+等等，先让我们思考一下，如果将函数当作值返回给调用者，这个函数还能使用上层作用域的变量吗？
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+
+    // 引用 outside 作用域内变量
+    console.log(outside_);
+  }
+
+  // 返回 inside
+  return inside;
+}
+
+// 调用 outside 并保存返回值
+let $inside = outside();
+
+// 调用返回的 inside 内部函数
+$inside(); // 输出什么???
+```
+
+答案是可以，因为变量访问规则其实是基于词法作用域的，所谓词法作用域，可以理解为编码位置，代码编写在何处这些代码所能访问的数据就已经决定了，在何处能访问到这些代码也是如此，它们之间进行了词法绑定
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+  }
+
+  function inside2() {
+    let inside2_ = 'inside2';
+  }
+}
+```
+
+以上述代码为例，它们的词法作用域以及所能访问的作用域分别如下
+
+<Image url='http://qkc148.bvimg.com/18470/2faf8ca411c3f816.png' width={656} height={451} alt='词法作用域' />
+
+现在还有一个问题：函数执行完毕以后，它所在作用域内的变量应该被销毁了才对，为什么还能访问呢？
+
+我们知道，`JS` 是动态编译的语言，浏览器在真正执行 `JavaScript` 代码前会对代码进行预编译，编译阶段会经历 **_词法解析_**、**_语法解析_** 并最终生成可执行代码，这中间 `JS` 引擎会发现内部函数引用了外部函数的变量且内部函数的引用离开了其词法作用域，那么在代码执行的时候，外部函数的作用域在其代码执行完毕以后并不会被销毁，这样就形成了 **_闭包_**
+
+```javascript
+let global_ = 'global';
+
+function outside() {
+  let outside_ = 'outside';
+
+  function inside() {
+    let inside_ = 'inside';
+
+    // 引用 outside 作用域内变量
+    console.log(outside_);
+  }
+
+  // 返回 inside
+  return inside;
+}
+
+// 调用 outside 并保存返回值
+let $inside = outside();
+
+// 调用返回的 inside 内部函数
+$inside(); // outside
+```
+
+此时 `$inside` 就是一个闭包，因为 `inside` 函数离开了其词法作用域且内部引用了 `outside` 函数内的变量，同时 `outside` 作用域因为闭包的存在而无法被释放。
+
+## 作用
+
+说完了如何创建闭包，我们再来说说闭包有什么作用，又为什么说它是非常重要的概念。
+
+关于闭包的作用主要有两点：
+
+- 延长变量生命周期
+- 制造私有变量
+
+### 延长生命周期
+
+关于这一点，其实从上面的代码中就能看出来，因为闭包引用着上层作用域内的变量，导致上层作用域无法被释放，自然变量也就会一直存在
+
+```javascript
+function outside() {
+  let outside = 0;
+
+  return function inside() {
+    console.log(outside++);
+  };
+}
+
+const $inside = outside();
+$inside(); // 0
+$inside(); // 1
+$inside(); // 2
+```
+
+在上面的代码中，`$inside` 是一个闭包，内部使用了 `outside` 的变量，每次使用这个闭包的时候，都会打印闭包变量并加一，这也表明变量的生命周期确实被延长了。
+
+### 私有变量
+
+在 `JS` 中，私有变量是没有原生支持的，这给我们带来了很多的问题，如变量污染，状态共享等问题。
+
+举一个简单例子：一个库维护了一个内部状态，这个状态本该由该库的开发者进行维护，但由于没有私有变量的原生支持，导致使用者也能随意的修改这个状态，这就会导致一些不知名的 `bug`，尽管这些 `bug` 本不该出现。
+
+在 `ES6` 模块化推出前，解决办法就是利用闭包来模拟私有变量
+
+```javascript
+// copy from MDN
+var Counter = (function () {
+  var privateCounter = 0;
+  function changeBy(val) {
+    privateCounter += val;
+  }
+  return {
+    increment: function () {
+      changeBy(1);
+    },
+    decrement: function () {
+      changeBy(-1);
+    },
+    value: function () {
+      return privateCounter;
+    }
+  };
+})();
+
+console.log(Counter.value()); /* logs 0 */
+Counter.increment();
+Counter.increment();
+console.log(Counter.value()); /* logs 2 */
+Counter.decrement();
+console.log(Counter.value()); /* logs 1 */
+```
+
+在上述代码中，`privateCounter` 就是一个私有变量，因为我们无法直接访问并修改它，只能通过提供的方法来访问。
+
+关于闭包的更多运用，可以看 [JavaScript 概念 - 高阶函数]，其实高阶函数的很多运用也可以看作是闭包的运用，当然依赖于闭包还能实现更多特性，读者可自行探索。
+
+## 缺点
+
+关于闭包的缺点，其实在 [创建闭包](#创建闭包) 一节末尾就可窥见一斑，闭包会引用上层作用域的变量，导致上层作用域一直无法被释放，对应的内存也就不能被回收，如果大量使用闭包，可能会造成内存泄漏，解决办法也很简单，只要在不需要使用上层作用域的变量时，将变量的引用清空即可。
+
+## 结语
+
+本文理解并讲述了闭包是什么，并就闭包的作用与注意事项进行了讨论。
+
+内容有误请指出，内容有缺请补充。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN][MDN#JavaScript]
+
+[JavaScript 概念 - 高阶函数]: ../js/js_pro_func.mdx
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript

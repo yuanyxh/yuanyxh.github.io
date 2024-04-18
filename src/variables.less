@@ -1,0 +1,46 @@
+:root {
+  --color-primary: #ff6000;
+  --color-primary-light: #ffefe5;
+  --color-info: #5f6368;
+  --color-info-light: #eee;
+  --text-color-primary: black;
+  --background-color: white;
+  --mask-color: rgb(0 0 0 / 40%);
+  --z-ignore: -1;
+  --z-normal: 1;
+  --z-useful: 2;
+  --z-important: 3;
+  --font-size-base: 16px;
+  --font-family-base: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto,
+    oxygen, ubuntu, cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    stheiti, 'Microsoft YaHei', simsun, sans-serif;
+  --font-family-fancy: georgia pro, crimson, georgia, -apple-system,
+    blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ubuntu, cantarell,
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', stheiti, 'Microsoft YaHei',
+    simsun, sans-serif;
+  --font-family-code: consolas, monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+:root[mode='dark'] {
+  --color-primary: #dc5503;
+  --color-primary-light: #dccec6;
+  --color-info: #a9b0b7;
+  --color-info-light: #cdcdcd;
+  --text-color-primary: #d9d9d9;
+  --background-color: #202020;
+  --mask-color: rgb(0 0 0 / 40%);
+}
+
+@media screen and (width >= 1920px) {
+  :root {
+    --font-size-base: 18px;
+  }
+}
+
+// use inter font, see https://fonts.google.com/specimen/Inter
+@font-face {
+  font-family: Inter;
+  font-weight: 100 900;
+  src: url('/fonts/inter-variable/InterVariable.woff2') format('woff2');
+  font-display: swap;
+}

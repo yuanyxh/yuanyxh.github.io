@@ -1,0 +1,305 @@
+---
+title: ES6 新特性详解 - 箭头函数
+date: 2022-10-24 18:17:19
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/f8bd8ad829bcab6d.png
+description: 详解 JavaScript ES6 箭头函数
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 简述
+
+理解并讲述 `ES6` 新的定义函数的方式：[Arrow Function][arrow_function]，内容有误请指正。
+
+## 语法
+
+箭头函数是 `ES6` 中提出的新的定义函数的方式，语法较之传统函数声明与函数表达式更简洁，箭头函数只能以表达式的形式定义。
+
+```javascript
+// () 参数列表
+// => 胖箭头
+// { ... } 函数体
+const add = (a, b) => {
+  return a + b;
+};
+
+console.log(add(1, 2)); // 3
+```
+
+箭头函数在有且仅有一个参数的情况下，能够省略 `()`
+
+```javascript
+// 省略 ()
+const print = (charts) => {
+  console.log(charts);
+};
+
+print('Hello JavaScript!'); // Hello JavaScript!
+```
+
+此外，如果函数体内只有一个表达式，可以省略包裹函数体的 `{}`，且表达式的结果会被当作函数的返回值
+
+```javascript
+// 函数体内只有一个表达式，省略 {}
+const isString = (_unknown) => typeof _unknown === 'string';
+
+console.log(isString('Learn JavaScript')); // true
+console.log(isString({})); // false
+```
+
+当省略花括号 `{}` 且函数返回一个对象时，应使用 `()` 包裹
+
+```javascript
+// 返回对象
+const getPersonObj = (name, age) => ({
+  // 使用 () 包裹
+  name: name,
+  age: age,
+  sayHi() {
+    console.log('hello, my name is ' + this.name + '.');
+  }
+});
+
+const me = getPersonObj('yuanyxh', 22);
+me.sayHi(); // hello, my name is yuanyxh.
+```
+
+这是因为 `JS` 引擎在大部分场景下遇到 `{` 会将它看作是代码块 `{ ... }` 的左半部分，而非对象。
+
+## 特性
+
+箭头函数除了语法更简洁之外，还存在一些程序猿应该知晓的特性，只有了解这些特性才能更好的发挥出箭头函数的作用。
+
+箭头函数没有原型对象，即 `prototype` 属性，也意味着它不能被当作构造函数，被 `new` 调用
+
+```javascript
+// 声明箭头函数
+const ArrowFun = () => {};
+
+// 没有原型对象
+console.log(ArrowFun.prototype); // undefined
+
+// 无法以 new 调用
+new ArrowFun(); // TypeError
+```
+
+箭头函数的 `this` 永远指向最近的上下文的 `this`，且无法被 `call`、`bind`、`apply` 改变
+
+```javascript
+// 全局作用域下
+const arrow_global = () => console.log(this);
+arrow_global(); // window
+
+// 函数作用域下
+function getThisArgs() {
+  const arrow_func = () => console.log(this);
+  arrow_func(); // { name: 'yuanyxh', age: 22 }
+}
+// getThisArgs 绑定 this
+getThisArgs.call({
+  name: 'yuanyxh',
+  age: 22
+});
+```
+
+```javascript
+const owner = {
+  count: 6,
+  add(num) {
+    const inner = { count: 0 };
+    const fn = (v) => v + this.count;
+    return fn.call(inner, num); // 修改 this 指向
+  }
+};
+console.log(owner.add(2)); // 8 -> 修改 this 指向无效!!!
+```
+
+箭头函数没有自己的 `arguments`、`super` 与 `new.target`，若最近的上下文拥有这些 `标识` 则引用上下文的，否则抛出错误
+
+```javascript
+// 全局作用域下，箭头函数没有自己的 arguments
+const arrow_global = () => console.log(arguments);
+arrow(); // ReferenceError
+
+// 函数作用域下，箭头函数引用了 owner 的 arguments
+function owner() {
+  const args = arguments;
+  const inner = () => {
+    console.log(args === arguments); // true
+    (() => console.log(args === arguments))(); // true
+  };
+  inner();
+}
+owner();
+```
+
+[super] 是 `ES6` 的另一个新特性，配合 `ES6` [class] 使用，用于在子类引用父类构造器或父类方法
+
+```javascript
+// 父类
+class Person {
+  sayHi() {
+    console.log('hi');
+  }
+}
+// 子类
+class Son extends Person {
+  constructor() {
+    super();
+  }
+  sayHi() {
+    // 箭头函数引用最近上下文的 super
+    const arrow = () => super.sayHi();
+    arrow();
+  }
+}
+// 构造实例
+new Son().sayHi(); // hi
+```
+
+[new.target] 指向 `new` 调用的目标构造函数或类，当以普通方式调用时，`new.target` 值为 `undefined`
+
+```javascript
+// 全局作用域下，箭头函数无法使用 new.target
+const arrow = () => console.log(new.target);
+arrow(); // SyntaxError
+
+// 函数作用域下
+function CheckNewTarget() {
+  // 箭头函数引用 CheckNewTarget 的 new.target
+  const arrow_func = () => console.log(new.target === CheckNewTarget);
+  arrow_func();
+}
+new CheckNewTarget(); // true
+```
+
+## 实践
+
+`JS` 中的 `this` 是动态绑定的，在不同场景下会出现 `this` 指向与预料不同的情况，如
+
+假设有一个按钮，点击出现倒计时并禁用
+
+```javascript
+// 获取按钮
+const btn = document.querySelector('.btn');
+// 添加事件
+btn.addEventListener('click', function () {
+  let i = 10,
+    timer = null;
+  this.disabled = true;
+  // 每隔一秒执行回调
+  timer = setInterval(function () {
+    i--;
+    this.innerHTML = '还有' + i + '秒';
+
+    if (i <= 0) {
+      clearInterval(timer);
+      this.disabled = false;
+      this.innerHTML = '点击倒计时';
+    }
+  }, 1000);
+});
+```
+
+运行以上代码，会发现点击后除了按钮被禁用外，按钮文本并没有变化，甚至在严格模式下还会报错，这是因为传递给 `setInterval` 的函数内部 `this` 指向 `window`，在严格模式下为 `undefined`
+
+```javascript
+const obj = {
+  sayHi() {
+    console.log(this);
+  }
+  asyncSayHi() {
+    setTimeout(this.sayHi, 1000);
+  }
+};
+
+obj.sayHi(); // obj
+obj.asyncSayHi(); // window
+```
+
+可以看到 `sayHi` 方法经由 `obj` 调用，`this` 指向 `obj`，而传递给 `setTimeout` 的 `sayHi` 方法在定时结束后是直接调用的，并没有绑定到谁身上。
+
+在箭头函数出现之前，开发人员经常使用一个临时变量来存储 `this` 的值
+
+```javascript
+// 获取按钮
+const btn = document.querySelector('.btn');
+// 添加事件
+btn.addEventListener('click', function () {
+  let i = 10,
+    timer = null;
+
+  // 存储 this
+  const _self = this;
+
+  this.disabled = true;
+  // 每隔一秒执行回调
+  timer = setInterval(function () {
+    i--;
+
+    // 使用临时变量修改状态
+    _self.innerHTML = '还有' + i + '秒';
+
+    if (i <= 0) {
+      // 清除定时器并重置状态
+      clearInterval(timer);
+      _self.innerHTML = '点击倒计时';
+      _self.disabled = false;
+    }
+  }, 1000);
+});
+```
+
+而使用箭头函数则不必再分配一个变量，因为箭头函数的 `this` 永远指向最近的上下文的 `this`
+
+```javascript
+// 获取按钮
+const btn = document.querySelector('.btn');
+// 添加事件
+btn.addEventListener('click', function () {
+  let i = 10,
+    timer = null;
+
+  // const _self = this;
+
+  this.disabled = true;
+  // 每隔一秒执行回调
+  timer = setInterval(() => {
+    i--;
+
+    // _self.innerHTML = '还有' + i + '秒';
+
+    // this 指向正常
+    this.innerHTML = '还有' + i + '秒';
+
+    if (i <= 0) {
+      // 清除定时器并重置状态
+      clearInterval(timer);
+      // _self.innerHTML = '点击倒计时';
+      // _self.disabled = false;
+
+      this.innerHTML = '点击倒计时';
+      this.disabled = false;
+    }
+  }, 1000);
+});
+```
+
+## 结语
+
+本文介绍了箭头函数的语法与相关特性。虽然箭头函数语法更简洁，但不应该滥用，不应该为了节省几句代码而忽视了箭头函数的特性。
+
+## 参考资料
+
+- 《你不知道的 JavaScript》
+- 《JavaScript 高级程序设计》
+- [MDN#JavaScript]
+
+[MDN#JavaScript]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript
+[arrow_function]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Arrow_functions
+[super]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/super
+[class]: https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes/class
+[new.target]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/new.target

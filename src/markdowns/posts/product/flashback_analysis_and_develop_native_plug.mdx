@@ -1,0 +1,196 @@
+---
+title: 应用闪退分析与 uniapp 安卓原生插件开发
+date: 2023-11-28 22:40:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/3a6e04cb2d739750.jpg
+description: 记录一次 App 闪退分析的过程，了解不同机型对于后台进程回收的策略，并借助 uniapp 原生插件的能力解决相关 bug。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+公司使用 uniapp 开发的 App 端项目在红米 Note11T Pro 中出现了拍照后闪退的问题，也是折腾了挺久才研究出原因和解决方案，在这里记录和分享。
+
+## 调试分析
+
+首先可以肯定的是并非代码的问题，在调用拍摄 Api（uni.chooseImage）前、成功回调、失败回调中都打了断点，除了拍摄前的断点进入了，成功和失败回调是没有进入的，而且闪退只在少部分机型上出现，不是必现的行为。
+
+在网上查了一些 uniapp 拍照闪退的相关资料，可以排除的原因有
+
+- 没有配置权限
+- 拍照像素过大，GPU 渲染崩溃
+  - 按下拍摄键还没确认的时候应用其实就已经闪退了，也就不存在 GPU 渲染问题
+
+既然前端代码没有问题，那我们就得往低一层去调试分析了，使用离线打包配置，在 as 中运行项目到真机并开启 logcat：
+
+<Image url='http://qkc148.bvimg.com/18470/fbcb8b1839ebcc41.png' width={1366} height={728} alt='Android studio 的 logcat 图片' />
+
+目前的日志有点多，包含了整个系统的日志输出，所以我们需要做个过滤：
+
+<Image url='http://qkc148.bvimg.com/18470/68142fb3405445ec.png' width={1366} height={728} alt='Android studio 的 logcat 过滤日志图片' />
+
+过滤包名为 `com.android.simple` 且等级为 `warn` 和 `error` 的日志输出。完整的过滤语法看官网文档 [使用 Logcat 查看日志] 。
+
+接下来我们需要在设备（真机、模拟器）上进行操作来复现闪退的行为，然后查找可疑的 crash 日志。
+
+<Image url='https://qkc148.bvimg.com/18470/b9a548df1c946bad.gif' width={1080} height={2340} alt='app 展示的图片' />
+
+这样操作了几次，虽然会复现闪退行为，但并没有找到相关的 crash 日志，得到的信息只有：按下拍摄键后应用进程被结束。
+
+<Image url='http://qkc148.bvimg.com/18470/838664f464be5ba5.png' width={1366} height={728} alt='logcat 展示信息的图片' />
+
+到这里信息基本算是断了，但是没有 crash 日志，闪退的可能性降低了，那是不是系统回收了应用资源呢？我们搜索对应的机型 + 关键词：
+
+<Image url='http://qkc148.bvimg.com/18470/42e92f63155fcca3.png' width={1366} height={728} alt='chrome 搜索结果的图片' />
+
+- [红米Note调用系统相机拍照后应用崩溃问题分析解决]
+- [如何保证android程序进程不到万不得已的情况下，不会被结束]
+
+通过上面的两篇文章，我们可以发现一些共同点：
+
+- 调用系统相机进行拍摄
+- 拍摄时应用进入后台，此时可能会被系统回收资源
+
+这两篇文章的问题与我们目前经历的很像，都是调用系统相机拍摄后应用被结束了进程，那么很大的可能是应用进入后台后被系统回收了资源。
+
+如果是这样的话那我们需要降低应用进入后台后被系统回收资源的几率，也就是保活，为此找到了一篇 Android 保活相关的文章：
+
+- [Android实现进程保活方案解析]
+
+从这篇文章里知道了一个关键的信息：应用后台优先级 — oom_adj 值。
+
+这个值是反映进程的优先级的，在系统内存不足时，会根据这个值去决定将哪些进程回收（kill），值越低表示优先级越高，越不可能被回收资源。常见的值有：
+
+- 0：前台进程，应用目前在前台运行
+- 1：可感知进程，比如播放音乐，通知栏有可交互的控件
+- 负数：属于系统级别的进程
+
+这个值是根据你的应用状态实时变化的，可以通过以下命令查看你的应用 oom_adj 值：
+
+```shell
+- adb shell "ps|grep your package name"
+
+- adb shell
+- cat /proc/pid/oom_adj
+```
+
+前台
+
+<Image url='http://qkc148.bvimg.com/18470/413a08249ae5752d.png' width={1045} height={580} alt='app 前台对应的 oom_adj 图片' />
+
+后台
+
+<Image url='http://qkc148.bvimg.com/18470/2f6c122f1441d7b8.png' width={1045} height={580} alt='app 后台对应的 oom_adj 图片' />
+
+可以发现什么也没做的话（如果开通了厂商提供的通知服务，如 MiPush，会开启一个专属的通知进程，可以提升应用的后台优先级，但是测试发现红米 Note11T Pro Android13 里这个通知进程也很容易被 kill）应用进入后台时的优先级是很低的，调用拍摄又是个消耗大量内存的行为，也就不奇怪会出现应用被回收资源的问题了。
+
+## uniapp Android 原生插件开发
+
+既然知道了可能的原因，我们就需要有针对的去解决，这里我采用 [Android实现进程保活方案解析] 中的前台服务方案，开发一个 Android 原生插件，尝试提升应用的优先级。参考 uniapp 文档：
+
+- [Android 插件开发教程]
+
+关于环境的配置就不过多介绍，需要的可以看下面这篇文章：
+
+- [记录【未配置appkey或配置错误】安卓开发uniapp的原生插件的步骤及避坑]
+
+### module 配置
+
+我们先新建一个 module：
+
+<Image url='http://qkc148.bvimg.com/18470/d7a095efa0aea2c5.png' width={1366} height={728} alt='Android studio 新建模块的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/d31de5eba43dbdf7.png' width={818} height={526} alt='Android studio 新建模块的图片2' />
+
+<Image url='http://qkc148.bvimg.com/18470/6597dcbfee698d99.png' width={818} height={526} alt='Android studio 新建模块的图片3' />
+
+可能会出现报错，我们直接 cv uniapp Android SDK 中 `richalert` 的 `.gradle` 配置并点击 `Try Again`：
+
+<Image url='http://qkc148.bvimg.com/18470/28a0f9f0d40a9134.png' width={1366} height={728} alt='配置 cv 的图片' />
+
+如果出现错误 `package name not found`，我们直接点击进入对应的文件：
+
+<Image url='http://qkc148.bvimg.com/18470/99dd1e09687a59ae.png' width={1366} height={728} alt='进入对应配置的图片' />
+
+添加自己的包名并再次尝试：
+
+<Image url='http://qkc148.bvimg.com/18470/ab110a1b3f4a898e.png' width={1366} height={728} alt='添加模块包名的图片' />
+
+删除这两个文件：
+
+<Image url='http://qkc148.bvimg.com/18470/58958d21727c0d16.png' width={1366} height={728} alt='删除多余文件的图片' />
+
+新建一个 uniapp module 类供其调用：
+
+<Image url='http://qkc148.bvimg.com/18470/863abb6f2799ee74.png' width={1366} height={728} alt='新建 uniapp 模块的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/c49c985f73c23e87.png' width={332} height={158} alt='新建 uniapp 模块2的图片' />
+
+根据文档，这个需要和 uniapp 打交道的类需要继承 `UniModule`:
+
+<Image url='http://qkc148.bvimg.com/18470/10a98f2b8bde970f.png' width={1366} height={728} alt='编写继承类的图片' />
+
+我们可以定义在前端代码中调用的方法，这个方法需要加上 `@UniJSMethod(uiThread = boolean)` 注解，`uiThread` 标识是否运行在 ui 线程：
+
+<Image url='http://qkc148.bvimg.com/18470/20b1297267f2ad3a.png' width={1366} height={728} alt='添加标识的图片' />
+
+然后需要在 uniapp 的配置中配置这个类，并在主模块的 `.gradle` 配置中添加依赖，然后编译：
+
+<Image url='http://qkc148.bvimg.com/18470/52fe698c8e25cd4b.png' width={1366} height={728} alt='添加配置的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/4c6e8e64238f12df.png' width={1366} height={728} alt='编译的图片' />
+
+现在可以试试是否可以调用：
+
+<Image url='http://qkc148.bvimg.com/18470/ccb3cb266ecd0190.png' width={1132} height={408} alt='uniapp 编写调用代码的图片' />
+
+<Image url='http://qkc148.bvimg.com/18470/1516bfa68ccca8bd.png' width={1366} height={728} alt='uniapp 编写调用代码的图片2' />
+
+### 保活功能实现
+
+新建一个类并继承自 `Service`:
+
+<Image url='http://qkc148.bvimg.com/18470/7e36314fe89a40e0.png' width={1366} height={728} alt='新建保活类的图片' />
+
+在这个类中创建一个前台服务：
+
+<Image url='http://qkc148.bvimg.com/18470/d4d98ac04f9688c5.png' width={844} height={688} alt='完善保活类的图片' />
+
+在 `AndroidManifest.json` 中注册服务并添加前台服务权限：
+
+<Image url='http://qkc148.bvimg.com/18470/ada4719a9340b94f.png' width={1366} height={728} alt='添加权限的图片' />
+
+修改之前的 `startForeground` 方法，开启一个服务：
+
+<Image url='http://qkc148.bvimg.com/18470/376141bc8fdc1c30.png' width={1366} height={728} alt='添加开启服务的代码图片' />
+
+得到的效果如下：
+
+<Image url='http://qkc148.bvimg.com/18470/c4bc6468fd9138aa.gif' width={1080} height={2340} alt='展示保活效果的图片' />
+
+查看应用后台时的 oom_adj 值确实变小了，也没有再次测到拍照闪退的问题，现在可以肯定是系统回收资源导致的了：
+
+<Image url='http://qkc148.bvimg.com/18470/acd8e6913b5a76f5.png' width={1136} height={563} alt='展示保活后的 oom_adj 值的图片' />
+
+可以使用手机的开发者选项，开启后台进程限制，选择最多不超过两个后台进程，然后开启你的应用和两个额外的应用，在这三个应用间切换，你会发现被杀死的总是另外两个应用，你的应用是一直存活的。
+
+## 后话
+
+本来到这里以为已经结束了，谁知道同事说以前做过保活功能，但是被应用商店给打回了，目前国内对后台运行、自启动、关联启动基本是 0 容忍。
+
+也尝试过双进程守护等保活实现，但是现在的系统对于后台服务在后台运行超过一定时间后会直接杀死，可以说目前国内想实现保活基本是不可能了。
+
+目前还没有更新发版，不确定这种轻量级的保活能不能审核通过；有大佬提供过一种思路：不调用系统相机，自定义拍照页面来完成拍照功能。这样应用还是在前台的，也就不会被系统杀死了。
+
+最后附上另外一位热心大佬和我的沟通讨论：[应用保活讨论]
+
+[使用 Logcat 查看日志]: https://developer.android.com/studio/debug/logcat?hl=zh-cn
+[红米Note调用系统相机拍照后应用崩溃问题分析解决]: https://blog.csdn.net/huyongl1989/article/details/49333953
+[如何保证android程序进程不到万不得已的情况下，不会被结束]: https://blog.csdn.net/u013474104/article/details/54666820
+[Android实现进程保活方案解析]: https://cloud.tencent.com/developer/article/1784046
+[Android 插件开发教程]: https://nativesupport.dcloud.net.cn/NativePlugin/course/android.html
+[记录【未配置appkey或配置错误】安卓开发uniapp的原生插件的步骤及避坑]: https://blog.csdn.net/weixin_43449246/article/details/120486710
+[应用保活讨论]: https://juejin.cn/pin/7306192146767446031

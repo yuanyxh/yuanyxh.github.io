@@ -1,0 +1,170 @@
+---
+title: CSS 数据类型与浏览器渐进兼容处理
+date: 2023-03-05 20:12:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/a9e5c8a2241aff83.jpg
+description: 了解 css 中的数据类型与属性定义语法，学习 css 中对于不同时期浏览器的渐进处理方案。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+编程语言一般都拥有数据类型的概念，不同的数据类型决定了运行时不同的处理方式，但 CSS 也拥有数据类型是我万万没想到的。
+
+在我的认知中，CSS 与 HTML 一样，只是用于被浏览器读取解析的文本，学习 CSS 的方式也只是强记一些常用的属性与它们的作用，从未规范的学习过 CSS 的相关知识，也是因为觉得 CSS 相关知识有点薄弱，所以买了本 《CSS 新世界》，从中才知道了 CSS 也是拥有数据类型的。
+
+## CSS 数据类型
+
+CSS 中的数据类型指的是被 `<` 和 `>` 包裹的结构，它是一系列 **CSS 属性值** 和其他数据结构的组合，限制了 CSS 属性的有效取值范围。
+
+举个栗子，我们常见的 CSS 属性 `background-image`，它的有效取值是 `none | <image>`，其中 `none` 是一个关键字，表示无；而 `<image>` 就是一个数据结构，它包含以下属性和数据结构：
+
+- &lt;url&gt;
+- &lt;gradient&gt;
+- element()
+
+那么 CSS 数据类型有什么用呢，看起来就是将一堆 CSS 属性值组合到一起而已。没错，仅仅只是把 CSS 属性值组合到一起，却能减少我们记忆的开销；试想一下，如果我们想要知道常用属性对应的合法属性值，那需要记忆的成本就非常大了，但现在我们以数据类型的方式记忆，只需要知道属性对应的数据类型就能够知道这个属性的合法取值是什么。
+
+## CSS 属性值定义语法
+
+数据类型决定了某个属性的有效取值，而语法则规定了应该怎么排列、书写这些数据类型。
+
+CSS 属性定义语法包含三个部分，即：符号、关键字、数据结构；以线性渐变 `linear-gradient` 为例，它的语法如下图：
+
+<Image url='http://qkc148.bvimg.com/18470/7e751dcca13d1954.png' width={591} height={221} alt='CSS 属性值语法' />
+
+### 关键字
+
+关键字分为通用关键字和全局关键字；通用关键字只被部分 CSS 属性支持，如：auto、none、ease 等；全局关键字可用于所有 CSS 属性，它的值有：
+
+- inherit - 继承
+- initial - 重置属性值为 **CSS 规范定义的初始值**
+- unset - 属性支持继承则等于 inherit，否则等于 initial
+- revert - 重置属性值为 **浏览器默认设置的初始值**
+
+### 符号
+
+符号有字面符号、组合符号、数量符号，它们的含义如下表：
+
+字面符号
+
+| 符号 | 名称       | 描述                                 |
+| ---- | ---------- | ------------------------------------ |
+| ,    | 并列分隔符 | 分隔并列值及函数参数                 |
+| /    | 缩写分隔符 | 分隔一个值的多个部分、用于部分函数中 |
+
+缩写分隔符可用于分隔如 `font` 属性中 `font-size` 与 `line-height` 的值，又或者是 `background` 属性中 `background-position` 与 `background-size` 的值。
+
+组合符号
+
+| 符号         | 名称   | 描述                                                 |
+| ------------ | ------ | ---------------------------------------------------- |
+|              | 并列   | 空格，表示各部分必须出现且按顺序出现                 |
+| &&           | 与     | 表示各部分必须出现，但可以不按顺序出现               |
+| &#124;&#124; | 或     | 各部分至少出现一个，也可以同时存在，可以不按顺序出现 |
+| &#124;       | 互斥   | 各部分只能出现一个                                   |
+| []           | 方括号 | 提升计算优先级                                       |
+
+数量符号
+
+| 符号 | 名称 | 描述                              |
+| ---- | ---- | --------------------------------- |
+|      | 无   | 出现一次                          |
+| \*   | 星号 | 出现任意次                        |
+| +    | 加号 | 出现一次或多次                    |
+| ?    | 问号 | 不出现或一次                      |
+| #    | 井号 | 同加号，但出现多次时必须以 , 分隔 |
+| !    | 叹号 | 分组必须产生一个值                |
+
+了解了这些，我们再看 `linear-gradient` 的语法就能很容易知道它的有效取值是什么了：
+
+```css
+linear-gradient( [ <angle> | to <side-or-corner> ,]? <color-stop-list> )
+```
+
+它的前半部分是一个分组，且使用了数量修饰符 `?`，表示它的前半部分是可有可无的，分组内部使用了 `|` 互斥符号，表示 `<angle>` 和 `to <side-or-corner>` 只能出现其中一个，后面还有一个 `,` 并列分隔符号，`?` 数量符号后还有一个空格符号，最后就是 `<color-stop-list>`，所以 `linear-gradient` 的有效语法有：
+
+```css
+linear-gradient( <angle>, <color-stop-list> )
+linear-gradient( to <side-or-corner>, <color-stop-list> )
+linear-gradient( <color-stop-list> )
+```
+
+## 浏览器渐进兼容处理
+
+浏览器的历史原因导致了不同内核浏览器之间存在差异，不管是 `HTML`、`CSS`、还是 `JavaScript`；当项目需要兼容旧浏览器时，我们就需要对这些浏览器进行适配。
+
+### 语法差异实现兼容
+
+适配的方法主要是利用语法差异实现兼容，如利用属性值语法的不同与 `CSS` 样式层叠的特性，浏览器在遇到不支持的 CSS 属性值语法时会默认忽略，我们可以先在前面设置一个被特定浏览器接受的 CSS 属性，然后通过层叠在后面设置不被特定浏览器接受但被现代浏览器接受的 CSS 属性。
+
+像这种兼容处理的方式需要我们知道不同浏览器之间的差异并记忆大量它们之间共通的 CSS 属性，这是没有必要的，因为现在浏览器厂商之间都在往规范发展，而旧浏览器所占的市场份额只会越来越小，除非必要，我们只需要学习规范支持的 CSS 属性，当遇到需要兼容旧浏览器时再去查阅相关资料。
+
+我们还能够通过 CSS 伪类和伪元素对浏览器进行区分，在 `IE9` 以前是不支持伪类和伪元素的，而 `IE10` 支持特定的伪类，如 `:required`、`:valid` 等。
+
+### @supports 特性检测
+
+`@supports` 是规范的渐进处理方式，它能够检查浏览器是否支持指定的 CSS 属性与属性值，但由于它是从 `Edge12` 才开始支持的，所以无法通过它对 `IE` 进行兼容处理，它的简单语法如下：
+
+```css
+@supports (position: sticky) {
+  navbar {
+    position: sticky;
+  }
+}
+```
+
+同时，它还支持 `and`、`or`、`not` 等条件，比如：
+
+```css
+@supports not (position: sticky) {
+  nabbar {
+    position: relative;
+  }
+}
+```
+
+它们还能组合使用，比如：
+
+```css
+@supports (position: relative) and (not position: sticky) {
+  nabbar {
+    position: relative;
+  }
+}
+```
+
+`@supports` 还支持检查自定义属性以及函数，比如选择器 `selector` 函数：
+
+自定义属性
+
+```css
+@supports (--foo: green) {
+  body {
+    color: var(--varName);
+  }
+}
+```
+
+`selector` 函数
+
+```css
+@supports selector(:nth-child(even)) {
+  // do something
+}
+```
+
+`@supports` 还支持内嵌其他 `@` 规则，包括它自己，能够以此来完成更复杂的判断。
+
+最后推荐学习 CSS 数据结构的站点 [CSS值类型文档大全] 和 MDN 文档 [MDN#CSS_Types]
+
+-- end
+
+## 参考资料
+
+- 《CSS 新世界》
+- [MDN#CSS_Types]
+
+[MDN#CSS_Types]: https://developer.mozilla.org/en-US/docs/Web/CSS/alpha-value
+[CSS值类型文档大全]: https://www.zhangxinxu.com/wordpress/2019/11/css-value-type/

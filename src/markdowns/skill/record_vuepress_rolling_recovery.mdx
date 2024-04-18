@@ -1,0 +1,57 @@
+---
+title: 记录一次关于 vuepress 滚动恢复的讨论
+date: 2023-09-28 14:12:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/ff9c074093a8255d.png
+description: 一次关于滚动恢复的讨论。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 问题
+
+之前写 react 项目时在开发阶段经常需要刷新页面，导致滚动位置重置，需要滚动一段距离才能回到原位置，时间长了也有点烦，所以想研究一下滚动恢复（PS：react-router-v6 提供了 ScrollRestoration），先想到的就是我博客的滚动恢复（博客是 vuepress 搭的），然后发现了一点违反直觉的事情。
+
+vuepress 具体的滚动行为是这样的：一个新的页面默认滚动位置是 0，当你滚动时会记录滚动位置，当你刷新或在页面中导航时会恢复滚动位置。
+
+看起来很正常，但滚动位置存储在了什么地方呢？要知道即使刷新并导航也不会丢失滚动位置，这肯定是需要将滚动位置保存的，但我使用 chrome 开发者工具翻遍了有关 storage 的地方都没有找到滚动位置记录的数据。而且还有一个值得注意的地方就是新开一个 tab 页签访问相同的网站，对应的滚动位置是默认的，即 0。
+
+我把这个问题发到了一些编程群，诞生了以下讨论（内容较长，可以跳过不看）：
+
+<Image url='http://qkc148.bvimg.com/18470/21c7c4f6b8407973.jpg' width={712} height={14356} alt='讨论图 1' />
+
+<Image url='http://qkc148.bvimg.com/18470/53e20556118ae5c0.jpg' width={1024} height={10006} alt='讨论图 2' />
+
+<Image url='http://qkc148.bvimg.com/18470/359c388d57519b81.png' width={1080} height={5846} alt='讨论图 3' />
+
+讨论后得出的结果是 vuepress 将滚动位置保存在了 `history` 对象的 `state` 属性中，因为历史记录在刷新后是不会变的，所以才可以实现保存数据的功能，而不同的页签历史记录是不同的，也就可以解释为什么新开页签的页面不会有滚动恢复。
+
+<Image url='http://qkc148.bvimg.com/18470/c7cc7b4132ab682e.png' width={1366} height={386} alt='控制台打印滚动位置' />
+
+## 溯源
+
+有了线索我们就可以有针对性的去查找，我下载了 vuepress 的源码，针对路由部分进行搜索，找到了以下代码：
+
+<Image url='http://qkc148.bvimg.com/18470/86be23928e48ad40.png' width={492} height={415} alt='vuepress 有关路由的代码' />
+
+可以看到这种行为其实是 vue-router 提供的（不看文档的坏处），vue-router 提供了 [scroll-behavior] 的滚动恢复行为，我们再看 vue-router 的源码。
+
+我们在 vue-router 找到 `pushWithRedirect` 函数，这个函数是 vue-router 中 `push` 和 `replace` 实际调用的函数：
+
+<Image url='http://qkc148.bvimg.com/18470/07210775f147e664.png' width={479} height={99} alt='vue-router pushWithRedirect 函数签名的图片' />
+
+`pushWithRedirect` 又调用了 `handleScroll`，在这里获取了保存的滚动位置：
+
+<Image url='http://qkc148.bvimg.com/18470/7174051e9000aa10.png' width={630} height={435} alt='保存滚动位置代码的图片' />
+
+vue-router 会通过一个 `Map` 保存滚动位置，每个滚动位置的 `key` 都是对应页面的 `path`，当某个页面的滚动位置不在 `Map` 中时会去 `history.state.scroll` 中取。
+
+有获取就有保存，vue-router 不是在滚动发生时实时保存滚动位置的，而是在离开当前页面时进行保存，`pushWithRedirect` 里还调用了 `finalizeNavigation` 方法：
+
+<Image url='http://qkc148.bvimg.com/18470/346d1245a59cf92f.png' width={776} height={586} alt='finalizeNavigation 方法代码的图片' />
+
+`routerHistory` 的初始化比较复杂，只需要知道这里他是 `history` 的副本就 ok 了，就是通过 h5 的 `pushState` 和 `replaceState` API 实现的。另外除了 `pushWithRedirect` 添加历史时会记录滚动位置，`history.popstate` 和 `window.beforeunload` 事件中都有对应的逻辑。
+
+[scroll-behavior]: https://router.vuejs.org/zh/guide/advanced/scroll-behavior.html

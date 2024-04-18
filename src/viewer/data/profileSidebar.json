@@ -1,0 +1,24 @@
+[
+  {
+    "path": "/profile",
+    "label": "网站设置",
+    "key": "/profile"
+  },
+  {
+    "type": "group",
+    "label": "关于",
+    "key": "about",
+    "children": [
+      {
+        "path": "/profile/about_me",
+        "label": "关于我",
+        "key": "/profile/about_me"
+      },
+      {
+        "path": "/profile/about_site",
+        "label": "关于网站",
+        "key": "/profile/about_site"
+      }
+    ]
+  }
+]

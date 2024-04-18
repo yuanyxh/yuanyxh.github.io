@@ -1,0 +1,504 @@
+---
+title: ES6 新特性详解 - 迭代器与生成器
+date: 2022-11-26 14:47:27
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/5a97aff6bdd7c7a3.jpg
+description: 详解 JavaScript ES6 迭代器与生成器
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+迭代，指按序重复执行同一段程序，`JavaScript` 在 `ES6` 之前，使用计数循环来实现数组的迭代，但它并不理想，因为这种方式特定于某一种数据结构，为次，`ES6` 新增了 **_迭代器_** 和 **_生成器_** 这两个高级特性。
+
+## 迭代器
+
+所谓迭代器，并不是指某种特殊的数据结构或特殊语法，而是一种模式，只要某个数据结构满足了 **_可迭代协议_**，那么它就是一个迭代器，可迭代协议有以下要求：
+
+- 能够识别自身是否是迭代器，对应于 `JavaScript` 代码则是：
+  - 需要拥有 `Symbol.iterator` 内建属性
+  - 该属性应为一个函数，且返回一个 **_可迭代对象_**
+- 可迭代对象必须拥有 `next` 方法与可选的 `return` 方法，方法的返回值格式应为 `{ done: boolean, value: any }`
+  - `done` 标识这个可迭代对象是否被消耗完毕
+  - `value` 则是每次迭代所产生的值
+
+下述代码就是一个满足要求的迭代器
+
+```javascript
+const obj = {
+  [Symbol.iterator]() {
+    return {
+      next() {
+        return { done: true, value: undefined };
+      }
+    };
+  }
+};
+```
+
+只要一个数据结构满足可迭代协议，那么就能被 `for...of` 等语法消费，`for...of` 语法会隐式的调用 `Symbol.iterator` 方法，获取到可迭代对象，并不断的调用该对象的 `next` 方法，直到 `done` 标识为 `true`，且 `done` 为 `true` 时会忽略当前的 `value` 值
+
+```javascript
+const obj = {
+  [Symbol.iterator]() {
+    let i = 0;
+    return {
+      next() {
+        return {
+          done: i >= 5,
+          value: i >= 5 ? undefined : i++
+        };
+      }
+    };
+  }
+};
+
+for (const k of obj) {
+  console.log(k); // 0 1 2 3 4
+}
+```
+
+我们可以模拟 `for...of` 的行为
+
+```javascript
+function forOf(target, callback) {
+  const iterator = target[Symbol.iterator]();
+
+  let result;
+  while ((result = iterator.next()) && !result.done) {
+    const { value } = result;
+    callback(value);
+  }
+}
+
+forOf(obj, (k) => console.log(k)); // 0 1 2 3 4
+```
+
+像一些常见的数据结构都有内建的迭代器，如 `Array`、`string` 等，当对这些数据结构进行迭代操作时便会调用内建的迭代器。
+
+`next` 方法用于不断的获取值，而 `return` 方法用于终止迭代器，如 `for...of` 语法中使用 `break` 关键字跳出迭代
+
+```javascript
+const obj = {
+  [Symbol.iterator]() {
+    let i = 0;
+    return {
+      next() {
+        return {
+          done: i >= 5,
+          value: i >= 5 ? undefined : i++
+        };
+      },
+      return() {
+        return { done: true, value: undefined };
+      }
+    };
+  }
+};
+
+for (const k of obj) {
+  console.log(k); // 0 1 2 3
+  if (k === 3) break;
+}
+```
+
+当在 `for...of` 中使用 `break` 时，意味着不再需要消费后续的值，此时会调用可迭代对象的 `return` 方法。
+
+迭代器与可迭代对象两者并不冲突，可以共存，即一个对象可以是迭代器也可以是可迭代对象
+
+```javascript
+const obj = {
+  i: 0,
+  [Symbol.iterator]() {
+    this.i = 0;
+    return this;
+  },
+  next() {
+    return {
+      done: this.i >= 5,
+      value: this.i >= 5 ? undefined : this.i++
+    };
+  }
+};
+```
+
+## 异步迭代器
+
+迭代器虽然非常强大，但如果程序内部逻辑是异步的便无法取得对应的值，你可能想到可迭代对象每次产生一个 `Promise` 就能获取对应的值，但这样是有缺陷的
+
+```javascript
+const obj = {
+  i: 0,
+  [Symbol.iterator]() {
+    this.i = 0;
+    return this;
+  },
+  next() {
+    const i = this.i++;
+    return {
+      done: i >= 5,
+      value:
+        i >= 5
+          ? undefined
+          : new Promise((resolve) => {
+              setTimeout(() => resolve(i), Math.random() * 10);
+            })
+    };
+  }
+};
+
+for (const p of obj) {
+  p.then((i) => {
+    console.log(i);
+  });
+}
+```
+
+上述代码中，可迭代对象每次产生一个 `Promise`，这让我们能够通过 `.then` 来获取到对应的异步值，但输出顺序却是乱序的，这与按序执行的宗旨相违背，并不是我们想看到的，为此我们需要新的迭代方式以支持异步迭代，即异步迭代器。
+
+异步迭代器的定义与迭代器相似，区别在于识别自身的方式与可迭代对象 `next` 和 `return` 方法的返回值，异步迭代器使用 `Symbol.asyncIterator` 来标识自身，而可迭代对象 `next` 与 `return` 方法需要返回一个状态已完成的 `Promise`
+
+```javascript
+const obj = {
+  [Symbol.asyncIterator]() {
+    return this;
+  },
+  next() {
+    return Promise.resolve({ done: true, value: undefined });
+  }
+};
+```
+
+上面就是一个符合的异步迭代器，但仅仅如此不行，异步迭代器还需要配合 `for await...of` 语法使用，你可能发现了一个关键词 `await`，是的，`for await...of` 语法只能在异步函数中使用
+
+```javascript
+const obj = {
+  i: 0,
+  [Symbol.asyncIterator]() {
+    this.i = 0;
+    return this;
+  },
+  next() {
+    const i = this.i++;
+    return Promise.resolve({
+      done: i >= 5,
+      value: i >= 5 ? undefined : i
+    });
+  }
+};
+
+async function run() {
+  for await (const k of obj) {
+    console.log(k); // 0 1 2 3 4
+  }
+}
+run();
+```
+
+上述代码可以正常工作，且输出顺序也是正常的，那么让我们用异步迭代器重写之前的例子
+
+```javascript
+const obj = {
+  i: 0,
+  [Symbol.asyncIterator]() {
+    this.i = 0;
+    return this;
+  },
+  async next() {
+    const i = this.i++;
+    await new Promise((resolve) => {
+      setTimeout(resolve, Math.random() * 10, i);
+    });
+
+    return { done: i >= 5, value: i >= 5 ? undefined : i };
+  }
+};
+
+async function run() {
+  for await (const k of obj) {
+    console.log(k); // 0 1 2 3 4
+  }
+}
+run();
+```
+
+## 生成器
+
+与迭代器相比，生成器更加优秀，它提供了非常强大的异步流程控制方式，同时，生成器与迭代器的表现形式并不一样，任何数据结构满足要求便可以是一个迭代器，而生成器的表现形式为一个特殊函数
+
+```javascript
+function* generator() {}
+```
+
+上述代码中，在函数声明 `function` 后添加了一个 `*` 号，这让这个函数变成了一个生成器，既然是特殊函数，那特殊在哪里呢
+
+```javascript
+function* generator() {
+  console.log('generator');
+}
+generator();
+
+function ordinary() {
+  console.log('ordinary');
+}
+ordinary();
+```
+
+运行上述代码，你会惊奇的发现，普通函数正常输出，但生成器函数却没有，难道函数调用没起作用吗？
+
+其实是有的，但调用生成器函数并不会执行函数体内的代码，而是会返回一个生成器对象，该对象原型上具有 `next` 方法，可以用来启动和恢复程序的执行
+
+```javascript
+function* generator() {
+  console.log('generator');
+}
+const g = generator();
+
+// 启动程序
+g.next(); // generator
+```
+
+我们调用生成器函数获取到了生成器对象，并调用该对象原型上的 `next` 方法以启动程序的执行，最终正常输出。
+
+`next` 方法不光能够启动程序，还能恢复程序执行，那意味着还有一种机制能够暂停程序的执行，在生成器函数中通过 `yield` 关键词来中断程序的执行
+
+```javascript
+function* generator() {
+  console.log('generator');
+
+  yield;
+
+  console.log('程序恢复执行');
+}
+const g = generator();
+
+// 启动程序
+g.next(); // generator
+// 恢复执行
+g.next(); // 程序恢复执行
+```
+
+运行上述代码，会发现第一个 `next` 调用启动程序后，只打印了一个输出，这意味着程序被中断了，而第二个 `next` 调用后恢复了程序的执行，才将第二个 `console.log` 语句输出。
+
+`yield` 不光能够暂停程序的执行，还能够将值传递出去，就好像一个暂时的 `return` 语句一样
+
+```javascript
+function* generator() {
+  console.log('generator');
+
+  yield 1;
+
+  console.log('程序恢复执行');
+}
+const g = generator();
+
+// 启动程序
+const val1 = g.next(); // generator
+console.log(val1); // { done: false, value: 1 }
+
+// 恢复执行
+const val2 = g.next(); // 程序恢复执行
+console.log(val2); // { done: true, value: undefined }
+```
+
+`yield` 后能够书写表达式，这表示我们需要将表达式的值返回给 `next` 调用，但是我们会发现返回值的格式与可迭代对象产生的值格式一致，这意味着我们能够像消费可迭代对象一样消费生成器对象
+
+```javascript
+function* generator() {
+  yield 0;
+  yield 1;
+  yield 2;
+  yield 3;
+  yield 4;
+}
+
+for (const k of generator()) {
+  console.log(k); // 0 1 2 3 4
+}
+```
+
+`yield` 不光能够输出，还能够接受输入，调用 `next` 方法传递的参数会被当作 `yield` 的值
+
+```javascript
+function* generator() {
+  const num = yield 10;
+  console.log(num);
+}
+const g = generator();
+
+const val1 = g.next();
+console.log(val1); // { done: false, value: 10 }
+
+g.next(20); // 20
+```
+
+上述代码中，给第一个 `next` 调用传递参数是没有必要的，因为它用于启动程序，程序运行后遇到 `yield` 关键字导致程序暂停执行，并返回 `yield` 后的表达式值 10，第二个 `next` 调用后传递了实参 20，这导致上一个暂停程序的 `yield` 关键字变为了 值 20，此时进行 `const num = 20` 的运算，然后输出。
+
+现在让我们来看看复杂一些的例子
+
+```javascript
+function* generator(i) {
+  const num = yield yield i * 10;
+  console.log(num);
+}
+
+const g = generator(20);
+
+console.log(g.next().value);
+console.log(g.next(5).value);
+g.next(10);
+```
+
+上述代码中会分别输出什么呢？思考一下。
+
+其实会分别输出 200、5、10，这段代码的执行如下
+
+1. 获取生成器对象
+2. 启动程序
+3. 遇到第一个 `yield`，计算第一个 `yield` 后的表达式值，又遇到第二个 `yield`
+4. 第二个 `yield` 返回入参 20 和 10 的乘积 200
+5. 输出 200
+6. 恢复程序执行并传参 5
+7. 此时第二个 `yield` 值为 5，被第一个 `yield` 返回
+8. 输出 5
+9. 恢复程序执行并传参 10
+10. 此时 `num` 值为 10
+11. 输出 10
+
+`yield` 是会受到运算符优先级影响的，相同的代码修改一下运算优先级会产生不同的结果
+
+```javascript
+function* generator(i) {
+  const num = yield (yield i) * 10;
+  console.log(num);
+}
+
+const g = generator(20);
+
+console.log(g.next().value); // 20
+console.log(g.next(5).value); // 50
+g.next(10); // 10
+```
+
+除了普通的 `yield` 语法外，`JS` 还提供了 `yield*` 语法，该语法类似于 `for...of`，使用 `yield*` 意味着我们想要消耗一个可迭代对象
+
+```javascript
+function* generator() {
+  yield* [0, 1, 2, 3, 4];
+}
+
+for (const k of generator()) {
+  console.log(k); // 0 1 2 3 4
+}
+```
+
+此外，`yield*` 还能进行委托
+
+```javascript
+function* other() {
+  const num = yield 10;
+  console.log(num);
+}
+
+function* generator() {
+  yield* other();
+}
+const g = generator();
+
+const val = g.next();
+console.log(val); // { done: false, value: 10 }
+
+g.next(20); // 20
+```
+
+可以看到，`generator` 生成器函数内并没有 `yield` 出任何值，但仍能够获取到 `other` 生成器中 `yield` 出的值，且 `other` 生成器也能够接受到 `generator` 生成器的输入，`yield*` 的行为类似如下
+
+```javascript
+function* other() {
+  const num = yield 10;
+  console.log(num);
+}
+
+function* generator() {
+  // yield*
+  {
+    const g = other();
+
+    let result = g.next();
+    while (!result.done) {
+      const args = yield result.value;
+      result = g.next(args);
+    }
+  }
+}
+```
+
+生成器对象原型上还拥有 `return` 与 `throw` 方法，`return` 方法用于关闭生成器，而 `throw` 方法用于注入错误
+
+```javascript
+function* generator() {
+  yield 10;
+}
+const g = generator();
+
+// 启动程序
+g.next();
+// 注入错误
+g.throw('err');
+```
+
+上述代码中，`next` 启动生成器之后，程序中止并 `yield` 出一个值，然后调用了 `throw` 方法，这会恢复程序的执行，并在上次中止执行的位置注入一个错误，这导致了这个生成器被关闭。
+
+虽然注入了错误，但这个错误不是不可捕获的，我们只需要在程序停止运行的位置书写 `try...catch` 即可捕获被注入的错误
+
+```javascript
+function* generator() {
+  try {
+    yield 10;
+  } catch (err) {
+    console.log(err);
+  }
+}
+const g = generator();
+
+// 启动程序
+g.next();
+// 注入错误
+g.throw('err'); // err
+```
+
+这样我们就能捕获到注入的错误，并阻止生成器关闭，同时后续的 `yield` 输出值也会通过 `throw` 返回
+
+```javascript
+function* generator() {
+  try {
+    yield 10;
+  } catch (err) {
+    console.log(err);
+  }
+
+  yield 20;
+}
+const g = generator();
+
+// 启动程序
+g.next();
+// 注入错误
+const val = g.throw('err'); // err
+console.log(val); // { done: false, value: 20 }
+```
+
+## 结语
+
+`ES6` 迭代器与生成器的出现提供了非常强大的功能，迭代器模式使我们能够自定义重复执行程序的逻辑，而生成器给我们提供了强大的异步流程控制，与生成器相配合的 `yield` 让我们能够进行双向的数据传递，基于此，我们能够实现很多高级的模式，像 `async` 函数其实就是基于 `Promise + generator` 实现的。
+
+## 参考资料
+
+- 《JavaScript 高级程序设计》
+- 《你不知道的 JavaScript》
+- [MDN]
+
+[MDN]: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript
