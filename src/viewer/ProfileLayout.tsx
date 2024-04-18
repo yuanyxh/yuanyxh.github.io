@@ -21,7 +21,12 @@ const Settings = () => {
         height: '100%'
       }}
     >
-      <Sider breakpoint="xxl" collapsedWidth={200} width={250}>
+      <Sider
+        breakpoint="sm"
+        collapsedWidth={0}
+        zeroWidthTriggerStyle={{ backgroundColor: 'var(--color-primary)' }}
+        width={250}
+      >
         <Menu
           mode="inline"
           defaultSelectedKeys={[location.path]}

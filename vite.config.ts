@@ -18,6 +18,7 @@ import { remarkMdxToc } from 'remark-mdx-toc';
 import ViteRouteGenerator from './helpers/vite-route-generator';
 import rehypePrism from '@mapbox/rehype-prism';
 import vitePrerender from 'vite-plugin-prerender';
+// import vitePrerender from './vite-plugin-prerender/index.js';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 interface ProjectEnv {
@@ -42,26 +43,27 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       ViteRouteGenerator(),
 
       // 预渲染配置：https://www.npmjs.com/package/vite-plugin-prerender
-      // vitePrerender({
-      //   // 要渲染的路由
-      //   routes: ['/'],
-      //   // 静态文件目录
-      //   staticDir: resolve('./build'),
-      //   // 是否压缩 HTML 文件
-      //   minify: {
-      //     collapseBooleanAttributes: true,
-      //     collapseWhitespace: true,
-      //     decodeEntities: true,
-      //     keepClosingSlash: true,
-      //     sortAttributes: true
-      //   },
+      vitePrerender({
+        // 要渲染的路由
+        routes: ['/'],
+        // 静态文件目录
+        staticDir: resolve('./build'),
+        // 是否压缩 HTML 文件
+        minify: {
+          collapseBooleanAttributes: true,
+          collapseWhitespace: true,
+          decodeEntities: true,
+          keepClosingSlash: true,
+          sortAttributes: true
+        },
 
-      //   // 渲染时是否显示浏览器窗口，值写false可用于调试
-      //   renderer: new Renderer({
-      //     headless: false,
-      //     renderAfterTime: 5000
-      //   })
-      // }),
+        // 渲染时是否显示浏览器窗口，值写false可用于调试
+        renderer: new Renderer({
+          headless: false,
+          renderAfterTime: 20000
+        })
+      }),
+
       /**
        * format
        * baseUrl
@@ -178,7 +180,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       sourcemap: isBuild === false,
       rollupOptions: {
         plugins: isBuild
-          ? [visualizer({ filename: '.analyze.html', open: true })]
+          ? [visualizer({ filename: '.analyze.html', open: false })]
           : [],
         output: {
           manualChunks: {

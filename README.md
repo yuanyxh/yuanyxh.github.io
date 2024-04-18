@@ -18,7 +18,7 @@
 
 ## 网站技术与规划
 
-网站使用 `React` + `Vite` + T`ypeScript` 作为基础架构，搭配 `ESLint`、`StyleLint`、`CommitLint`、`Prettier` 规范项目，`Antd` 实现网站的部分 UI，图标使用 `iconify/Material Symbols` 与 `@ant-design/icons`，使用 `postcss` 和 `less` 处理 css，`MDX` 编译 markdown，`zustand` 作为全局状态管理。
+网站使用 `React` + `Vite` + `TypeScript` 作为基础架构，搭配 `ESLint`、`StyleLint`、`CommitLint`、`Prettier` 规范项目，`Antd` 实现网站的部分 UI，图标使用 `iconify/Material Symbols` 与 `@ant-design/icons`，使用 `postcss` 和 `less` 处理 css，`MDX` 编译 markdown，`zustand` 作为全局状态管理。
 
 网站目前部署在 Github Pages 中，是一个纯静态托管的服务，使用域名解析到国内域名，后续会学习服务端相关知识，并将网站迁移。
 
