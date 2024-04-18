@@ -27,24 +27,35 @@ function ViteRouteGenerator(): PluginOption {
 
   const generateRouteJSON = async () => {
     const paths = await fast.glob(['src/markdowns/**/*.mdx']);
+    let articles = ',';
+    let books = ',';
 
-    return paths.map(resolve).reduce((routes, path, index) => {
+    paths.map(resolve).forEach((path) => {
       const route = parseRoute(path);
       const { attributes } = frontmatter<ArticleMeta>(
         readFileSync(path, 'utf-8')
       );
 
-      const aliasPath = paths[index].replace('src/markdowns', '@/markdowns');
+      const aliasPath = path
+        .replace('src/markdowns', '@/markdowns')
+        .replace(/\\/g, '/');
 
-      return `
-          ${routes + (index === 0 ? ',' : '')}
+      const str = `
           {
             path: "${route}",
             element: () => import("${aliasPath}"),
             meta: ${JSON.stringify(attributes)}
           },
         `;
-    }, '');
+
+      if (attributes.book) {
+        books += str;
+      } else {
+        articles += str;
+      }
+    });
+
+    return { articles, books };
   };
 
   return {
@@ -65,10 +76,11 @@ function ViteRouteGenerator(): PluginOption {
       if (id.includes('node_modules')) return;
 
       if (resolve(routesPath) === resolve(id.split('?')[0])) {
-        return code.replace(
-          '/** placeholder for articles */',
-          await generateRouteJSON()
-        );
+        const { articles, books } = await generateRouteJSON();
+
+        return code
+          .replace('/** placeholder for articles */', articles)
+          .replace('/** placeholder for books */', books);
       }
     }
   };

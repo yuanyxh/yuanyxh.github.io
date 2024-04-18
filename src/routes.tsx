@@ -25,6 +25,16 @@ export const routes: RouteObject[] = [
         ]
       },
       {
+        path: 'books',
+        children: [
+          {
+            path: 'index',
+            element: () => import('@/viewer/Books')
+          }
+          /** placeholder for books */
+        ]
+      },
+      {
         path: 'profile',
         element: () => import('@/viewer/ProfileLayout'),
         children: [

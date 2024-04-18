@@ -9,7 +9,7 @@ export function useArticle() {
   const articles = useMemo(() => {
     // TODO: hardcode? maby use context to provide articles, and router get context provide page route.
     const articles = (routes?.[0].children?.[1].children || []).filter(
-      ({ path, meta }) => path !== INDEX_PATH && meta?.book !== true
+      ({ path }) => path !== INDEX_PATH
     );
 
     // the latest articles are displayed first
