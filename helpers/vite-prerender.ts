@@ -59,14 +59,19 @@ async function vitePrerender() {
     },
 
     renderer: new Renderer({
-      headless: false,
-      renderAfterTime: 5000
+      headless: true,
+      renderAfterDocumentEvent: 'pageReadyed'
     }),
 
     postProcess(renderedRoute: PostProcessParam) {
       if (!excludeOutPathRewrite.includes(renderedRoute.originalRoute)) {
         renderedRoute.outputPath = 'build' + renderedRoute.originalRoute;
       }
+
+      renderedRoute.html = renderedRoute.html.replace(
+        /alignItems/g,
+        'align-items'
+      );
 
       return renderedRoute;
     }

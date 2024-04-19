@@ -88,6 +88,23 @@ const Outlet = memo(
 
     useLayoutEffect(() => {
       mountedRef.current?.();
+
+      // use prerender to complete, how do I remove it after pre-rendering?
+      try {
+        if (!route) return void 0;
+
+        const currentPaths = [
+          window.location.pathname,
+          window.location.pathname + 'index',
+          window.location.pathname + '/index'
+        ];
+
+        if (currentPaths.includes(route.fullPath!)) {
+          window.document.dispatchEvent(new Event('pageReadyed'));
+        }
+      } catch (err) {
+        window.document.dispatchEvent(new Event('pageReadyed'));
+      }
     }, [route]);
 
     if (route?.module === void 0) return null;
