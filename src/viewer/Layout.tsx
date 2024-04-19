@@ -26,7 +26,7 @@ import { fallbackFullscreen, isFullScreen, requestFullScreen } from '@/utils';
 
 import { Icon } from '@/components';
 
-import LogoImage from '@/assets/images/logo.png';
+import LogoImage from '@/assets/images/logo.webp';
 
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';

@@ -74,7 +74,7 @@ async function vitePrerender() {
       );
 
       // <link rel="alternate" hreflang="en" href="https://developer.chrome.com/docs">
-      // <meta property="og:title" content="文档 &nbsp;|&nbsp; Docs &nbsp;|&nbsp; Chrome for Developers">
+      // <meta property="og:title" content="文档 &nbsp;|&nbsp; Docs &nbsp;|&nbsp; Chrome for Developers">, see https://ogp.me/
       // <meta name="description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
       // <meta property="og:description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
       // <meta property="og:url" content="https://developer.chrome.com/docs?hl=zh-cn">
