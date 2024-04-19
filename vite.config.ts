@@ -18,7 +18,6 @@ import { remarkMdxToc } from 'remark-mdx-toc';
 import ViteRouteGenerator from './helpers/vite-route-generator';
 import rehypePrism from '@mapbox/rehype-prism';
 import vitePrerender from 'vite-plugin-prerender';
-// import vitePrerender from './vite-plugin-prerender/index.js';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 interface ProjectEnv {

@@ -102,7 +102,7 @@ const AboutSite = () => {
         <Paragraph style={{ fontSize: 16 }}>
           网站使用 <Text code>React</Text> + <Text code>Vite</Text> +{' '}
           <Text code>TypeScript</Text>
-          作为基础架构，搭配 <Text code>ESLint</Text>、
+          作为基础架构，<Text code>pnpm</Text> 作为包管理器，搭配 <Text code>ESLint</Text>、
           <Text code>StyleLint</Text>、<Text code>CommitLint</Text>、
           <Text code>Prettier</Text>
           规范项目，<Text code>Antd</Text> 实现网站的部分 UI，图标使用{' '}
