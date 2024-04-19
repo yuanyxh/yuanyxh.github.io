@@ -61,6 +61,7 @@ async function vitePrerender() {
     renderer: new Renderer({
       headless: true,
       renderAfterDocumentEvent: 'pageReadyed'
+      // renderAfterTime: 20000
     }),
 
     postProcess(renderedRoute: PostProcessParam) {

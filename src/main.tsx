@@ -1,5 +1,5 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 
 import 'normalize.css';
 import 'nprogress/nprogress.css';
@@ -10,12 +10,12 @@ import { RouterProvider } from '@/router';
 import App from './App.tsx';
 import router from './routes.tsx';
 
-// use hydrateRoot instead of createRoot because the page is pre-rendered
-ReactDOM.hydrateRoot(
-  document.getElementById('root')!,
-  <React.StrictMode>
+const node = (
+  <StrictMode>
     <App>
       <RouterProvider router={router} />
     </App>
-  </React.StrictMode>
+  </StrictMode>
 );
+
+createRoot(document.getElementById('root')!).render(node);

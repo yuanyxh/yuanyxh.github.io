@@ -74,10 +74,14 @@ router.beforeEnter(() => {
 });
 
 router.afterEnter(() => {
+  resetProgressBar();
+});
+
+export const resetProgressBar = () => {
   NProgress.done();
 
   clear && clear();
   clear = null;
-});
+};
 
 export default router;

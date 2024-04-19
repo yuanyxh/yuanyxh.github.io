@@ -286,14 +286,16 @@ class Router {
       };
       resolveComponents(_matchs, (matchs: RouteObject[]) => {
         if (!isObsolete) {
+          this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
+
           const safeMatchs = cloneDeep(matchs);
           const getMatch = () => safeMatchs.shift();
           this.event.emit('matchRoute', getMatch);
         }
-      }).finally(() => {
-        if (!isObsolete) {
+      }).catch(() => {
+        // do not handle after_enters in finally, which will cause pre -rendering abnormalities
+        if (!isObsolete)
           this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
-        }
       });
 
       if (changeHistory) {

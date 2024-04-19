@@ -90,6 +90,7 @@ const Outlet = memo(
       mountedRef.current?.();
 
       // use prerender to complete, how do I remove it after pre-rendering?
+      //don't delete this, mark it to delete after the construction
       try {
         if (!route) return void 0;
 
@@ -105,6 +106,7 @@ const Outlet = memo(
       } catch (err) {
         window.document.dispatchEvent(new Event('pageReadyed'));
       }
+      //don't delete this, mark it to delete after the construction
     }, [route]);
 
     if (route?.module === void 0) return null;
