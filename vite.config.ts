@@ -15,19 +15,18 @@ import remarkGfm from 'remark-gfm';
 import remarkBraks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
-import ViteRouteGenerator from './helpers/vite-route-generator';
+import viteRouteGenerator from './helpers/vite-route-generator';
+import vitePrerender from './helpers/vite-prerender';
 import rehypePrism from '@mapbox/rehype-prism';
-import vitePrerender from 'vite-plugin-prerender';
+
 import type { ConfigEnv, UserConfig } from 'vite';
 
 interface ProjectEnv {
-  /** 基础路径 */
+  /** base path */
   VITE_BASE_PATH: string;
-  /** 初始标题 */
+  /** app title */
   VITE_APP_TITLE: string;
 }
-
-const Renderer = vitePrerender.PuppeteerRenderer;
 
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
@@ -39,29 +38,9 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     root: root,
     base: env.VITE_BASE_PATH,
     plugins: [
-      ViteRouteGenerator(),
+      viteRouteGenerator(),
 
-      // 预渲染配置：https://www.npmjs.com/package/vite-plugin-prerender
-      vitePrerender({
-        // 要渲染的路由
-        routes: ['/'],
-        // 静态文件目录
-        staticDir: resolve('./build'),
-        // 是否压缩 HTML 文件
-        minify: {
-          collapseBooleanAttributes: true,
-          collapseWhitespace: true,
-          decodeEntities: true,
-          keepClosingSlash: true,
-          sortAttributes: true
-        },
-
-        // 渲染时是否显示浏览器窗口，值写false可用于调试
-        renderer: new Renderer({
-          headless: false,
-          renderAfterTime: 20000
-        })
-      }),
+      vitePrerender(),
 
       /**
        * format
