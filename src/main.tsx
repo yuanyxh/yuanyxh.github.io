@@ -10,6 +10,8 @@ import { RouterProvider } from '@/router';
 import App from './App.tsx';
 import router from './routes.tsx';
 
+window.document.dispatchEvent(new Event('pageReadyed'));
+
 const node = (
   <StrictMode>
     <App>

@@ -91,21 +91,21 @@ const Outlet = memo(
 
       // use prerender to complete, how do I remove it after pre-rendering?
       //don't delete this, mark it to delete after the construction
-      try {
-        if (!route) return void 0;
+      // try {
+      //   if (!route) return void 0;
 
-        const currentPaths = [
-          window.location.pathname,
-          window.location.pathname + 'index',
-          window.location.pathname + '/index'
-        ];
+      //   const currentPaths = [
+      //     window.location.pathname,
+      //     window.location.pathname + 'index',
+      //     window.location.pathname + '/index'
+      //   ];
 
-        if (currentPaths.includes(route.fullPath!)) {
-          window.document.dispatchEvent(new Event('pageReadyed'));
-        }
-      } catch (err) {
-        window.document.dispatchEvent(new Event('pageReadyed'));
-      }
+      //   if (currentPaths.includes(route.fullPath!)) {
+      //     window.document.dispatchEvent(new Event('pageReadyed'));
+      //   }
+      // } catch (err) {
+      //   window.document.dispatchEvent(new Event('pageReadyed'));
+      // }
       //don't delete this, mark it to delete after the construction
     }, [route]);
 
