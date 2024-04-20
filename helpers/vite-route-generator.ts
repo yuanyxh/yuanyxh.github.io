@@ -23,9 +23,6 @@ function viteRouteGenerator(): PluginOption {
   return {
     name: 'vite-plugin-route-generator',
     enforce: 'pre',
-    config() {
-      return {};
-    },
     configureServer(server) {
       const listener = (id: string) => {
         if (!filter(id)) return;
