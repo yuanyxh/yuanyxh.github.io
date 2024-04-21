@@ -12,6 +12,7 @@ export type {
   LazyComponent,
   Meta,
   NavigateOptions,
+  ResolveRouteObject,
   RouteObject,
   RouterListener,
   RouterUnListener,

@@ -1,7 +1,8 @@
-import { INDEX_PATH, NOT_FOUND_PATH, type RouteObject } from './router';
+import type { ResolveRouteObject } from './router';
+import { INDEX_PATH, NOT_FOUND_PATH } from './router';
 
 interface Node {
-  value: RouteObject;
+  value: ResolveRouteObject;
   children: Tree;
 }
 
@@ -16,13 +17,13 @@ function split(path: string) {
 class RouteTree {
   tree: Tree;
 
-  constructor(routes: RouteObject[]) {
+  constructor(routes: ResolveRouteObject[]) {
     this.tree = {};
 
     this.add(this.tree, routes);
   }
 
-  add(root?: Tree, routes?: RouteObject[]) {
+  add(root?: Tree, routes?: ResolveRouteObject[]) {
     if (!routes) return;
 
     root = root || {};
@@ -42,7 +43,7 @@ class RouteTree {
     }
   }
 
-  match(path: string): RouteObject[] {
+  match(path: string): ResolveRouteObject[] {
     if (!path.startsWith('/')) {
       throw new Error('path must start with "/"');
     }
@@ -58,7 +59,7 @@ class RouteTree {
       paths = ['/', ...paths];
     }
 
-    const result: RouteObject[] = [];
+    const result: ResolveRouteObject[] = [];
     let i = 0;
     let expectedMatch = paths.length;
 
@@ -83,7 +84,10 @@ class RouteTree {
     if (result.length === expectedMatch) {
       node[INDEX_PATH]?.value && result.push(node[INDEX_PATH]!.value);
     } else {
-      result[i] = { path: NOT_FOUND_PATH };
+      result[i] = {
+        path: NOT_FOUND_PATH,
+        fullPath: Math.random().toString(16)
+      };
     }
 
     return result;

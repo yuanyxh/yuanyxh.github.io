@@ -3,7 +3,7 @@ import { Col, Divider, Row, Typography } from 'antd';
 import type { RouteObject } from '@/router';
 import { Link } from '@/router';
 
-import { useArticle } from './hooks/useArticles';
+import { useArticles } from './hooks/useArticles';
 import styles from './styles/Articles.module.less';
 
 const ArticleItem = ({ article }: { article: RouteObject }) => {
@@ -49,7 +49,7 @@ const ArticleItem = ({ article }: { article: RouteObject }) => {
 };
 
 const Articles = () => {
-  const articles = useArticle();
+  const articles = useArticles();
 
   return (
     <Row className={styles.articles} gutter={[60, 50]}>

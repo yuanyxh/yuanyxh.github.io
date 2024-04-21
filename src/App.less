@@ -83,6 +83,23 @@ table {
   border-collapse: separate;
 }
 
+.shiki {
+  code {
+    counter-reset: step;
+    counter-increment: step 0;
+  }
+
+  code .line::before {
+    content: counter(step);
+    counter-increment: step;
+    width: 1.5rem;
+    margin-right: 1rem;
+    display: inline-block;
+    text-align: right;
+    color: #6e7681;
+  }
+}
+
 // sustom scrollbar
 ::-webkit-scrollbar {
   width: 12px;

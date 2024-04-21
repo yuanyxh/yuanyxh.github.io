@@ -1,0 +1,94 @@
+.wrapper {
+  width: 100%;
+  height: 100vh;
+  overflow: auto;
+  background-color: #1f1f1f;
+
+  .sider {
+    background-color: #181818;
+    overflow: auto;
+    box-shadow: 1px 0 1px rgba(255, 255, 255, 0.05);
+
+    .list {
+      padding: 10px;
+
+      .item {
+        color: #cccccc;
+        line-height: 1.6;
+        user-select: none;
+        cursor: pointer;
+
+        .row {
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+          }
+        }
+
+        > .list {
+          height: 0px;
+          overflow: hidden;
+          padding: 0px 10px;
+          transition: height 0.2s ease;
+          will-change: height;
+        }
+
+        > .directoryIcon {
+          svg {
+            transition: transform 0.2s ease;
+          }
+        }
+
+        &.expand {
+          > .list {
+            height: fit-content;
+          }
+
+          > .directoryIcon {
+            svg {
+              transform: rotate(90deg);
+            }
+          }
+        }
+
+        span {
+          margin-left: 8px;
+        }
+
+        .directoryIcon + span {
+          margin-left: 0px;
+        }
+      }
+    }
+  }
+
+  .content {
+    display: flex;
+    width: 100%;
+    height: 100%;
+
+    .code,
+    .exhibit {
+      flex: 1;
+    }
+
+    .code {
+      padding: 10px 5px;
+      padding-bottom: 250px;
+      overflow: auto;
+      scrollbar-color: transparent transparent;
+      background-color: #282c34;
+
+      &::-webkit-scrollbar {
+        width: 0;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: transparent;
+      }
+
+      code {
+        font-family: var(--font-family-code);
+      }
+    }
+  }
+}

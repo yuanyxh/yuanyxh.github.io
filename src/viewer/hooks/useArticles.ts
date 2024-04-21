@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useRoute } from '@/router';
 import { INDEX_PATH } from '@/router';
 
-export function useArticle() {
+export function useArticles() {
   const routes = useRoute();
 
   const articles = useMemo(() => {

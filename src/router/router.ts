@@ -35,7 +35,11 @@ interface RouteObject {
   children?: RouteObject[];
   meta?: ArticleMeta;
   module?: Module;
-  fullPath?: string;
+}
+
+interface ResolveRouteObject extends RouteObject {
+  fullPath: string;
+  children?: ResolveRouteObject[];
 }
 
 interface RouteState {
@@ -73,19 +77,25 @@ function getState(): RouteState {
   };
 }
 
-function resolveFullPath(routes: RouteObject[], parent: string) {
+function resolveFullPath(
+  routes: RouteObject[],
+  parent: string
+): ResolveRouteObject[] {
   return routes.map(function map(route) {
     const seps = parent.split('/');
     seps.shift();
 
-    route.fullPath = [...seps, route.path].join('/');
-    !route.fullPath.startsWith('/') && (route.fullPath = '/' + route.fullPath);
+    const _route = route as ResolveRouteObject;
+
+    _route.fullPath = [...seps, route.path].join('/');
+    !_route.fullPath.startsWith('/') &&
+      (_route.fullPath = '/' + _route.fullPath);
 
     if (route.children?.length) {
-      resolveFullPath(route.children, route.fullPath);
+      resolveFullPath(route.children, _route.fullPath);
     }
 
-    return route;
+    return _route;
   });
 }
 
@@ -114,20 +124,22 @@ async function fetch(match: RouteObject) {
 }
 
 async function resolveComponents(
-  matchs: RouteObject[],
-  cb: (data: RouteObject[]) => any
+  matchs: ResolveRouteObject[],
+  cb: (data: ResolveRouteObject[]) => any
 ) {
   const awaits = matchs.map(fetch);
 
-  const safeMatchs: RouteObject[] = cloneDeep(matchs).map((safeMatch) => {
-    return {
-      ...safeMatch,
-      module:
-        safeMatch.module && safeMatch.module.status === 'fulfilled'
-          ? safeMatch.module
-          : { status: 'pending' }
-    };
-  });
+  const safeMatchs: ResolveRouteObject[] = cloneDeep(matchs).map(
+    (safeMatch) => {
+      return {
+        ...safeMatch,
+        module:
+          safeMatch.module && safeMatch.module.status === 'fulfilled'
+            ? safeMatch.module
+            : { status: 'pending' }
+      };
+    }
+  );
 
   return Promise.all(
     awaits.map((p, i) => {
@@ -180,7 +192,7 @@ export class NotFound extends Error {
 }
 
 class Router {
-  private routes: RouteObject[] = [];
+  private routes: ResolveRouteObject[] = [];
 
   private routeTree: RouteTree;
 
@@ -284,16 +296,13 @@ class Router {
         isObsolete = true;
         this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
       };
-      resolveComponents(_matchs, (matchs: RouteObject[]) => {
+      resolveComponents(_matchs, (matchs: ResolveRouteObject[]) => {
         if (!isObsolete) {
-          this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
-
           const safeMatchs = cloneDeep(matchs);
           const getMatch = () => safeMatchs.shift();
           this.event.emit('matchRoute', getMatch);
         }
-      }).catch(() => {
-        // do not handle after_enters in finally, which will cause pre -rendering abnormalities
+      }).finally(() => {
         if (!isObsolete)
           this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
       });
@@ -327,7 +336,7 @@ class Router {
     this.navigateTo(state.path, state);
   }
 
-  onMatchRoute(cb: (getMatch: () => RouteObject | undefined) => any) {
+  onMatchRoute(cb: (getMatch: () => ResolveRouteObject | undefined) => any) {
     const cancel = this.event.on('matchRoute', cb);
 
     return cancel;
@@ -398,6 +407,7 @@ export type {
   Meta,
   Module,
   NavigateOptions,
+  ResolveRouteObject,
   RouteObject,
   RouterListener,
   RouterUnListener,

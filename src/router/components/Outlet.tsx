@@ -10,18 +10,16 @@ import React, {
 } from 'react';
 import { forwardRef } from 'react';
 
+import { Loading } from '@/components';
+
 import ErrorBoundary from './ErrorBoundary';
-import { NOT_FOUND_PATH, RouteObject } from '../router';
+import { NOT_FOUND_PATH, ResolveRouteObject } from '../router';
 import { RouterContext } from '../shared/context';
 
 interface IOutletProps extends ChildrenComponent {}
 
 export interface IOutletRef {
   onMounted(cb: () => any): void;
-}
-
-function Loading() {
-  return <h1>loading</h1>;
 }
 
 function Error() {
@@ -37,7 +35,7 @@ const Outlet = memo(
     const routerContext = useContext(RouterContext);
 
     const initialedRef = useRef(false);
-    const [route, setRoute] = useState<RouteObject>();
+    const [route, setRoute] = useState<ResolveRouteObject>();
 
     const mountedRef = useRef<() => any>();
 
@@ -88,25 +86,6 @@ const Outlet = memo(
 
     useLayoutEffect(() => {
       mountedRef.current?.();
-
-      // use prerender to complete, how do I remove it after pre-rendering?
-      //don't delete this, mark it to delete after the construction
-      // try {
-      //   if (!route) return void 0;
-
-      //   const currentPaths = [
-      //     window.location.pathname,
-      //     window.location.pathname + 'index',
-      //     window.location.pathname + '/index'
-      //   ];
-
-      //   if (currentPaths.includes(route.fullPath!)) {
-      //     window.document.dispatchEvent(new Event('pageReadyed'));
-      //   }
-      // } catch (err) {
-      //   window.document.dispatchEvent(new Event('pageReadyed'));
-      // }
-      //don't delete this, mark it to delete after the construction
     }, [route]);
 
     if (route?.module === void 0) return null;

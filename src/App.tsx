@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 
 import { ConfigProvider, theme } from 'antd';
 
+import { resetProgressBar } from './routes';
 import { useAppStore } from './store';
 import './App.less';
 
@@ -18,6 +19,8 @@ const App: React.FC<IAppProps> = (props) => {
   }, []);
 
   useEffect(() => {
+    resetProgressBar();
+
     let language = 'en';
     if (['zh-CN', 'en'].includes(window.navigator.language)) {
       language = window.navigator.language;
