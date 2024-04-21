@@ -90,13 +90,13 @@ table {
   }
 
   code .line::before {
-    content: counter(step);
-    counter-increment: step;
+    display: inline-block;
     width: 1.5rem;
     margin-right: 1rem;
-    display: inline-block;
-    text-align: right;
     color: #6e7681;
+    text-align: right;
+    content: counter(step);
+    counter-increment: step;
   }
 }
 

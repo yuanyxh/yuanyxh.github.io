@@ -5,29 +5,29 @@
   background-color: #1f1f1f;
 
   .sider {
-    background-color: #181818;
     overflow: auto;
-    box-shadow: 1px 0 1px rgba(255, 255, 255, 0.05);
+    background-color: #181818;
+    box-shadow: 1px 0 1px rgb(255 255 255 / 5%);
 
     .list {
       padding: 10px;
 
       .item {
-        color: #cccccc;
         line-height: 1.6;
-        user-select: none;
+        color: #ccc;
         cursor: pointer;
+        user-select: none;
 
         .row {
           &:hover {
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgb(255 255 255 / 30%);
           }
         }
 
         > .list {
-          height: 0px;
+          height: 0;
+          padding: 0 10px;
           overflow: hidden;
-          padding: 0px 10px;
           transition: height 0.2s ease;
           will-change: height;
         }
@@ -55,7 +55,7 @@
         }
 
         .directoryIcon + span {
-          margin-left: 0px;
+          margin-left: 0;
         }
       }
     }
