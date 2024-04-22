@@ -61,31 +61,6 @@ export const routes: RouteObject[] = [
       {
         path: 'index',
         element: () => import('@/coder/Cases')
-      },
-      {
-        path: 'base64_coder',
-        element: () => import('@/examples/base64_coder/Index'),
-        meta: {
-          title: 'base64 编解码',
-          date: '2024-4-21 16:54:00',
-          author: 'yuanyxh',
-          description: 'js 实现的 base64 示例，帮助理解 base64 是如何工作的',
-          imageUrl: ''
-        },
-        children: [
-          {
-            path: 'utils-base64.ts',
-            element: () => import('@/examples/base64_coder/code/base64')
-          },
-          {
-            path: 'Index.module.tsx',
-            element: () => import('@/examples/base64_coder/code/Index.module')
-          },
-          {
-            path: 'index',
-            element: () => import('@/examples/base64_coder/code/Index')
-          }
-        ]
       }
       /** placeholder for coder */
     ]

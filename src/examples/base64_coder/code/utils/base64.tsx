@@ -1,8 +1,5 @@
 export default function Default() {
-  return (
-    <div
-      dangerouslySetInnerHTML={{
-        __html: `<pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">isInteger</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">from</span><span style="color:#98C379"> 'lodash-es'</span><span style="color:#ABB2BF">;</span></span>
+        return <div dangerouslySetInnerHTML={{ __html: `<pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">isInteger</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">from</span><span style="color:#98C379"> 'lodash-es'</span><span style="color:#ABB2BF">;</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#7F848E;font-style:italic">/** base64 字符映射 */</span></span>
 <span class="line"><span style="color:#C678DD">const</span><span style="color:#E5C07B"> CHARACTER_SET</span><span style="color:#56B6C2"> =</span></span>
@@ -104,8 +101,5 @@ export default function Default() {
 <span class="line"><span style="color:#ABB2BF">};</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#C678DD">export</span><span style="color:#C678DD"> default</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">encode</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">decode</span><span style="color:#ABB2BF"> };</span></span>
-<span class="line"></span></code></pre>`
-      }}
-    ></div>
-  );
-}
+<span class="line"></span></code></pre>` }}></div>
+      }

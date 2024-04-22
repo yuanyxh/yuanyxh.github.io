@@ -1,0 +1,184 @@
+import { memo, useMemo, useState } from 'react';
+
+import { Layout } from 'antd';
+
+import { cloneDeep } from 'lodash-es';
+import classNames from 'classnames';
+
+import type { ResolveRouteObject } from '@/router';
+import { Outlet, useHistory, useLocation, useRoute } from '@/router';
+
+import styles from '@/coder/styles/Wrapper.module.less';
+
+import Default from '@/examples/base64_coder/Index';
+
+import { Icon } from '@/components';
+
+interface IMenu {
+  path: string;
+  fullPath: string;
+  children?: IMenu[];
+}
+
+function mergeMenu(menu: IMenu[]) {
+  let curr: IMenu | undefined;
+
+  const result: IMenu[] = [];
+  while ((curr = menu.shift())) {
+    const some = menu.filter((item) => item.path === curr!.path);
+
+    for (let i = 0; i < some.length; i++) {
+      curr.children = [...(curr.children || []), ...(some[i].children || [])];
+
+      curr.children = curr.children.length
+        ? mergeMenu(curr.children)
+        : undefined;
+    }
+
+    result.push(curr);
+
+    menu = menu.filter((item) => item.path !== curr!.path);
+  }
+
+  result.sort((a, b) => {
+    const _a = Number(!!a.children);
+    const _b = Number(!!b.children);
+
+    return _b - _a;
+  });
+
+  return result;
+}
+
+function transformMenu(routes: ResolveRouteObject[]) {
+  const values = routes.map((route) => {
+    if (route.path.includes('-')) {
+      const seqs = route.path.split('-');
+
+      let seq = seqs.shift();
+
+      const root: IMenu = { path: seq!, fullPath: route.fullPath };
+
+      let current = root;
+
+      while ((seq = seqs.shift())) {
+        const child = { path: seq, fullPath: route.fullPath };
+        current.children = [child];
+
+        current = child;
+      }
+
+      return root;
+    }
+
+    return { path: route.path, fullPath: route.fullPath };
+  });
+
+  return mergeMenu(values);
+}
+
+const { Sider } = Layout;
+
+function Menu({ items }: { items: IMenu[] }) {
+  const location = useLocation();
+
+  const [expands, setExpands] = useState<string[]>([]);
+
+  const history = useHistory();
+
+  const handleSetExpands = (key: string) => {
+    setExpands((prev) => {
+      if (prev.includes(key)) {
+        return prev.filter((path) => path !== key);
+      }
+
+      return [...prev, key];
+    });
+  };
+
+  const handleSwitchFile = (path: string) => {
+    history.replace(path);
+  };
+
+  return (
+    <ul className={styles.list} onClick={(e) => e.stopPropagation()}>
+      {items.map((item) => (
+        <li
+          key={item.fullPath}
+          className={classNames(styles.item, {
+            [styles.expand]: expands.includes(item.fullPath)
+          })}
+        >
+          <a
+            href={item.fullPath}
+            onClick={(e) => e.preventDefault()}
+            title={item.path}
+          >
+            <div
+              className={classNames(styles.row, {
+                [styles.active]:
+                  location.path === item.fullPath &&
+                  !expands.includes(item.fullPath),
+                [styles.directory]: item.children
+              })}
+              onClick={
+                item.children
+                  ? () => handleSetExpands(item.fullPath)
+                  : () => handleSwitchFile(item.fullPath)
+              }
+            >
+              {item.children ? (
+                <Icon
+                  className={styles.directoryIcon}
+                  icon="material-symbols:keyboard-arrow-right"
+                />
+              ) : null}
+              <span>{item.path}</span>
+            </div>
+          </a>
+
+          {item.children ? <Menu items={item.children} /> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const Exhibit = memo(function Exhibit() {
+  return (
+    <section className={styles.exhibit}>
+      <Default />
+    </section>
+  );
+});
+
+export default function Wrapper() {
+  const route = useRoute();
+  const location = useLocation();
+
+  const menu = useMemo(() => {
+    const codes = route?.[1].children || [];
+
+    const curr = location.path.replace('/coder/', '').split('/').shift()!;
+
+    return transformMenu(
+      cloneDeep(codes.find((code) => code.path === curr)!.children!)
+    );
+  }, []);
+
+  return (
+    <Layout className={styles.wrapper}>
+      <Sider className={styles.sider} theme="dark">
+        <Menu items={menu} />
+      </Sider>
+
+      <main className={styles.content}>
+        <section className={styles.code}>
+          <Outlet />
+        </section>
+
+        <Exhibit />
+      </main>
+    </Layout>
+  );
+}
