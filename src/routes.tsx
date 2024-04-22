@@ -51,6 +51,10 @@ export const routes: RouteObject[] = [
             element: () => import('@/viewer/AboutSite')
           }
         ]
+      },
+      {
+        path: 'examples',
+        element: () => import('@/viewer/Examples')
       }
     ]
   },
@@ -58,10 +62,6 @@ export const routes: RouteObject[] = [
     path: '/coder',
     element: () => import('@/coder/Layout'),
     children: [
-      {
-        path: 'index',
-        element: () => import('@/coder/Cases')
-      }
       /** placeholder for coder */
     ]
   }

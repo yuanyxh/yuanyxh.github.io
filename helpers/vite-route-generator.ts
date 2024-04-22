@@ -5,7 +5,6 @@ import {
   routesPath
 } from './utils';
 
-import { writeFileSync } from 'fs';
 import type { PluginOption } from 'vite';
 import { createFilter } from 'vite';
 
@@ -19,7 +18,7 @@ export interface ArticleMeta {
 }
 
 function viteRouteGenerator(): PluginOption {
-  const filter = createFilter([/\.[md|ts]x$/]);
+  const filter = createFilter([/\.mdx$/]);
 
   return {
     name: 'vite-plugin-route-generator',
@@ -31,18 +30,21 @@ function viteRouteGenerator(): PluginOption {
       };
 
       server.watcher.add('**/*.{mdx}');
-      server.watcher.add('/src/examples/*');
-      // server.watcher.on('change', listener);
       server.watcher.on('add', listener);
       server.watcher.on('unlink', listener);
+
+      server.watcher.add(resolve('./src/coder/Wrapper.tsx'));
+      server.watcher.on('change', (id) => {
+        if (resolve(id) === resolve('./src/coder/Wrapper.tsx')) {
+          server.restart();
+        }
+      });
     },
     async transform(code, id) {
       if (id.includes('node_modules')) return;
 
       if (resolve(routesPath) === resolve(id.split('?')[0])) {
         const result = replacePlaceRoute(code, await generateRouteJSON());
-
-        writeFileSync(resolve('./route.tsx'), result, 'utf-8');
 
         return result;
       }

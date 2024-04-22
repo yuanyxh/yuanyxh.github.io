@@ -1,15 +1,16 @@
 import { Typography } from 'antd';
 
-import { Link, type RouteObject } from '@/router';
+import type { ResolveRouteObject } from '@/router';
+import { Link } from '@/router';
 
 import { useBooks } from './hooks/useBooks';
 import styles from './styles/Books.module.less';
 
 const { Title, Paragraph } = Typography;
 
-const BookItem = ({ book }: { book: RouteObject }) => {
+const BookItem = ({ book }: { book: ResolveRouteObject }) => {
   return (
-    <Link to={`/books/${book.path}`}>
+    <Link to={book.fullPath}>
       <div className={styles.bookItem}>
         <div className={styles.contentBox}>
           <Title className={styles.title} level={3}>

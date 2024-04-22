@@ -22,7 +22,12 @@ import { Link, Outlet, useHistory, useScrollStore } from '@/router';
 
 import { useAppStore } from '@/store';
 
-import { fallbackFullscreen, isFullScreen, requestFullScreen } from '@/utils';
+import {
+  fallbackFullscreen,
+  isFullScreen,
+  onFullScreen,
+  requestFullScreen
+} from '@/utils';
 
 import { Icon } from '@/components';
 
@@ -139,6 +144,12 @@ const Actions = () => {
   const [fullScreen, setFullScreen] = useState(isFullScreen());
 
   const history = useHistory();
+
+  useEffect(() => {
+    return onFullScreen((val) => {
+      setFullScreen(val);
+    });
+  }, []);
 
   const handleLanuageChange: MenuProps['onClick'] = (e) => {
     setLanguage(e.key);

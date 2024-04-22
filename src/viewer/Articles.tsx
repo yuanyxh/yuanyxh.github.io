@@ -1,14 +1,14 @@
 import { Col, Divider, Row, Typography } from 'antd';
 
-import type { RouteObject } from '@/router';
+import type { ResolveRouteObject } from '@/router';
 import { Link } from '@/router';
 
 import { useArticles } from './hooks/useArticles';
 import styles from './styles/Articles.module.less';
 
-const ArticleItem = ({ article }: { article: RouteObject }) => {
+const ArticleItem = ({ article }: { article: ResolveRouteObject }) => {
   return (
-    <Link to={`/articles/${article.path}`}>
+    <Link to={article.fullPath}>
       <div className={styles.articleItem}>
         <div className={styles.preview}>
           <img

@@ -91,7 +91,7 @@ export const getExampleMeta = (path: string) => {
 
 const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
 export const generateRouteJSONWithExample = async () => {
-  let result = ',';
+  let result = '';
 
   async function transform(
     dirs: string[],

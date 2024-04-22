@@ -1,0 +1,48 @@
+.examples {
+  max-width: 916px;
+  margin: 0 auto;
+
+  .exampleItem {
+    display: flex;
+    justify-content: space-between;
+    height: 120px;
+    padding: 15px 20px;
+    margin-top: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    box-shadow:
+      0 1px 2px 0 rgb(0 0 0 / 5%),
+      0 1px 6px -1px rgb(0 0 0 / 4%),
+      0 2px 4px 0 rgb(0 0 0 / 4%);
+
+    .contentBox {
+      flex: 1;
+
+      .title {
+        transition: minianimation(color);
+
+        &:hover {
+          color: var(--color-primary);
+        }
+      }
+    }
+  }
+}
+
+:root[mode='dark'] {
+  .examples {
+    .exampleItem {
+      box-shadow:
+        0 1px 2px 0 rgb(255 255 255 / 10%),
+        0 1px 6px -1px rgb(255 255 255 / 9%),
+        0 2px 4px 0 rgb(255 255 255 / 9%);
+    }
+  }
+}
+
+@media screen and (width <= 768px) {
+  .books {
+    width: 100%;
+    padding: 0 30px;
+  }
+}

@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 
-import { Layout } from 'antd';
+import { Drawer, FloatButton, Form, Layout, Radio } from 'antd';
 
 import { cloneDeep } from 'lodash-es';
 import classNames from 'classnames';
@@ -106,7 +106,7 @@ function Menu({ items }: { items: IMenu[] }) {
         <li
           key={item.fullPath}
           className={classNames(styles.item, {
-            [styles.expand]: expands.includes(item.fullPath)
+            [styles.expand]: expands.includes(item.fullPath + item.path)
           })}
         >
           <a
@@ -118,12 +118,12 @@ function Menu({ items }: { items: IMenu[] }) {
               className={classNames(styles.row, {
                 [styles.active]:
                   location.path === item.fullPath &&
-                  !expands.includes(item.fullPath),
+                  !expands.includes(item.fullPath + item.path),
                 [styles.directory]: item.children
               })}
               onClick={
                 item.children
-                  ? () => handleSetExpands(item.fullPath)
+                  ? () => handleSetExpands(item.fullPath + item.path)
                   : () => handleSwitchFile(item.fullPath)
               }
             >
@@ -152,9 +152,16 @@ const Exhibit = memo(function Exhibit() {
   );
 });
 
+type FieldType = {
+  distribution: number;
+};
+
 export default function Wrapper() {
   const route = useRoute();
   const location = useLocation();
+
+  const [open, setOpen] = useState(false);
+  const [layoutId, setLayoutId] = useState(0);
 
   const menu = useMemo(() => {
     const codes = route?.[1].children || [];
@@ -166,19 +173,53 @@ export default function Wrapper() {
     );
   }, []);
 
+  const handleChangeLayout = (e: number) => {
+    setLayoutId(e);
+  };
+
   return (
     <Layout className={styles.wrapper}>
       <Sider className={styles.sider} theme="dark">
         <Menu items={menu} />
       </Sider>
 
-      <main className={styles.content}>
+      <main
+        className={classNames(styles.content, {
+          [styles.codearea]: layoutId === 1,
+          [styles.examplearea]: layoutId === 2
+        })}
+      >
         <section className={styles.code}>
           <Outlet />
         </section>
 
         <Exhibit />
       </main>
+
+      <Drawer title="Settings" onClose={() => setOpen(false)} open={open}>
+        <Form
+          name="settings"
+          layout="horizontal"
+          style={{ maxWidth: 600 }}
+          initialValues={{ distribution: 0 }}
+          autoComplete="off"
+        >
+          <Form.Item<FieldType> label="展示" name="distribution">
+            <Radio.Group onChange={(e) => handleChangeLayout(e.target.value)}>
+              <Radio.Button value={0}>左右布局</Radio.Button>
+              <Radio.Button value={1}>代码区</Radio.Button>
+              <Radio.Button value={2}>示例区</Radio.Button>
+            </Radio.Group>
+          </Form.Item>
+        </Form>
+      </Drawer>
+
+      <FloatButton.Group>
+        <FloatButton
+          icon={<Icon icon="material-symbols:settings" />}
+          onClick={() => setOpen(true)}
+        />
+      </FloatButton.Group>
     </Layout>
   );
 }

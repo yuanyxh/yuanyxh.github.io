@@ -44,6 +44,27 @@ export const requestFullScreen = async (ele?: HTMLElement) => {
   return false;
 };
 
+export const onFullScreen = (
+  cb: (isFullScreen: boolean) => any,
+  ele?: HTMLElement
+) => {
+  function onChange() {
+    cb(isFullScreen());
+  }
+
+  (ele || document.documentElement).addEventListener(
+    'fullscreenchange',
+    onChange
+  );
+
+  return () => {
+    (ele || document.documentElement).removeEventListener(
+      'fullscreenchange',
+      onChange
+    );
+  };
+};
+
 export const isFullScreen = () => {
   return window.document.fullscreenElement !== null;
 };
