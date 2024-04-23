@@ -17,7 +17,6 @@ import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
 import viteRouteGenerator from './helpers/vite-route-generator';
 import vitePrerender from './helpers/vite-prerender';
-import rehypeShiki from '@shikijs/rehype';
 import rehypePrism from '@mapbox/rehype-prism';
 
 import type { ConfigEnv, UserConfig } from 'vite';
@@ -76,21 +75,12 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
             remarkEmoji,
             remarkMdxFrontmatter,
             remarkGfm,
-            // @ts-expect-error is ok
+            // @ts-expect-error this is normal, it's just a mismatch in the type definitions
             remarkMdxToc
           ],
           rehypePlugins: [
-            // @ts-expect-error is ok
+            // @ts-expect-error this is normal, it's just a mismatch in the type definitions
             [rehypePrism, { ignoreMissing: true, alias: { shell: 'sh' } }]
-            // [
-            //   rehypeShiki,
-            //   {
-            //     themes: {
-            //       light: 'one-dark-pro',
-            //       dark: 'one-dark-pro'
-            //     }
-            //   }
-            // ]
           ],
           providerImportSource: '@/viewer/Provider.tsx'
         })

@@ -29,3 +29,5 @@ pnpm-lock.yaml
 .analyze.html
 
 build
+
+src/examples/*/code/

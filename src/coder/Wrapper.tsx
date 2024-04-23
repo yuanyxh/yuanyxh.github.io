@@ -204,7 +204,7 @@ export default function Wrapper() {
           initialValues={{ distribution: 0 }}
           autoComplete="off"
         >
-          <Form.Item<FieldType> label="展示" name="distribution">
+          <Form.Item<FieldType> label="布局" name="distribution">
             <Radio.Group onChange={(e) => handleChangeLayout(e.target.value)}>
               <Radio.Button value={0}>左右布局</Radio.Button>
               <Radio.Button value={1}>代码区</Radio.Button>

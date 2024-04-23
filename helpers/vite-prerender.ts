@@ -6,7 +6,7 @@ import {
   routesPath
 } from './utils';
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import selfVitePrerender from 'vite-plugin-prerender';
 
 export interface PostProcessParam {
@@ -35,6 +35,12 @@ const match = text.match(reg);
 async function vitePrerender() {
   if (!match) {
     throw Error('no match routes.');
+  }
+
+  const dirs = readdirSync(resolve('./src/examples'));
+
+  for (let i = 0; i < dirs.length; i++) {
+    excludeOutPathRewrite.push('/coder/' + dirs[i]);
   }
 
   const getRoutes = new Function(
