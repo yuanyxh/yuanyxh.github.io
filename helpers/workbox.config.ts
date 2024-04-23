@@ -307,44 +307,6 @@ export declare interface WorkboxPlugin {
   requestWillFetch?: RequestWillFetchCallback;
 }
 
-export interface RuntimeCaching {
-  handler: RouteHandler | StrategyName;
-  method?: HTTPMethod;
-  options?: {
-    backgroundSync?: {
-      name: string;
-      options?: QueueOptions;
-    };
-
-    broadcastUpdate?: {
-      channelName?: string;
-      options: BroadcastCacheUpdateOptions;
-    };
-
-    cacheableResponse?: CacheableResponseOptions;
-
-    cacheName?: string | null;
-
-    expiration?: ExpirationPluginOptions;
-
-    networkTimeoutSeconds?: number;
-
-    plugins?: Array<WorkboxPlugin>;
-
-    precacheFallback?: {
-      fallbackURL: string;
-    };
-
-    rangeRequests?: boolean;
-
-    fetchOptions?: RequestInit;
-
-    matchOptions?: CacheQueryOptions;
-  };
-
-  urlPattern: RegExp | string | RouteMatchCallback;
-}
-
 export interface RouteMatchCallbackOptions {
   event: ExtendableEvent;
   request: Request;
@@ -364,22 +326,7 @@ export interface GoogleAnalyticsInitializeOptions {
   hitFilter?: (params: URLSearchParams) => void;
 }
 
-export default generateSW({
-  swDest: './build/sw.js',
-  globDirectory: './build',
-  globPatterns: ['**/*.{js,css,html}'],
-  babelPresetEnvTargets: [
-    'Chrome >= 87',
-    'Firefox >= 78',
-    'Safari >= 14',
-    'Edge >= 88',
-    'Opera >= 80',
-    'defaults and fully supports es6-module'
-  ],
-  cleanupOutdatedCaches: true,
-  clientsClaim: true
-  // sourcemap: false
-});
+// -------------------------------------------------
 
 export interface BasePartial {
   /** 要缓存的链接？ */
@@ -429,37 +376,187 @@ export interface GeneratePartial {
   /** 如果对以 / 结尾的网址的导航请求与预缓存的网址不匹配，该值将被附加到该网址，并将检查该网址是否存在预缓存匹配。此值应该设置为 Web 服务器用于其目录索引的内容。 */
   directoryIndex?: string | null;
 
+  /** 禁用开发 log */
   disableDevLogs?: boolean;
 
+  /**
+   * 在查找预缓存匹配项之前，系统会移除与此数组中的某个正则表达式匹配的所有搜索参数名称。
+   * 如果您的用户请求的网址包含一些用于跟踪流量来源的网址参数，那么这种做法非常有用。
+   * */
   ignoreURLParametersMatching?: Array<RegExp>;
 
+  /** 导入额外脚本 */
   importScripts?: Array<string>;
 
+  /** 将 workbox 依赖内置在生成的 service workder 文件中 */
   inlineWorkboxRuntime?: boolean;
 
   mode?: string | null;
 
+  /**
+   * 如果指定此参数，针对未预缓存的网址的所有导航请求都将通过所提供的网址中的 HTML 执行。
+   * 您必须传入预缓存清单中列出的 HTML 文档的网址。这适用于单页应用场景，在此场景中，
+   * 您希望所有导航都使用通用的 App Shell HTML。
+   * */
   navigateFallback?: string | null;
 
+  /**
+   * 可选的正则表达式数组，用于限制所配置的 navigateFallback 行为适用的网址。
+   * 如果只有您网站的部分网址应被视为单页应用的一部分，这种做法非常有用。
+   * 如果同时配置了 navigateFallbackDenylist 和 navigateFallbackAllowlist，则拒绝名单优先。
+   */
   navigateFallbackAllowlist?: Array<RegExp>;
 
+  /**
+   * 可选的正则表达式数组，用于限制所配置的 navigateFallback 行为适用的网址。
+   */
   navigateFallbackDenylist?: Array<RegExp>;
 
+  /** 启用导航预加载 */
   navigationPreload?: boolean;
 
+  /** 控制是否支持离线 Google Analytics（分析）。 */
   offlineGoogleAnalytics?: boolean | GoogleAnalyticsInitializeOptions;
 
+  /**
+   * 指定一个或多个运行时缓存配置。
+   * 系统会使用您定义的匹配和处理程序配置将这些对象转换为 workbox-routing.registerRoute 调用
+   */
   runtimeCaching?: Array<RuntimeCaching>;
 
+  /**
+   * 是否将对 skipWaiting() 的无条件调用添加到生成的 Service Worker。
+   * 如果为 false，则改为添加 message 监听器，以允许客户端页面通过对等待的 Service Worker
+   * 调用 postMessage({type: 'SKIP_WAITING'}) 来触发 skipWaiting()。
+   */
   skipWaiting?: boolean;
 
   sourcemap?: boolean;
 }
 
 export interface RequiredSWDestPartial {
+  /** 输出 service worker 路径 */
   swDest: string;
 }
 
 export interface OptionalGlobDirectoryPartial {
+  /** 指定工作目录 */
   globDirectory?: string;
+}
+
+export interface RuntimeCaching {
+  /** 路由处理程序或策略名称 */
+  handler: RouteHandler | StrategyName;
+  /** 请求方式 */
+  method?: HTTPMethod;
+  options?: {
+    /**
+     * BackgroundSync API，自动将失败的请求加入队列，并在将来的 sync 事件触发时重试
+     * 支持 BackgroundSync API 的浏览器会根据由浏览器管理的时间间隔代表您自动重放失败的请求，
+     * 并且可能会在两次重放尝试之间使用指数退避算法。
+     */
+    backgroundSync?: {
+      name: string;
+      options?: QueueOptions;
+    };
+
+    /**
+     * 广播更新，在数据存在更新时通知对应的广播频道，
+     * https://developer.chrome.com/docs/workbox/modules/workbox-broadcast-update?hl=zh-cn
+     */
+    broadcastUpdate?: {
+      channelName?: string;
+      options: BroadcastCacheUpdateOptions;
+    };
+
+    /**
+     * 在运行时缓存资源时，判断给定响应是否有效以及是否符合保存和重复使用条件。
+     */
+    cacheableResponse?: CacheableResponseOptions;
+
+    /**
+     * 如果提供，此属性将设置在 handler 中配置的 workbox-strategies 的 cacheName 属性。
+     */
+    cacheName?: string | null;
+
+    /**
+     * 设置缓存过期策略
+     */
+    expiration?: ExpirationPluginOptions;
+
+    /**
+     * 网络超时
+     */
+    networkTimeoutSeconds?: number;
+
+    /**
+     * 插件
+     */
+    plugins?: Array<WorkboxPlugin>;
+
+    /** 预缓存插件 */
+    precacheFallback?: {
+      fallbackURL: string;
+    };
+
+    /** 范围请求插件 */
+    rangeRequests?: boolean;
+
+    /** 请求选项 */
+    fetchOptions?: RequestInit;
+
+    /** 匹配选项 */
+    matchOptions?: CacheQueryOptions;
+  };
+
+  urlPattern: RegExp | string | RouteMatchCallback;
+}
+
+interface ConfigParams {
+  mode: 'production' | 'development';
+}
+
+export default function getWorkboxConfig({ mode }: ConfigParams) {
+  return generateSW({
+    swDest: './build/sw.js',
+    globDirectory: './build',
+    globPatterns: ['**/*'],
+    directoryIndex: 'index.html',
+    babelPresetEnvTargets: [
+      'Chrome >= 87',
+      'Firefox >= 78',
+      'Safari >= 14',
+      'Edge >= 88',
+      'Opera >= 80',
+      'defaults and fully supports es6-module'
+    ],
+    cleanupOutdatedCaches: true,
+    clientsClaim: true,
+    mode: mode,
+    runtimeCaching: [
+      {
+        handler: 'CacheFirst',
+        urlPattern: (options) => options.request.destination === 'font',
+        options: {
+          cacheName: 'fontCache',
+          expiration: {
+            /** maximum cache 3 months */
+            maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+          }
+        }
+      },
+      {
+        handler: 'CacheFirst',
+        urlPattern: (options) => options.request.destination === 'image',
+        options: {
+          cacheName: 'imageCache',
+          expiration: {
+            /** maximum cache 3 months */
+            maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+          }
+        }
+      }
+    ]
+    // sourcemap: false
+  });
 }
