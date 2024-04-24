@@ -19,13 +19,3 @@ const node = (
 );
 
 createRoot(document.getElementById('root')!).render(node);
-
-function registerServiceWorker() {
-  if ('serviceWorker' in window.navigator) {
-    window.navigator.serviceWorker.register('./sw.js');
-  }
-}
-
-if (import.meta.env.PROD) {
-  registerServiceWorker();
-}

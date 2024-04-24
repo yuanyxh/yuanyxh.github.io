@@ -18,7 +18,6 @@ import { remarkMdxToc } from 'remark-mdx-toc';
 import viteRouteGenerator from './helpers/vite-route-generator';
 import vitePrerender from './helpers/vite-prerender';
 import rehypePrism from '@mapbox/rehype-prism';
-import getWorkboxConfig from './helpers/workbox.config';
 
 import type { ConfigEnv, UserConfig } from 'vite';
 
@@ -42,8 +41,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       viteRouteGenerator(),
 
       vitePrerender(),
-
-      getWorkboxConfig({ mode: isBuild ? 'production' : 'development' }),
 
       /**
        * format

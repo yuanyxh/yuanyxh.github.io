@@ -1,4 +1,5 @@
-import { generateSW } from 'rollup-plugin-workbox';
+import type { PluginOption } from 'vite';
+import { generateSW } from 'workbox-build';
 
 // TODO: this is an externally defined type, just to resolve the error
 export interface ExtendableEvent {}
@@ -512,51 +513,78 @@ export interface RuntimeCaching {
   urlPattern: RegExp | string | RouteMatchCallback;
 }
 
-interface ConfigParams {
+export interface ConfigParams {
   mode: 'production' | 'development';
 }
 
-export default function getWorkboxConfig({ mode }: ConfigParams) {
-  return generateSW({
-    swDest: './build/sw.js',
-    globDirectory: './build',
-    globPatterns: ['**/*'],
-    directoryIndex: 'index.html',
-    babelPresetEnvTargets: [
-      'Chrome >= 87',
-      'Firefox >= 78',
-      'Safari >= 14',
-      'Edge >= 88',
-      'Opera >= 80',
-      'defaults and fully supports es6-module'
-    ],
-    cleanupOutdatedCaches: true,
-    clientsClaim: true,
-    mode: mode,
-    runtimeCaching: [
-      {
-        handler: 'CacheFirst',
-        urlPattern: (options) => options.request.destination === 'font',
-        options: {
-          cacheName: 'fontCache',
-          expiration: {
-            /** maximum cache 3 months */
-            maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+const defaultConfig = {
+  name: 'vite:workbox'
+};
+
+export default function vitePluginWorkbox({
+  mode
+}: ConfigParams): PluginOption {
+  if (mode === 'development') {
+    return defaultConfig;
+  }
+
+  const getSwConfig = () => {
+    return generateSW({
+      swDest: './build/sw.js',
+      globDirectory: './build',
+      globPatterns: ['**/**'],
+      directoryIndex: 'index.html',
+      babelPresetEnvTargets: [
+        'Chrome >= 87',
+        'Firefox >= 78',
+        'Safari >= 14',
+        'Edge >= 88',
+        'Opera >= 80',
+        'defaults and fully supports es6-module'
+      ],
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      mode: mode,
+      runtimeCaching: [
+        {
+          handler: 'CacheFirst',
+          urlPattern: (options) => options.request.destination === 'font',
+          options: {
+            cacheName: 'fontCache',
+            expiration: {
+              /** maximum cache 3 months */
+              maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+            }
+          }
+        },
+        {
+          handler: 'CacheFirst',
+          urlPattern: (options) => options.request.destination === 'image',
+          options: {
+            cacheName: 'imageCache',
+            expiration: {
+              /** maximum cache 3 months */
+              maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+            }
           }
         }
-      },
-      {
-        handler: 'CacheFirst',
-        urlPattern: (options) => options.request.destination === 'image',
-        options: {
-          cacheName: 'imageCache',
-          expiration: {
-            /** maximum cache 3 months */
-            maxAgeSeconds: 3 * 30 * 24 * 60 * 60
-          }
-        }
-      }
-    ]
-    // sourcemap: false
-  });
+      ]
+      // sourcemap: false
+    });
+  };
+
+  const config: PluginOption = {
+    ...defaultConfig,
+    apply: 'build',
+    enforce: 'post',
+    configResolved(config) {
+      console.log(config);
+    },
+    async closeBundle() {
+      const { warnings, count, size } = await getSwConfig();
+      console.log(warnings, count, size);
+    }
+  };
+
+  return config;
 }

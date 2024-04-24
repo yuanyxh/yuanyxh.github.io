@@ -34,6 +34,7 @@ module.exports = {
   plugins: ['@typescript-eslint', 'react', 'simple-import-sort'],
   rules: {
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-this-alias': 'off',
     'react/prop-types': 'off',
     'simple-import-sort/imports': [
       'error',

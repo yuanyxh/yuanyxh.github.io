@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --mode dev",
     "test": "tsc && pnpm vite build --mode test",
-    "build": "tsc && pnpm vite build --mode prod",
+    "build": "tsc && pnpm vite build --mode prod && node ./helpers/generateSw.js",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "stylelint": "stylelint \"**/*.less\"",
@@ -70,7 +70,6 @@
     "remark-mdx-frontmatter": "^4.0.0",
     "remark-mdx-toc": "^0.3.1",
     "rollup-plugin-visualizer": "^5.12.0",
-    "rollup-plugin-workbox": "^8.1.0",
     "serve": "^14.2.1",
     "shiki": "^1.3.0",
     "stylelint": "^16.3.1",
@@ -81,7 +80,8 @@
     "vite-plugin-ejs": "^1.7.0",
     "vite-plugin-prerender": "^1.0.8",
     "vite-plugin-progress": "^0.0.7",
-    "vite-plugin-svg-icons": "^2.0.1"
+    "vite-plugin-svg-icons": "^2.0.1",
+    "workbox-build": "^7.1.0"
   },
   "pnpm": {
     "patchedDependencies": {

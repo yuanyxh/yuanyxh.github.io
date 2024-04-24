@@ -1,6 +1,8 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
-import { ConfigProvider, theme } from 'antd';
+import { Button, ConfigProvider, notification, theme } from 'antd';
+
+import ServiceWorkerManager, { clearCache } from '@/utils/serviceWorker';
 
 import { resetProgressBar } from './routes';
 import { useAppStore } from './store';
@@ -8,6 +10,9 @@ import './App.less';
 
 interface IAppProps extends Required<ChildrenComponent> {}
 const App: React.FC<IAppProps> = (props) => {
+  const [api, contextHolder] = notification.useNotification({ maxCount: 1 });
+  const serviceWorkerRef = useRef<ServiceWorkerManager>();
+
   const {
     settings: { colorScheme },
     setLanguage,
@@ -32,23 +37,57 @@ const App: React.FC<IAppProps> = (props) => {
       setColorScheme('dark');
     }
 
+    function update() {
+      function handleReEnter() {
+        serviceWorkerRef.current?.skipWaiting();
+        api.destroy();
+      }
+
+      const btn = (
+        <Button type="primary" onClick={handleReEnter}>
+          确认
+        </Button>
+      );
+
+      api.info({
+        message: '有新内容',
+        description: '网站有更新，请点击确认以获取最新内容。',
+        placement: 'bottomRight',
+        style: { padding: '14px 16px', width: 300 },
+        btn,
+        duration: null
+      });
+    }
+
+    if (import.meta.env.PROD) {
+      serviceWorkerRef.current = new ServiceWorkerManager({ update });
+      serviceWorkerRef.current.registerServiceWorker();
+    }
+
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
     return () =>
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
   }, []);
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#ff6000'
-        },
-        algorithm:
-          colorScheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm
-      }}
-    >
-      {props.children}
-    </ConfigProvider>
+    <>
+      {contextHolder}
+
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#ff6000'
+          },
+          algorithm:
+            colorScheme === 'dark'
+              ? theme.darkAlgorithm
+              : theme.defaultAlgorithm
+        }}
+      >
+        <Button onClick={() => clearCache()}>清理缓存</Button>
+        {props.children}
+      </ConfigProvider>
+    </>
   );
 };
 

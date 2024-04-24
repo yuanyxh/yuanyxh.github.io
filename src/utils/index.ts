@@ -1,5 +1,6 @@
 export { default as EventEmitter } from './event';
 export * from './fullscreen';
+export * from './serviceWorker';
 export * from './windowEvent';
 
 export const sleep = (time: number, fn: (...anys: any[]) => any) => {
