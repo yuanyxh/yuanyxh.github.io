@@ -19,10 +19,10 @@ export async function clearCache() {
           databases.map((database) => {
             const isFound = database.name?.includes('workbox');
 
-            console.error(database);
-
             if (isFound) {
-              window.indexedDB.deleteDatabase(database.name!);
+              const idb = window.indexedDB.deleteDatabase(database.name!);
+              idb.onsuccess = () => resolve(true);
+              idb.onerror = () => resolve(false);
             }
           });
 
@@ -32,7 +32,9 @@ export async function clearCache() {
         }
       }
 
-      return window.indexedDB.deleteDatabase('workbox-expiration');
+      const idb = window.indexedDB.deleteDatabase('workbox-expiration');
+      idb.onsuccess = () => resolve(true);
+      idb.onerror = () => resolve(false);
     }
 
     const cachesPromise = window.caches.keys().then((keys) => {

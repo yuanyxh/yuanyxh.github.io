@@ -1,30 +1,18 @@
-import { Button } from 'antd';
-
-import { requestFullScreen } from '@/utils';
+import { Row, Space, Switch, Typography } from 'antd';
 
 const Settings = () => {
-  const handleFullScreen = () => {
-    requestFullScreen();
-  };
-
   return (
-    <>
-      <div>
-        <Button type="primary" onClick={handleFullScreen}>
-          full screen
-        </Button>
-      </div>
+    <section>
+      <Typography.Title level={5}>Cache</Typography.Title>
 
-      <div
-        style={{
-          backgroundColor: '#fff',
-          height: '300px',
-          border: '1px solid #eee'
-        }}
-      >
-        全屏啊
-      </div>
-    </>
+      <Row>
+        <Space>
+          <Typography.Text>禁用离线缓存：</Typography.Text>
+
+          <Switch />
+        </Space>
+      </Row>
+    </section>
   );
 };
 
