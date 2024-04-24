@@ -38,7 +38,7 @@ generateSW({
   ],
   cleanupOutdatedCaches: true,
   clientsClaim: true,
-  mode: 'development',
+  mode: 'production',
   runtimeCaching: [
     {
       handler: 'CacheFirst',

@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { Button, ConfigProvider, notification, theme } from 'antd';
 
-import ServiceWorkerManager, { clearCache } from '@/utils/serviceWorker';
+import { State, useAppStore } from '@/store';
+
+import { getStorage, hasLocalStorage, ServiceWorkerManager } from '@/utils';
 
 import { resetProgressBar } from './routes';
-import { useAppStore } from './store';
 import './App.less';
 
 interface IAppProps extends Required<ChildrenComponent> {}
@@ -14,7 +15,7 @@ const App: React.FC<IAppProps> = (props) => {
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
 
   const {
-    settings: { colorScheme },
+    settings: { colorScheme, enableServiceWorkerCache },
     setLanguage,
     setColorScheme
   } = useAppStore();
@@ -30,11 +31,25 @@ const App: React.FC<IAppProps> = (props) => {
     if (['zh-CN', 'en'].includes(window.navigator.language)) {
       language = window.navigator.language;
     }
-    setLanguage(language);
-
     const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    if (darkModeQuery.matches) {
-      setColorScheme('dark');
+
+    if (hasLocalStorage('app')) {
+      setLanguage(getStorage<State>('app')?.settings?.language || 'zh-CN');
+      setColorScheme(
+        getStorage<State>('app')?.settings?.colorScheme || 'light'
+      );
+    } else {
+      setLanguage(language);
+      if (darkModeQuery.matches) {
+        setColorScheme('dark');
+      }
+    }
+
+    serviceWorkerRef.current = new ServiceWorkerManager({ update });
+    if (import.meta.env.PROD && enableServiceWorkerCache) {
+      serviceWorkerRef.current.registerServiceWorker();
+    } else {
+      serviceWorkerRef.current.unregisterServiceWorker();
     }
 
     function update() {
@@ -59,11 +74,6 @@ const App: React.FC<IAppProps> = (props) => {
       });
     }
 
-    if (import.meta.env.PROD) {
-      serviceWorkerRef.current = new ServiceWorkerManager({ update });
-      serviceWorkerRef.current.registerServiceWorker();
-    }
-
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
     return () =>
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
@@ -84,7 +94,6 @@ const App: React.FC<IAppProps> = (props) => {
               : theme.defaultAlgorithm
         }}
       >
-        <Button onClick={() => clearCache()}>清理缓存</Button>
         {props.children}
       </ConfigProvider>
     </>

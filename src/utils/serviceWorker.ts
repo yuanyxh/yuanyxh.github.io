@@ -61,8 +61,10 @@ class ServiceWorkerManager {
 
   private isRunning = false;
 
-  constructor({ update }: ServiceWorkerManagerOptions) {
-    this.event.on(EVENT_KEY, update);
+  constructor(options?: ServiceWorkerManagerOptions) {
+    if (options) {
+      this.event.on(EVENT_KEY, options.update);
+    }
   }
 
   registerServiceWorker() {
@@ -119,7 +121,13 @@ class ServiceWorkerManager {
   async unregisterServiceWorker() {
     if (!this.serviceWorker) return false;
 
-    return this.serviceWorker.unregister();
+    const uninstalled = await this.serviceWorker.unregister();
+
+    if (uninstalled) {
+      return await clearCache();
+    }
+
+    return false;
   }
 
   skipWaiting() {
