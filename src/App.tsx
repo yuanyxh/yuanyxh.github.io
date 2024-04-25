@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { createContext, useCallback, useEffect, useRef } from 'react';
 
-import { Button, ConfigProvider, notification, theme } from 'antd';
+import { Button, ConfigProvider, message, notification, theme } from 'antd';
+import type { MessageInstance } from 'antd/es/message/interface';
+import type { NotificationInstance } from 'antd/es/notification/interface';
 
 import { State, useAppStore } from '@/store';
 
@@ -10,8 +12,27 @@ import { resetProgressBar } from './routes';
 import './App.less';
 
 interface IAppProps extends Required<ChildrenComponent> {}
+
+interface AppProvider {
+  notification?: NotificationInstance;
+  message?: MessageInstance;
+}
+
+/** app context, provider global tools */
+export const AppContext = createContext<AppProvider>({});
+
 const App: React.FC<IAppProps> = (props) => {
-  const [api, contextHolder] = notification.useNotification({ maxCount: 1 });
+  const [notificationApi, notificationContextHolder] =
+    notification.useNotification({
+      maxCount: 1
+    });
+  const [messageApi, messageContextHolder] = message.useMessage();
+
+  const appProvider = useRef<AppProvider>({
+    notification: notificationApi,
+    message: messageApi
+  });
+
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
 
   const {
@@ -55,7 +76,7 @@ const App: React.FC<IAppProps> = (props) => {
     function update() {
       function handleReEnter() {
         serviceWorkerRef.current?.skipWaiting();
-        api.destroy();
+        notificationApi.destroy();
       }
 
       const btn = (
@@ -64,7 +85,7 @@ const App: React.FC<IAppProps> = (props) => {
         </Button>
       );
 
-      api.info({
+      notificationApi.info({
         message: '有新内容',
         description: '网站有更新，请点击确认以获取最新内容。',
         placement: 'bottomRight',
@@ -81,7 +102,8 @@ const App: React.FC<IAppProps> = (props) => {
 
   return (
     <>
-      {contextHolder}
+      {notificationContextHolder}
+      {messageContextHolder}
 
       <ConfigProvider
         theme={{
@@ -94,7 +116,9 @@ const App: React.FC<IAppProps> = (props) => {
               : theme.defaultAlgorithm
         }}
       >
-        {props.children}
+        <AppContext.Provider value={appProvider.current}>
+          {props.children}
+        </AppContext.Provider>
       </ConfigProvider>
     </>
   );

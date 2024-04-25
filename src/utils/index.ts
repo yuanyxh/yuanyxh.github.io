@@ -1,6 +1,7 @@
 export { default as EventEmitter } from './event';
 export * from './fullscreen';
 export * from './localStorageTools';
+export * from './notification';
 export { default as ServiceWorkerManager } from './serviceWorker';
 export * from './serviceWorker';
 export * from './windowEvent';

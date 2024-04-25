@@ -5,21 +5,22 @@
 // description: js 实现的 base64 编解码示例，帮助理解 base64 是如何工作的。base64 中的 64 对应 64 个指定的字符，将源字符以 3 字节一组拆分，每组分为 4 个 6 位数字，每位数字对应 64 位字符的索引，以此来编码源字符。
 //--endmeta
 
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
-import { Input, message } from 'antd';
+import { Input } from 'antd';
 
 import { Icon } from '@/components';
 
 import styles from './styles/Index.module.less';
 import base64 from './utils/base64';
+import { AppContext } from '@/App';
 
 type TChange = React.ChangeEventHandler<HTMLTextAreaElement>;
 
 const { TextArea } = Input;
 
 export default function Base64_Coder() {
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message } = useContext(AppContext);
 
   const [origin, setOrigin] = useState('');
   const [encode, setEncode] = useState('');
@@ -34,7 +35,7 @@ export default function Base64_Coder() {
     try {
       setEncode(base64.encode(e.target.value));
     } catch (err) {
-      messageApi.error((err as Error).message);
+      message?.error((err as Error).message);
     }
   };
 
@@ -48,14 +49,12 @@ export default function Base64_Coder() {
     try {
       setOrigin(base64.decode(e.target.value));
     } catch (err) {
-      messageApi.error((err as Error).message);
+      message?.error((err as Error).message);
     }
   };
 
   return (
     <div className={styles.base64_coder}>
-      {contextHolder}
-
       <TextArea
         placeholder="输入源字符串"
         rows={7}

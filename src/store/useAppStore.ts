@@ -7,6 +7,7 @@ export interface State {
     language: string;
     colorScheme: 'light' | 'dark';
     enableServiceWorkerCache: boolean;
+    enableNotification: boolean;
   };
 }
 
@@ -14,7 +15,10 @@ export interface Actions {
   setLanguage(language: string): void;
   setColorScheme(colorScheme: State['settings']['colorScheme']): void;
   setEnableServiceWorkerCache(
-    colorScheme: State['settings']['enableServiceWorkerCache']
+    enableServiceWorkerCache: State['settings']['enableServiceWorkerCache']
+  ): void;
+  setEnableNotification(
+    enableNotification: State['settings']['enableNotification']
   ): void;
 }
 
@@ -23,7 +27,8 @@ const useAppStore = create<State & Actions>((set) => ({
     settings: {
       language: 'zh-CN',
       colorScheme: 'light',
-      enableServiceWorkerCache: true
+      enableServiceWorkerCache: true,
+      enableNotification: false
     }
   }),
   setLanguage(language) {
@@ -51,6 +56,15 @@ const useAppStore = create<State & Actions>((set) => ({
   setEnableServiceWorkerCache(enableServiceWorkerCache) {
     set((state) => {
       const app = { settings: { ...state.settings, enableServiceWorkerCache } };
+
+      setStorage('app', app);
+
+      return app;
+    });
+  },
+  setEnableNotification(enableNotification) {
+    set((state) => {
+      const app = { settings: { ...state.settings, enableNotification } };
 
       setStorage('app', app);
 

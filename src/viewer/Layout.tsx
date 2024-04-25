@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import type { MenuProps } from 'antd';
 import {
@@ -7,7 +7,6 @@ import {
   FloatButton,
   Form,
   Input,
-  message,
   Modal,
   Select,
   Space
@@ -36,6 +35,7 @@ import LogoImage from '@/assets/images/logo.webp';
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
+import { AppContext } from '@/App';
 
 const active = styles.active;
 
@@ -288,7 +288,7 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
   const [uploading, setUploading] = useState(false);
 
   const [form] = Form.useForm();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message } = useContext(AppContext);
 
   const onTypeChange = (type: string) => {
     form.setFieldValue('type', type);
@@ -330,12 +330,12 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 
       form.resetFields();
 
-      messageApi.open({
+      message?.open({
         type: 'success',
         content: '已添加反馈建议。'
       });
     } catch (err) {
-      messageApi.open({
+      message?.open({
         type: 'error',
         content: '抱歉，暂时无法添加反馈，请稍后再试或前往 Github 留言。'
       });
@@ -403,8 +403,6 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
           </Form.Item>
         </Form>
       </Modal>
-
-      {contextHolder}
     </>
   );
 };

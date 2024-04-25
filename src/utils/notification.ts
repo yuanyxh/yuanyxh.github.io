@@ -1,0 +1,71 @@
+interface NotifyOptions extends NotificationOptions {
+  title: string;
+  onShow?(): any;
+  onError?(): any;
+  onClick?(): any;
+  onClose?(): any;
+}
+
+type NotifyPermissionStatus = 'allow' | 'cancel' | 'reject';
+
+export async function requestNotifyPermission() {
+  return new Promise<NotifyPermissionStatus>((resolve, reject) => {
+    Notification.requestPermission((e) => {
+      switch (e) {
+        case 'default':
+          resolve('cancel');
+          break;
+        case 'denied':
+          resolve('reject');
+          break;
+        case 'granted':
+          resolve('allow');
+          break;
+        default:
+          reject('unknow error');
+          break;
+      }
+    });
+  });
+}
+
+export async function notify(options: NotifyOptions) {
+  const status = await requestNotifyPermission();
+
+  if (status !== 'allow') {
+    return status;
+  }
+
+  return new Promise<boolean>((resolve) => {
+    const { title, onShow, onError, onClick, onClose, ...rest } = options;
+
+    const notice = new Notification(title, rest);
+
+    notice.addEventListener('click', function click() {
+      notice.removeEventListener('click', click);
+
+      if (onClick) {
+        return onClick();
+      }
+
+      notice.close();
+    });
+
+    onClose && notice.addEventListener('close', onClose);
+
+    notice.addEventListener('show', function show() {
+      notice.removeEventListener('show', show);
+
+      resolve(true);
+
+      onShow && onShow();
+    });
+    notice.addEventListener('error', function error() {
+      notice.removeEventListener('error', error);
+
+      resolve(false);
+
+      onError && onError();
+    });
+  });
+}
