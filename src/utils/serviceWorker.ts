@@ -121,15 +121,26 @@ class ServiceWorkerManager {
   }
 
   async unregisterServiceWorker() {
-    if (!this.serviceWorker) return false;
+    const cleared = await clearCache();
 
-    const uninstalled = await this.serviceWorker.unregister();
-
-    if (uninstalled) {
-      return await clearCache();
+    if (!cleared) {
+      return false;
     }
 
-    return false;
+    let uninstalled = await navigator.serviceWorker.ready.then((registration) =>
+      registration.unregister()
+    );
+
+    if (!uninstalled) {
+      uninstalled =
+        (await navigator.serviceWorker
+          ?.getRegistration()
+          .then((sw) => sw?.unregister() || false)) || false;
+
+      return uninstalled;
+    }
+
+    return true;
   }
 
   skipWaiting() {

@@ -1,0 +1,25 @@
+.settings {
+  width: 900px;
+
+  .row {
+    border-bottom: 1px solid #f0f0f0;
+
+    .subTitle {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+  }
+}
+
+:root[mode='dark'] {
+  .settings .row {
+    border-bottom: 1px solid #303030;
+  }
+}
+
+@media screen and (width <= 1366px) {
+  .settings {
+    width: initial;
+  }
+}
