@@ -4,7 +4,7 @@ generateSW({
   swDest: './build/sw.js',
   globDirectory: './build',
   globPatterns: [
-    '**/*.{js,css,html}',
+    '**/*.{js,css,html,json}',
     'articles/**',
     'books/**',
     'coder/**',

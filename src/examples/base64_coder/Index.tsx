@@ -35,7 +35,7 @@ export default function Base64_Coder() {
     try {
       setEncode(base64.encode(e.target.value));
     } catch (err) {
-      message?.error((err as Error).message);
+      message.error((err as Error).message);
     }
   };
 
@@ -49,7 +49,7 @@ export default function Base64_Coder() {
     try {
       setOrigin(base64.decode(e.target.value));
     } catch (err) {
-      message?.error((err as Error).message);
+      message.error((err as Error).message);
     }
   };
 

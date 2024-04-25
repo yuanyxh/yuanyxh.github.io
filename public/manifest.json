@@ -1,0 +1,47 @@
+{
+  "name": "illustrate",
+  "short_name": "illustrate",
+  "description": "技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#ff6000",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "shortcuts": [],
+  "icons": [
+    {
+      "src": "icons/chrome-512.webp",
+      "type": "image/webp",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icons/chrome-192.webp",
+      "type": "image/webp",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/chrome-mask-512.webp",
+      "type": "image/webp",
+      "purpose": "maskable",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icons/chrome-mask-192.webp",
+      "type": "image/webp",
+      "purpose": "maskable",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/apple-icon-152.webp",
+      "type": "image/webp",
+      "sizes": "152x152"
+    },
+    {
+      "src": "icons/ms-icon-144.png",
+      "type": "image/png",
+      "sizes": "144x144"
+    }
+  ]
+}

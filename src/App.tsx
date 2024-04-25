@@ -14,12 +14,12 @@ import './App.less';
 interface IAppProps extends Required<ChildrenComponent> {}
 
 interface AppProvider {
-  notification?: NotificationInstance;
-  message?: MessageInstance;
+  notification: NotificationInstance;
+  message: MessageInstance;
 }
 
 /** app context, provider global tools */
-export const AppContext = createContext<AppProvider>({});
+export const AppContext = createContext({} as AppProvider);
 
 const App: React.FC<IAppProps> = (props) => {
   const [notificationApi, notificationContextHolder] =

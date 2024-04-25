@@ -330,12 +330,12 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 
       form.resetFields();
 
-      message?.open({
+      message.open({
         type: 'success',
         content: '已添加反馈建议。'
       });
     } catch (err) {
-      message?.open({
+      message.open({
         type: 'error',
         content: '抱歉，暂时无法添加反馈，请稍后再试或前往 Github 留言。'
       });

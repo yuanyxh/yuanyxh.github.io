@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 
-import { Card, Col, Row, Spin, Switch, Typography } from 'antd';
+import { Button, Card, Col, Row, Spin, Switch, Typography } from 'antd';
 
 import { useAppStore } from '@/store';
 
@@ -41,7 +41,7 @@ function ServiceWorkerCache() {
             ? '已为您启用 service worker 缓存'
             : '无法启用 service worker 缓存，您可联系作者反馈。';
 
-          message?.[installed ? 'success' : 'error'](info);
+          message[installed ? 'success' : 'error'](info);
         });
     }
 
@@ -53,7 +53,7 @@ function ServiceWorkerCache() {
         ? '已为您禁用 service worker 缓存'
         : '无法禁用 service worker 缓存，您可联系作者反馈。';
 
-      message?.[uninstalled ? 'success' : 'error'](info);
+      message[uninstalled ? 'success' : 'error'](info);
     });
   };
 
@@ -100,7 +100,7 @@ function WebNotification() {
     requestNotifyPermission()
       .then((e) => {
         if (e === 'cancel' || e === 'reject') {
-          message?.error('无法获取通知权限。');
+          message.error('无法获取通知权限。');
           return false;
         }
 
@@ -241,6 +241,7 @@ function StorageDetail() {
         <Paragraph type="secondary">
           通过 Web API
           获取网站可用的存储配额及已用的存储空间，此方式获得的数据是估值，不是精确的存储数据。
+          该数据反映的是快照值，而不是及时更新的。
         </Paragraph>
       </Col>
     </Row>
@@ -248,8 +249,11 @@ function StorageDetail() {
 }
 
 const Settings = () => {
+  const handleClick = () => {};
+
   return (
     <Card className={styles.settings} title="网站设置">
+      <Button onClick={handleClick}>click me</Button>
       <ServiceWorkerCache />
 
       <StorageDetail />
