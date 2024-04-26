@@ -53,6 +53,7 @@ module.exports = {
           ['^@/store'],
           ['^@/hooks'],
           ['^@/utils'],
+          ['^@/filehandler'],
           ['^@/viewer'],
           ['^@/coder'],
           ['^@/markdowns'],

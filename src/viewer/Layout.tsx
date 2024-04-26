@@ -431,6 +431,17 @@ const Content = () => {
       <Outlet ref={mountedRef} />
 
       <FloatButton.Group>
+        {/*
+          <FloatButton
+            icon={
+              <Icon
+                icon="octicon--file-directory-open-fill-16"
+                color="var(--color-primary)"
+              />
+            }
+          />
+        */}
+
         <FloatButton icon={<CommentOutlined />} onClick={handleFeedback} />
 
         {/* FIXME: antd internal error, using outdated findDOMNode api causes react to throw warning in strict mode */}

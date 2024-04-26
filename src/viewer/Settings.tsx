@@ -1,10 +1,14 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 
-import { Button, Card, Col, Row, Spin, Switch, Typography } from 'antd';
+import { Card, Col, Row, Spin, Switch, Typography } from 'antd';
 
 import { useAppStore } from '@/store';
 
-import { requestNotifyPermission, ServiceWorkerManager } from '@/utils';
+import {
+  hasPermission,
+  requestNotifyPermission,
+  ServiceWorkerManager
+} from '@/utils';
 
 import { Canvas, CanvasInstance } from '@/components';
 
@@ -90,6 +94,12 @@ function WebNotification() {
 
   const [spinning, setSpinning] = useState(false);
   const { message } = useContext(AppContext);
+
+  useEffect(() => {
+    hasPermission('notifications').then((value) => {
+      setEnableNotification(value);
+    });
+  }, []);
 
   const handleSwitchWebNotification = (enableNotification: boolean) => {
     if (!enableNotification) {
@@ -249,11 +259,8 @@ function StorageDetail() {
 }
 
 const Settings = () => {
-  const handleClick = () => {};
-
   return (
     <Card className={styles.settings} title="网站设置">
-      <Button onClick={handleClick}>click me</Button>
       <ServiceWorkerCache />
 
       <StorageDetail />

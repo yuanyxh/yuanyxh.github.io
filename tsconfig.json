@@ -30,7 +30,8 @@
       "@/markdowns/*": ["src/markdowns/*"],
       "@/examples/*": ["src/examples/*"],
       "@/utils/*": ["src/utils/*"],
-      "@/components/*": ["src/components/*"]
+      "@/components/*": ["src/components/*"],
+      "@/filehandler/*": ["src/filehandler/*"]
     }
   },
   "include": ["src", "types"],

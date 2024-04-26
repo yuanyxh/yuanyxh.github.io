@@ -134,6 +134,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         {
           find: /@\/components\//,
           replacement: `${resolve('src/components')}/`
+        },
+        {
+          find: /@\/filehandler\//,
+          replacement: `${resolve('src/filehandler')}/`
         }
       ]
     },
@@ -160,14 +164,9 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         plugins: isBuild
           ? [visualizer({ filename: '.analyze.html', open: false })]
           : [],
-        output: {
-          manualChunks: {
-            'react-chunks': ['react']
-          }
-        }
+        output: {}
       },
       cssCodeSplit: true
-      // manifest: true
     },
     server: {
       host: 'localhost',
