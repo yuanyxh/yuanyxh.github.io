@@ -28,6 +28,8 @@ import {
   requestFullScreen
 } from '@/utils';
 
+import { isSupportOPFS, showFilePanel } from '@/filehandler';
+
 import { Icon } from '@/components';
 
 import LogoImage from '@/assets/images/logo.webp';
@@ -407,6 +409,30 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
   );
 };
 
+const FileSystemTrigger = () => {
+  const [support, setSupport] = useState(false);
+
+  useEffect(() => {
+    isSupportOPFS().then((res) => setSupport(res));
+  }, []);
+
+  const handleOpenFilePanel = () => {
+    showFilePanel();
+  };
+
+  return support ? (
+    <FloatButton
+      icon={
+        <Icon
+          icon="octicon--file-directory-open-fill-16"
+          color="var(--color-primary)"
+        />
+      }
+      onClick={handleOpenFilePanel}
+    />
+  ) : null;
+};
+
 const Content = () => {
   const mountedRef = useRef<IOutletRef>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -431,16 +457,7 @@ const Content = () => {
       <Outlet ref={mountedRef} />
 
       <FloatButton.Group>
-        {/*
-          <FloatButton
-            icon={
-              <Icon
-                icon="octicon--file-directory-open-fill-16"
-                color="var(--color-primary)"
-              />
-            }
-          />
-        */}
+        <FileSystemTrigger />
 
         <FloatButton icon={<CommentOutlined />} onClick={handleFeedback} />
 

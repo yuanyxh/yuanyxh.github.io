@@ -12,3 +12,18 @@ export const sleep = (time: number, fn: (...anys: any[]) => any) => {
 
   return () => window.clearTimeout(clearTimer);
 };
+
+export const uuid = () => {
+  if (!window.crypto?.randomUUID) {
+    return [8, 4, 4, 4, 12]
+      .reduce((prev, curr) => {
+        return `${prev}-${Math.random()
+          .toString(16)
+          .slice(2, 2 + curr)
+          .padStart(curr, '0')}`;
+      }, '')
+      .slice(1);
+  }
+
+  return window.crypto.randomUUID();
+};
