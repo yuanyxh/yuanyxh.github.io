@@ -1,63 +1,57 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import styles from './styles/FilePanel.module.less';
+import { Modal } from 'antd';
 
-interface IFilePanelProps {}
+// import styles from './styles/FilePanel.module.less';
+
+interface IFilePanelProps {
+  show(cb: ProcedureFunction): void;
+  hide(cb: ProcedureFunction): void;
+}
 
 const FilePanel: React.FC<Readonly<IFilePanelProps>> = (props) => {
-  props;
-
-  const [open, setOpen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const { show, hide } = props;
 
   useEffect(() => {
-    dialogRef.current?.show();
+    show(() => setOpen(true));
+    hide(() => setOpen(false));
   }, []);
 
-  useLayoutEffect(() => {
-    setOpen(true);
-    dialogRef.current?.classList.add(styles.show);
-    const animationend = () => {
-      dialogRef.current?.classList.remove(styles.show);
-      dialogRef.current?.close();
-    };
-    dialogRef.current?.addEventListener('animationend', animationend);
+  const [open, setOpen] = useState(false);
 
-    return () =>
-      dialogRef.current?.removeEventListener('animationend', animationend);
-  }, [open]);
-
-  return (
-    <dialog ref={dialogRef} className={styles.filePanel}>
-      FilePanel
-    </dialog>
-  );
+  return <Modal open={open}></Modal>;
 };
 
-const FILE_CONTAINER_ID = 'file-container';
-
 const getContainer = () => {
-  let container = window.document.getElementById(FILE_CONTAINER_ID);
-
-  if (container) {
-    return container;
-  }
-
-  container = window.document.createElement('div');
-  container.setAttribute('id', FILE_CONTAINER_ID);
+  const container = window.document.createElement('div');
 
   window.document.body.appendChild(container);
 
   return container;
 };
 
-export function showFilePanel() {
-  const container = getContainer();
+class FilePanelFactory {
+  private container = getContainer();
 
-  const root = createRoot(container);
+  private root = createRoot(this.container);
 
-  root.render(<FilePanel />);
+  show = () => {};
+
+  hide = () => {};
+
+  constructor() {
+    const show = (cb: ProcedureFunction) => (this.show = cb);
+    const hide = (cb: ProcedureFunction) => (this.hide = cb);
+
+    this.root.render(<FilePanel show={show} hide={hide} />);
+  }
+
+  destroy() {
+    this.root.unmount();
+    Promise.resolve().then(() => this.container.remove());
+  }
 }
 
-export default FilePanel;
+export default FilePanelFactory;
