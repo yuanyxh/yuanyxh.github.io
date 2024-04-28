@@ -1,17 +1,31 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { sleep } from '@/utils';
+import {
+  fallbackFullscreen,
+  isFullScreen,
+  requestFullScreen,
+  sleep
+} from '@/utils';
+
+import { Icon } from '@/components';
 
 import styles from './styles/FilePanel.module.less';
 
-type DialogProps = Omit<React.DialogHTMLAttributes<HTMLDialogElement>, 'open'>;
+type DialogProps = Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'open' | 'onClose'
+>;
 
 type AsyncFunction = () => Promise<boolean>;
-
-interface IFilePanelProps extends DialogProps {
-  open: boolean;
-}
 
 let mousePosition: { x: number; y: number } | null = null;
 
@@ -34,69 +48,161 @@ function setTransformOrigin(ele: HTMLElement) {
 }
 
 const animateStrategy = {
-  beforeEnter(ele: HTMLDialogElement) {
-    ele.show();
+  beforeEnter(ele: HTMLDivElement) {
+    ele.parentElement!.style.display = 'flex';
     ele.style.display = 'block';
-    setTransformOrigin(ele);
 
+    setTransformOrigin(ele);
     this.enter(ele);
   },
-  enter(ele: HTMLDialogElement) {
+  enter(ele: HTMLDivElement) {
     ele.classList.add(styles.enter);
   },
-  afterEnter(ele: HTMLDialogElement) {
+  afterEnter(ele: HTMLDivElement) {
     ele.classList.remove(styles.enter);
   },
-  beforeLeave(ele: HTMLDialogElement) {
+  beforeLeave(ele: HTMLDivElement) {
     this.leave(ele);
   },
-  leave(ele: HTMLDialogElement) {
+  leave(ele: HTMLDivElement) {
     ele.classList.add(styles.leave);
   },
-  afterLeave(ele: HTMLDialogElement) {
-    ele.close();
+  afterLeave(ele: HTMLDivElement) {
     ele.style.display = 'none';
+    ele.parentElement!.style.display = 'none';
+
     ele.classList.remove(styles.leave);
   }
 };
 
-const FilePanel: React.FC<Readonly<IFilePanelProps>> = (props) => {
-  const { open, onAnimationEnd, ...rest } = props;
-
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const initedRef = useRef(open);
-
-  useLayoutEffect(() => {
-    if (open) {
-      initedRef.current = true;
-    }
-
-    if (!initedRef.current) {
-      dialogRef.current!.style.display = 'none';
-      return void 0;
-    }
-
-    animateStrategy[open ? 'beforeEnter' : 'beforeLeave'](dialogRef.current!);
-  }, [open]);
-
-  const _onAnimationEnd = (e: React.AnimationEvent<HTMLDialogElement>) => {
-    animateStrategy[open ? 'afterEnter' : 'afterLeave'](dialogRef.current!);
-    onAnimationEnd?.(e);
-  };
-
-  return (
-    <dialog
-      {...rest}
-      ref={dialogRef}
-      className={styles.filePanel}
-      onAnimationEnd={_onAnimationEnd}
-    ></dialog>
-  );
+let savePosition = {
+  x: 0,
+  y: 0
 };
 
+interface IFilePanelProps extends DialogProps {
+  open: boolean;
+  onMinimize?(): any;
+  onMaximize?(): any;
+  onClose?(): any;
+}
+
+interface IFilePanelRef {
+  getDialog(): HTMLDivElement | null;
+}
+
+const FilePanel = forwardRef<IFilePanelRef, Readonly<IFilePanelProps>>(
+  function FilePanel(props, filePanelRef) {
+    const { open, onAnimationEnd, onMinimize, onMaximize, onClose, ...rest } =
+      props;
+
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const initedRef = useRef(open);
+
+    useImperativeHandle(filePanelRef, () => ({
+      getDialog() {
+        return dialogRef.current;
+      }
+    }));
+
+    useLayoutEffect(() => {
+      if (open) {
+        initedRef.current = true;
+      }
+
+      if (!initedRef.current) {
+        dialogRef.current!.style.display = 'none';
+        dialogRef.current!.parentElement!.style.display = 'none';
+        return void 0;
+      }
+
+      animateStrategy[open ? 'beforeEnter' : 'beforeLeave'](dialogRef.current!);
+    }, [open]);
+
+    const _onAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
+      animateStrategy[open ? 'afterEnter' : 'afterLeave'](dialogRef.current!);
+      onAnimationEnd?.(e);
+    };
+
+    const handleStart = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      if (isFullScreen(dialogRef.current!)) {
+        return false;
+      }
+
+      let prev = { x: e.pageX, y: e.pageY };
+
+      function mouseMove(e: MouseEvent) {
+        const movementX = e.pageX - prev.x;
+        const movementY = e.pageY - prev.y;
+
+        savePosition = {
+          x: savePosition.x + movementX,
+          y: savePosition.y + movementY
+        };
+
+        // TODO: supporting existence
+        dialogRef.current!.style.translate = `${savePosition.x}px ${savePosition.y}px`;
+
+        prev = {
+          x: e.pageX,
+          y: e.pageY
+        };
+      }
+
+      function mouoseUp() {
+        window.document.documentElement.removeEventListener(
+          'mousemove',
+          mouseMove
+        );
+        window.document.documentElement.removeEventListener(
+          'mouseup',
+          mouoseUp
+        );
+      }
+
+      window.document.documentElement.addEventListener('mousemove', mouseMove);
+      window.document.documentElement.addEventListener('mouseup', mouoseUp);
+    };
+
+    return (
+      <div className={styles.wrapper}>
+        <div
+          {...rest}
+          role="dialog"
+          ref={dialogRef}
+          className={styles.filePanel}
+          onAnimationEnd={_onAnimationEnd}
+        >
+          <header className={styles.header}>
+            <div className={styles.bar} onMouseDownCapture={handleStart}></div>
+
+            <div className={styles.operator}>
+              <Icon
+                role="button"
+                icon="mingcute--minimize-fill"
+                onClick={onMinimize}
+              />
+              <Icon
+                role="button"
+                icon="fluent--maximize-28-filled"
+                onClick={onMaximize}
+              />
+              <Icon
+                role="button"
+                icon="material-symbols--close"
+                onClick={onClose}
+              />
+            </div>
+          </header>
+        </div>
+      </div>
+    );
+  }
+);
+
 interface IFilePanelContainerProps extends DialogProps {
-  show(cb: AsyncFunction): void;
-  hide(cb: AsyncFunction): void;
+  show(cb?: AsyncFunction): void;
+  hide(cb?: AsyncFunction): void;
 }
 
 const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
@@ -105,6 +211,7 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
   const { show, hide, ...rest } = props;
 
   const renderResolveRef = useRef<(value: boolean) => void>();
+  const filePanelRef = useRef<IFilePanelRef>(null);
 
   useMemo(() => {
     show(
@@ -130,7 +237,34 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
     renderResolveRef.current = void 0;
   }, []);
 
-  return <FilePanel open={open} {...rest} onAnimationEnd={onAnimationEnd} />;
+  const onMinimize = () => {
+    hide();
+
+    const ele = filePanelRef.current!.getDialog()!;
+    if (isFullScreen(ele)) {
+      fallbackFullscreen();
+    }
+  };
+  const onMaximize = () => {
+    const ele = filePanelRef.current!.getDialog()!;
+
+    if (!isFullScreen(ele)) {
+      requestFullScreen(ele);
+    }
+  };
+  const onClose = () => {};
+
+  return (
+    <FilePanel
+      ref={filePanelRef}
+      open={open}
+      onAnimationEnd={onAnimationEnd}
+      onMinimize={onMinimize}
+      onMaximize={onMaximize}
+      onClose={onClose}
+      {...rest}
+    />
+  );
 };
 
 const getContainer = () => {
@@ -147,16 +281,28 @@ class FilePanelFactory {
 
   private root = createRoot(this.container);
 
-  private _show!: AsyncFunction;
-  private _hide!: AsyncFunction;
+  private _show: AsyncFunction | undefined;
+  private _hide: AsyncFunction | undefined;
 
   private doorValve = false;
 
   private isShow = false;
 
   constructor() {
-    const show = (cb: AsyncFunction) => (this._show = cb);
-    const hide = (cb: AsyncFunction) => (this._hide = cb);
+    const show = (cb?: AsyncFunction) => {
+      if (!this._show && cb) {
+        return (this._show = cb);
+      }
+
+      this.show();
+    };
+    const hide = (cb?: AsyncFunction) => {
+      if (!this._hide && cb) {
+        return (this._hide = cb);
+      }
+
+      this.hide();
+    };
     this.root.render(<FilePanelContainer show={show} hide={hide} />);
   }
 
@@ -165,7 +311,7 @@ class FilePanelFactory {
     this.doorValve = true;
 
     Promise.resolve().then(() => {
-      this._show().then(() => {
+      this._show?.().then(() => {
         this.doorValve = false;
         this.isShow = true;
       });
@@ -177,7 +323,7 @@ class FilePanelFactory {
     this.doorValve = true;
 
     Promise.resolve().then(() => {
-      this._hide().then(() => {
+      this._hide?.().then(() => {
         this.doorValve = false;
         this.isShow = false;
       });
@@ -189,7 +335,7 @@ class FilePanelFactory {
   }
 
   destroy() {
-    window.document.documentElement.removeEventListener('click', onClick, true);
+    // window.document.documentElement.removeEventListener('click', onClick, true);
     this.root.unmount();
     Promise.resolve().then(() => this.container.remove());
   }

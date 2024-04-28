@@ -1,48 +1,102 @@
 .filePanelContainer {
-  display: inline-block;
+  position: relative;
+  z-index: var(--z-gighest);
+  width: 0;
+  height: 0;
+
+  .wrapper {
+    position: fixed;
+    left: 10%;
+    top: 15vh;
+  }
 
   .filePanel {
-    position: fixed;
-    left: 50%;
-    margin-left: -25vw;
-    top: 15vh;
-    width: 50vw;
-    height: 300px;
+    width: 800px;
+    min-height: 60vh;
+    overflow: hidden;
     background-color: #f1f3f5;
-    outline: none;
     border: none;
     border-radius: var(--border-radius-base);
-    box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
+    outline: none;
+    box-shadow: 0 0 12px rgb(0 0 0 / 20%);
+    will-change: tranform;
+
+    // resize: both;
+
+    // &::-webkit-resizer {
+    //   display: none;
+    // }
+
+    .header {
+      display: flex;
+      height: 30px;
+    }
+
+    .header .bar {
+      flex: 1;
+      height: 100%;
+      cursor: move;
+    }
+
+    .header .operator {
+      height: 100%;
+      display: flex;
+      align-items: center;
+
+      i {
+        display: inline-flex;
+        align-items: center;
+        padding-inline: 14px;
+        height: 100%;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #d9d9d9;
+        }
+      }
+    }
   }
 
   .enter {
     animation: enter 0.3s cubic-bezier(0.08, 0.82, 0.17, 1);
+    animation-fill-mode: both;
   }
 
   .leave {
-    animation: leave 0.3s cubic-bezier(0.08, 0.82, 0.17, 1);
+    animation: leave 0.2s cubic-bezier(0.78, 0.14, 0.15, 0.86);
+    animation-fill-mode: both;
+  }
+}
+
+@media screen and (width <=768px) {
+  .filePanelContainer {
+    .filePanel {
+      width: 400px;
+      height: 60vh;
+    }
   }
 }
 
 @keyframes enter {
   0% {
-    transform: scale(0.2);
     opacity: 0;
+    transform: scale(0.2);
   }
+
   100% {
-    transform: scale(1);
     opacity: 1;
+    transform: scale(1);
   }
 }
 
 @keyframes leave {
   0% {
-    transform: scale(1);
     opacity: 1;
+    transform: scale(1);
   }
+
   100% {
-    transform: scale(0.2);
     opacity: 0;
+    transform: scale(0.2);
   }
 }

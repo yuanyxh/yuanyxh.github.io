@@ -64,7 +64,11 @@ export const onFullScreen = (
   };
 };
 
-export const isFullScreen = () => {
+export const isFullScreen = (ele?: Element) => {
+  if (ele) {
+    return window.document.fullscreenElement === ele;
+  }
+
   return window.document.fullscreenElement !== null;
 };
 
