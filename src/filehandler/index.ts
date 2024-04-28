@@ -1,4 +1,4 @@
-export { default as FilePanel } from './components/FilePanel';
+export { default as filePanel } from './components/FilePanel';
 export * from './components/FilePanel';
 export * from './utils/checkSupport';
 

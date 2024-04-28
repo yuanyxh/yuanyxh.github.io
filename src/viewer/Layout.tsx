@@ -28,7 +28,7 @@ import {
   requestFullScreen
 } from '@/utils';
 
-import { isSupportOPFS, showFilePanel } from '@/filehandler';
+import { filePanel, isSupportOPFS } from '@/filehandler';
 
 import { Icon } from '@/components';
 
@@ -417,7 +417,7 @@ const FileSystemTrigger = () => {
   }, []);
 
   const handleOpenFilePanel = () => {
-    showFilePanel();
+    filePanel.toggle();
   };
 
   return support ? (
