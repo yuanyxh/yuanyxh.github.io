@@ -1,7 +1,6 @@
-import {
-  forwardRef,
+import React, {
   useCallback,
-  useImperativeHandle,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,6 +11,7 @@ import { createRoot } from 'react-dom/client';
 import {
   fallbackFullscreen,
   isFullScreen,
+  onFullScreen,
   requestFullScreen,
   sleep
 } from '@/utils';
@@ -19,6 +19,8 @@ import {
 import { Icon } from '@/components';
 
 import styles from './styles/FilePanel.module.less';
+
+import '../fileInfoManager';
 
 type DialogProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -83,122 +85,158 @@ let savePosition = {
 interface IFilePanelProps extends DialogProps {
   open: boolean;
   onMinimize?(): any;
-  onMaximize?(): any;
-  onClose?(): any;
 }
 
-interface IFilePanelRef {
-  getDialog(): HTMLDivElement | null;
-}
+const FilePanel: React.FC<Readonly<IFilePanelProps>> = function FilePanel(
+  props
+) {
+  const { open, onAnimationEnd, onMinimize, ...rest } = props;
 
-const FilePanel = forwardRef<IFilePanelRef, Readonly<IFilePanelProps>>(
-  function FilePanel(props, filePanelRef) {
-    const { open, onAnimationEnd, onMinimize, onMaximize, onClose, ...rest } =
-      props;
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const initedRef = useRef(open);
 
-    const dialogRef = useRef<HTMLDivElement>(null);
-    const initedRef = useRef(open);
+  useLayoutEffect(() => {
+    if (open) {
+      initedRef.current = true;
+    }
 
-    useImperativeHandle(filePanelRef, () => ({
-      getDialog() {
-        return dialogRef.current;
+    if (!initedRef.current) {
+      dialogRef.current!.style.display = 'none';
+      dialogRef.current!.parentElement!.style.display = 'none';
+      return void 0;
+    }
+
+    animateStrategy[open ? 'beforeEnter' : 'beforeLeave'](dialogRef.current!);
+  }, [open]);
+
+  const _onAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
+    animateStrategy[open ? 'afterEnter' : 'afterLeave'](dialogRef.current!);
+    onAnimationEnd?.(e);
+  };
+
+  const handleStart = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (isFullScreen(dialogRef.current!)) {
+      return false;
+    }
+
+    let prev = { x: e.pageX, y: e.pageY };
+
+    function mouseMove(e: MouseEvent) {
+      const movementX = e.pageX - prev.x;
+      const movementY = e.pageY - prev.y;
+
+      savePosition = {
+        x: savePosition.x + movementX,
+        y: savePosition.y + movementY
+      };
+
+      // TODO: supporting existence
+      dialogRef.current!.style.translate = `${savePosition.x}px ${savePosition.y}px`;
+
+      prev = {
+        x: e.pageX,
+        y: e.pageY
+      };
+    }
+
+    function mouoseUp() {
+      window.document.documentElement.removeEventListener(
+        'mousemove',
+        mouseMove
+      );
+      window.document.documentElement.removeEventListener('mouseup', mouoseUp);
+    }
+
+    window.document.documentElement.addEventListener('mousemove', mouseMove);
+    window.document.documentElement.addEventListener('mouseup', mouoseUp);
+  };
+
+  function Header() {
+    const [full, setFull] = useState(false);
+
+    useEffect(() => {
+      return onFullScreen(() => {
+        setFull(isFullScreen(dialogRef.current!));
+      }, dialogRef.current!);
+    }, []);
+
+    const _onMinimize = () => {
+      onMinimize?.();
+
+      if (full) {
+        fallbackFullscreen();
       }
-    }));
-
-    useLayoutEffect(() => {
-      if (open) {
-        initedRef.current = true;
-      }
-
-      if (!initedRef.current) {
-        dialogRef.current!.style.display = 'none';
-        dialogRef.current!.parentElement!.style.display = 'none';
-        return void 0;
-      }
-
-      animateStrategy[open ? 'beforeEnter' : 'beforeLeave'](dialogRef.current!);
-    }, [open]);
-
-    const _onAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
-      animateStrategy[open ? 'afterEnter' : 'afterLeave'](dialogRef.current!);
-      onAnimationEnd?.(e);
     };
 
-    const handleStart = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      if (isFullScreen(dialogRef.current!)) {
-        return false;
+    const onMaximize = () => {
+      const ele = dialogRef.current!;
+
+      if (!isFullScreen(ele)) {
+        ele.style.translate = '';
+        requestFullScreen(ele);
+        setFull(true);
       }
-
-      let prev = { x: e.pageX, y: e.pageY };
-
-      function mouseMove(e: MouseEvent) {
-        const movementX = e.pageX - prev.x;
-        const movementY = e.pageY - prev.y;
-
-        savePosition = {
-          x: savePosition.x + movementX,
-          y: savePosition.y + movementY
-        };
-
-        // TODO: supporting existence
-        dialogRef.current!.style.translate = `${savePosition.x}px ${savePosition.y}px`;
-
-        prev = {
-          x: e.pageX,
-          y: e.pageY
-        };
-      }
-
-      function mouoseUp() {
-        window.document.documentElement.removeEventListener(
-          'mousemove',
-          mouseMove
-        );
-        window.document.documentElement.removeEventListener(
-          'mouseup',
-          mouoseUp
-        );
-      }
-
-      window.document.documentElement.addEventListener('mousemove', mouseMove);
-      window.document.documentElement.addEventListener('mouseup', mouoseUp);
     };
+    const onRestore = () => {
+      const ele = dialogRef.current!;
+
+      if (isFullScreen(ele)) {
+        ele.style.translate = `${savePosition.x}px ${savePosition.y}px`;
+        fallbackFullscreen();
+        setFull(false);
+      }
+    };
+
+    const onClose = () => {};
 
     return (
-      <div className={styles.wrapper}>
-        <div
-          {...rest}
-          role="dialog"
-          ref={dialogRef}
-          className={styles.filePanel}
-          onAnimationEnd={_onAnimationEnd}
-        >
-          <header className={styles.header}>
-            <div className={styles.bar} onMouseDownCapture={handleStart}></div>
+      <header className={styles.header}>
+        <div className={styles.bar} onMouseDownCapture={handleStart}></div>
 
-            <div className={styles.operator}>
-              <Icon
-                role="button"
-                icon="mingcute--minimize-fill"
-                onClick={onMinimize}
-              />
-              <Icon
-                role="button"
-                icon="fluent--maximize-28-filled"
-                onClick={onMaximize}
-              />
-              <Icon
-                role="button"
-                icon="material-symbols--close"
-                onClick={onClose}
-              />
-            </div>
-          </header>
+        <div className={styles.operator}>
+          <Icon
+            role="button"
+            icon="mingcute--minimize-fill"
+            onClick={_onMinimize}
+          />
+
+          <Icon
+            style={{ display: full ? 'none' : void 0 }}
+            role="button"
+            icon="fluent--maximize-28-filled"
+            onClick={onMaximize}
+          />
+          <Icon
+            style={{ display: full ? void 0 : 'none' }}
+            role="button"
+            icon="icon-park-outline--internal-reduction"
+            onClick={onRestore}
+          />
+
+          <Icon
+            role="button"
+            icon="material-symbols--close"
+            onClick={onClose}
+          />
         </div>
-      </div>
+      </header>
     );
   }
-);
+
+  return (
+    <div className={styles.wrapper}>
+      <div
+        role="dialog"
+        ref={dialogRef}
+        className={styles.filePanel}
+        onAnimationEnd={_onAnimationEnd}
+        {...rest}
+      >
+        <Header />
+      </div>
+    </div>
+  );
+};
 
 interface IFilePanelContainerProps extends DialogProps {
   show(cb?: AsyncFunction): void;
@@ -211,7 +249,6 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
   const { show, hide, ...rest } = props;
 
   const renderResolveRef = useRef<(value: boolean) => void>();
-  const filePanelRef = useRef<IFilePanelRef>(null);
 
   useMemo(() => {
     show(
@@ -239,29 +276,13 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
 
   const onMinimize = () => {
     hide();
-
-    const ele = filePanelRef.current!.getDialog()!;
-    if (isFullScreen(ele)) {
-      fallbackFullscreen();
-    }
   };
-  const onMaximize = () => {
-    const ele = filePanelRef.current!.getDialog()!;
-
-    if (!isFullScreen(ele)) {
-      requestFullScreen(ele);
-    }
-  };
-  const onClose = () => {};
 
   return (
     <FilePanel
-      ref={filePanelRef}
       open={open}
       onAnimationEnd={onAnimationEnd}
       onMinimize={onMinimize}
-      onMaximize={onMaximize}
-      onClose={onClose}
       {...rest}
     />
   );
@@ -303,6 +324,7 @@ class FilePanelFactory {
 
       this.hide();
     };
+
     this.root.render(<FilePanelContainer show={show} hide={hide} />);
   }
 
