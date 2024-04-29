@@ -130,7 +130,7 @@ const FilePanel: React.FC<Readonly<IFilePanelProps>> = function FilePanel(
         y: savePosition.y + movementY
       };
 
-      // TODO: supporting existence
+      // TODO: Browsers that support translate do not have a high occupancy rate on the market.
       dialogRef.current!.style.translate = `${savePosition.x}px ${savePosition.y}px`;
 
       prev = {

@@ -1,12 +1,13 @@
 import { isArrayBuffer } from 'lodash-es';
 
 import { FileInfo } from '../fileInfoManager';
+import type { FileData } from '../fileManager';
 
 import md5 from 'md5';
 
 interface GenerateOptions
   extends Pick<FileInfo, 'name' | 'path' | 'type' | 'ext'> {
-  data?: ArrayBuffer | Blob;
+  data?: FileData;
 }
 
 interface GenerateFileInfo {

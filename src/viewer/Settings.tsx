@@ -10,6 +10,8 @@ import {
   ServiceWorkerManager
 } from '@/utils';
 
+import { getStorageUsage } from '@/filehandler';
+
 import { Canvas, CanvasInstance } from '@/components';
 
 import styles from './styles/Settings.module.less';
@@ -159,7 +161,7 @@ function StorageDetail() {
   });
 
   useEffect(() => {
-    window.navigator.storage.estimate().then((res) => {
+    getStorageUsage().then((res) => {
       if (!(typeof res.quota === 'number' && typeof res.usage === 'number')) {
         return false;
       }

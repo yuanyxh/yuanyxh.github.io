@@ -1,3 +1,4 @@
+import fileManager from './fileManager';
 import { generateFileInfo } from './utils/generateFileInfo';
 
 import localforage from 'localforage';
@@ -6,9 +7,9 @@ export const FILE_SYSTEM_DATA_BASE_KEY = 'FILE_SYSTEM_DATA_BASE_KEY';
 export const FILE_SYSTEM_STORE_KEY = 'FILE_SYSTEM_STORE_KEY';
 
 /** file */
-type FileType = 0;
+export type FileType = 0;
 /** directory */
-type DirectoryType = 1;
+export type DirectoryType = 1;
 
 export interface FileInfo {
   /** file name */
@@ -42,6 +43,8 @@ const initBaseFileInfo = async (key: string) => {
   let result = await localforage.getItem<FileInfo>(key);
 
   if (result) return result;
+
+  await fileManager.add(key, 1);
 
   result = await generateFileInfo({
     name: key,
@@ -81,6 +84,7 @@ class FileInfoManager {
     });
     initBaseFileInfo(OriginalDirectory.HOME).then((home) => {
       this._home = home;
+      this.setCurrent(OriginalDirectory.HOME);
     });
     initBaseFileInfo(OriginalDirectory.RECYCLE).then((recycle) => {
       this._recycle = recycle;
@@ -105,10 +109,11 @@ class FileInfoManager {
     return this._current;
   }
 
-  setCurrent(key: 'temp' | 'config' | 'home' | 'recycle') {
-    this._current = this[key];
+  setCurrent(key: string) {
+    key;
+    // this._current = this[key];
     // TODO: notify
   }
 }
 
-export default FileInfoManager;
+export default new FileInfoManager();
