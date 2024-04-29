@@ -20,8 +20,6 @@ import { Icon } from '@/components';
 
 import styles from './styles/FilePanel.module.less';
 
-import '../fileInfoManager';
-
 type DialogProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   'open' | 'onClose'

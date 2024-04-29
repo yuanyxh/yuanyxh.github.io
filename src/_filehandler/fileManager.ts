@@ -6,6 +6,9 @@ import {
   NotEnoughStorageSpaceError
 } from './error';
 import type { DirectoryType, FileType } from './fileInfoManager';
+import fileInfoManager from './fileInfoManager';
+import { splitPath } from './utils';
+import { calcDirectorySize } from './utils/calcDirectorySize';
 import {
   checkRemainingStorageSpace,
   getByteLength,
@@ -15,8 +18,6 @@ import {
 export type IHandle = FileSystemFileHandle | FileSystemDirectoryHandle;
 
 export type FileData = ArrayBuffer | Blob;
-
-const splitPath = (path: string) => path.split('/');
 
 async function navigate(root: FileSystemDirectoryHandle, path: string) {
   const paths = splitPath(path);
@@ -87,25 +88,50 @@ interface DeleteOptions {
 }
 
 async function permanentDeleteFile(
+  path: string,
   options: Omit<DeleteOptions, 'permanentDelete'>
 ) {
-  options;
-}
+  const { deleteSelf, children } = options;
 
-async function safeDeleteFile(options: Omit<DeleteOptions, 'permanentDelete'>) {
-  options;
-}
+  if (deleteSelf) {
+    const paths = splitPath(path);
+    const name = paths.pop()!;
+    const parent = await fileManager.get(paths.join(''));
 
-async function deleteFile(path: string, options: DeleteOptions) {
-  const { permanentDelete = false, deleteSelf = true, children } = options;
-
-  if (permanentDelete) {
-    return permanentDeleteFile({ deleteSelf, children });
+    return (parent as FileSystemDirectoryHandle).removeEntry(name, {
+      recursive: true
+    });
   }
 
-  return safeDeleteFile({ deleteSelf, children });
+  if (children?.length) {
+    const parent = (await fileManager.get(path)) as FileSystemDirectoryHandle;
+
+    return Promise.all(
+      children.map((child) => parent.removeEntry(child, { recursive: true }))
+    );
+  }
 }
-deleteFile;
+async function safeDeleteFile(
+  path: string,
+  options: Omit<DeleteOptions, 'permanentDelete'>
+) {
+  const { deleteSelf, children } = options;
+  deleteSelf;
+  children;
+
+  const target = fileInfoManager.get(path);
+  const size = calcDirectorySize(target);
+
+  if (!(await checkRemainingStorageSpace(size))) {
+    // Data in the space in the recycling station permanently
+    await permanentDeleteFile('temp', { deleteSelf: false });
+
+    if (!(await checkRemainingStorageSpace(size))) {
+      const { quota = 0, usage = 0 } = await getStorageUsage();
+      throw new NotEnoughStorageSpaceError(size, quota - usage);
+    }
+  }
+}
 
 class FileManager {
   private root!: FileSystemDirectoryHandle;
@@ -124,33 +150,41 @@ class FileManager {
     if (!this.root) return false;
 
     const paths = splitPath(path);
-    let parent: IHandle;
-    let name: string;
-    if (paths.length === 1) {
-      parent = this.root;
-      name = paths[0];
-    } else {
-      name = paths.pop()!;
-      parent = await this.get(paths.join('/'));
-    }
+
+    const parent = await this.get(paths.join('/'));
+    const name = paths.pop()!;
 
     if (!(parent instanceof FileSystemDirectoryHandle)) {
       throw new FileNotDirectoryError(paths.join('/'));
     }
 
     if (await navigate(this.root, path)) {
-      throw new FileAlwaysExistError(name);
+      throw new FileAlwaysExistError(name, paths.join('/'));
     }
 
     if (type === 0) return createFile(parent, name, data);
     else if (type === 1) return createDirectory(parent, name);
   }
 
-  // async delete(path: string) {}
+  async delete(path: string, options: DeleteOptions) {
+    const { permanentDelete = false, ...rest } = options;
+
+    if (permanentDelete) {
+      return permanentDeleteFile(path, rest);
+    }
+
+    return safeDeleteFile(path, rest);
+  }
 
   // async update(path: string, data: any) {}
 
   async get(path: string) {
+    if (path === '') {
+      if (this.root) return this.root;
+
+      throw new FilePathNotExistError(path);
+    }
+
     const result = await navigate(this.root, path);
     if (!result) {
       const paths = splitPath(path);

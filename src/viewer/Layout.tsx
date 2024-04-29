@@ -28,8 +28,6 @@ import {
   requestFullScreen
 } from '@/utils';
 
-import { filePanel, isSupportOPFS } from '@/filehandler';
-
 import { Icon } from '@/components';
 
 import LogoImage from '@/assets/images/logo.webp';
@@ -38,6 +36,7 @@ import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
 import { AppContext } from '@/App';
+import { filePanel, isSupportOPFS } from '@/filehandle';
 
 const active = styles.active;
 

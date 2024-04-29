@@ -1,10 +1,11 @@
+import { FilePathNotExistError } from './error';
 import fileManager from './fileManager';
+import { splitPath } from './utils';
 import { generateFileInfo } from './utils/generateFileInfo';
 
 import localforage from 'localforage';
 
-export const FILE_SYSTEM_DATA_BASE_KEY = 'FILE_SYSTEM_DATA_BASE_KEY';
-export const FILE_SYSTEM_STORE_KEY = 'FILE_SYSTEM_STORE_KEY';
+type CommonDirectory = 'temp' | 'home' | 'config' | 'recycle';
 
 /** file */
 export type FileType = 0;
@@ -31,6 +32,9 @@ export interface FileInfo {
   ext?: string;
   children?: FileInfo[];
 }
+
+export const FILE_SYSTEM_DATA_BASE_KEY = 'FILE_SYSTEM_DATA_BASE_KEY';
+export const FILE_SYSTEM_STORE_KEY = 'FILE_SYSTEM_STORE_KEY';
 
 localforage.config({
   driver: localforage.INDEXEDDB,
@@ -107,6 +111,38 @@ class FileInfoManager {
 
   get current() {
     return this._current;
+  }
+
+  get(path: string) {
+    if (path === '') {
+      throw new FilePathNotExistError(path);
+    }
+
+    const paths = splitPath(path);
+    const rootName = paths.shift()!;
+
+    const root = this[rootName as CommonDirectory];
+
+    if (!root) {
+      throw new FilePathNotExistError(path);
+    }
+
+    let current: FileInfo | undefined = root;
+    let currentName: string | undefined;
+
+    while ((currentName = paths.shift())) {
+      if (!current?.children?.length) {
+        throw new FilePathNotExistError(path);
+      }
+
+      current = current.children.find((child) => child.name === currentName);
+
+      if (!current) {
+        throw new FilePathNotExistError(path);
+      }
+    }
+
+    return current;
   }
 
   setCurrent(key: string) {

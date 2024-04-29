@@ -13,8 +13,8 @@ export class FileAlwaysExistError extends FileBaseError {
 
   status = 410;
 
-  constructor(fileName: string) {
-    super(`the file or directory "${fileName}" always exists in this path`);
+  constructor(fileName: string, path: string) {
+    super(`the file or directory "${fileName}" always exists in "${path}"`);
   }
 }
 
