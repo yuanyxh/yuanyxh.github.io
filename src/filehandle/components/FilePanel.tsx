@@ -19,6 +19,7 @@ import {
 import { Icon } from '@/components';
 
 import styles from './styles/FilePanel.module.less';
+// import { useFileSystem } from '../hooks/useFileSystem';
 
 type DialogProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -78,6 +79,14 @@ const animateStrategy = {
 let savePosition = {
   x: 0,
   y: 0
+};
+
+const Content: React.FC = () => {
+  // const [fileSystem, current, children] = useFileSystem();
+
+  useMemo(() => {}, []);
+
+  return <></>;
 };
 
 interface IFilePanelProps extends DialogProps {
@@ -231,6 +240,8 @@ const FilePanel: React.FC<Readonly<IFilePanelProps>> = function FilePanel(
         {...rest}
       >
         <Header />
+
+        <Content />
       </div>
     </div>
   );
