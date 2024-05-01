@@ -1,9 +1,9 @@
-import { useContext, useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 
-import { App, Input, type InputProps, Modal, Typography } from 'antd';
+import { App, Input, type InputProps, InputRef, Modal, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
-import { validateFileName } from '@/utils';
+import { sleep, validateFileName } from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
@@ -36,6 +36,16 @@ function AddFileModal({
     status: '',
     message: ''
   });
+
+  const inputRef = useRef<InputRef>(null);
+
+  useMemo(() => {
+    if (open) {
+      sleep(100, () => {
+        inputRef.current?.focus();
+      });
+    }
+  }, [open]);
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -81,6 +91,7 @@ function AddFileModal({
       cancelText={'取消'}
     >
       <Input
+        ref={inputRef}
         status={inputStatus.status}
         value={inputStatus.name}
         onChange={handleInputChange}
