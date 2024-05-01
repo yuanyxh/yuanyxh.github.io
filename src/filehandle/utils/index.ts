@@ -9,3 +9,7 @@ export const isAlwaysExist = async (directory: DH, name: string) => {
     return false;
   }
 };
+
+export const getStorageUsage = () => {
+  return window.navigator.storage.estimate();
+};

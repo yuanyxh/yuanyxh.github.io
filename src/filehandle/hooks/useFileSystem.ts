@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import FileLinkedList from '../FileLinkedList';
 import type { DH, FileDataType, FileInfo } from '../utils/fileManager';
 import {
   createDirectory,
@@ -13,6 +14,7 @@ import {
 export interface FileSystem {
   current: DH;
   children: FileInfo[];
+  fileLinked: FileLinkedList;
   create(name: string, type: FileType, data?: FileDataType): Promise<any>;
   remove(name: string): Promise<any>;
   move(): void;
@@ -24,6 +26,8 @@ export interface FileSystem {
 export function useFileSystem(): FileSystem {
   const root =
     useRef<DH>() as React.MutableRefObject<FileSystemDirectoryHandle>;
+  const fileLinked =
+    useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
 
   const [current, setCurrent] = useState<DH>() as [
     DH,
@@ -70,17 +74,20 @@ export function useFileSystem(): FileSystem {
       getHandle(current, name).then((res) => {
         if (res.kind === 'directory') {
           setCurrent(res);
+          fileLinked.current.inset(res);
         }
       });
     }
 
     function returnToRoot() {
       setCurrent(root.current);
+      fileLinked.current = new FileLinkedList(root.current);
     }
 
     return {
       current,
       children,
+      fileLinked: fileLinked.current,
       register,
       returnToRoot,
       enterDirectory,
@@ -88,12 +95,21 @@ export function useFileSystem(): FileSystem {
       remove,
       create
     };
-  }, [current, children]);
+  }, [current, children, fileLinked.current]);
+
+  useMemo(() => {
+    if (!fileLinked.current) return;
+
+    return fileLinked.current.listener((directory) => {
+      setCurrent(directory);
+    });
+  }, [fileLinked.current]);
 
   useEffect(() => {
     window.navigator.storage.getDirectory().then((res) => {
       setCurrent(res);
       root.current = res;
+      fileLinked.current = new FileLinkedList(res);
     });
   }, []);
 

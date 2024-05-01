@@ -3,7 +3,7 @@ import { FileTypeError } from './error';
 export type FileDataType = ArrayBuffer | Blob | string;
 
 export type DH = FileSystemDirectoryHandle;
-// type FH = FileSystemFileHandle;
+export type FH = FileSystemFileHandle;
 
 export enum FileType {
   FILE = 0,

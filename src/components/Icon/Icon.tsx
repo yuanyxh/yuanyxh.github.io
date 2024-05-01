@@ -9,10 +9,19 @@ interface IIconProps extends React.HTMLAttributes<HTMLOrSVGElement> {
 const Icon: React.FC<Readonly<IIconProps>> = (props) => {
   const { icon, color, size = 18, svgStyle = {}, style = {}, ...rest } = props;
 
-  const mergeStyle = assign({ color: 'inherit', fill: 'currentColor' }, style, {
-    fontSize: `${size}px`,
-    color
-  });
+  const mergeStyle = assign(
+    {
+      color: 'inherit',
+      width: '1em',
+      height: '1em',
+      fill: 'currentColor'
+    },
+    style,
+    {
+      fontSize: `${size}px`,
+      color
+    }
+  );
 
   return (
     <i style={mergeStyle} {...rest}>

@@ -10,12 +10,11 @@ import {
   ServiceWorkerManager
 } from '@/utils';
 
-import { getStorageUsage } from '@/filehandler';
-
 import { Canvas, CanvasInstance } from '@/components';
 
 import styles from './styles/Settings.module.less';
 import { AppContext } from '@/App';
+import { getStorageUsage } from '@/filehandle';
 
 const { Paragraph, Text } = Typography;
 
