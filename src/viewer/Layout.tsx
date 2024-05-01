@@ -36,7 +36,7 @@ import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
 import { AppContext } from '@/App';
-import { filePanel, isSupportOPFS } from '@/filehandle';
+import filePanel, { isSupportOPFS } from '@/filehandle';
 
 const active = styles.active;
 

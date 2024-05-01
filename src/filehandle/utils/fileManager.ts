@@ -30,7 +30,14 @@ export async function getChildren(directory: DH) {
     children[children.length] = { name: key, type, icon: '', ext };
   }
 
-  return children;
+  return children
+    .filter((child) => child.type === FileType.DIRECTORY)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .concat(
+      children
+        .filter((child) => child.type === FileType.FILE)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
 }
 
 export async function getHandle(directory: DH, name: string) {

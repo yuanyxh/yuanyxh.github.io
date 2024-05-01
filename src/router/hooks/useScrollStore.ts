@@ -2,7 +2,7 @@ import { useContext, useLayoutEffect, useRef } from 'react';
 
 import { assign } from 'lodash-es';
 
-import { addListener } from '@/utils';
+import { addGlobalListener } from '@/utils';
 
 import { RouterContext } from '../shared/context';
 
@@ -40,7 +40,7 @@ export function useScrollStore(selector: string) {
       }
     );
 
-    const cancelPopState = addListener('popstate', () => {
+    const cancelPopState = addGlobalListener('popstate', () => {
       // we save the scroll position of the previous page when popping
       // in popstate, formLocation is the page we are about to leave, and we need to save its scroll position
       map[formLocation.current || ''] = {
@@ -49,7 +49,7 @@ export function useScrollStore(selector: string) {
       };
     });
 
-    const cancelBeforeUnload = addListener('beforeunload', () => {
+    const cancelBeforeUnload = addGlobalListener('beforeunload', () => {
       window.history.replaceState(
         assign({}, routerContext?.getState()?.state, {
           y: elementRef.current?.scrollTop || 0,

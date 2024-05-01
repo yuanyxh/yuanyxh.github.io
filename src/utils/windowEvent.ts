@@ -1,6 +1,6 @@
 import EventEmitter from './event';
 
-type AddListener = <K extends keyof WindowEventMap>(
+type AddGlobalListener = <K extends keyof WindowEventMap>(
   type: K,
   listener: (this: Window, ev: WindowEventMap[K]) => any,
   capture?: boolean
@@ -12,7 +12,11 @@ const map: {
   [key: string]: any;
 } = {};
 
-export const addListener: AddListener = (type, listener, capture) => {
+export const addGlobalListener: AddGlobalListener = (
+  type,
+  listener,
+  capture
+) => {
   const _type = capture ? `${type}Capture` : type;
 
   if (!event.has(_type)) {

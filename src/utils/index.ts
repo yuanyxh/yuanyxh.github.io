@@ -27,3 +27,9 @@ export const uuid = () => {
 
   return window.crypto.randomUUID();
 };
+
+export const validateFileName = (name: string) => {
+  if (name.trim() === '') return false;
+
+  return /^[^\\/:*?'`"<>|]{0,255}[^\\/:*?"`<>|.']$/.test(name.trim());
+};

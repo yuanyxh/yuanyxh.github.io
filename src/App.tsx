@@ -1,7 +1,15 @@
 import { createContext, useCallback, useEffect, useRef } from 'react';
 
-import { Button, ConfigProvider, message, notification, theme } from 'antd';
+import {
+  Button,
+  ConfigProvider,
+  message,
+  Modal,
+  notification,
+  theme
+} from 'antd';
 import type { MessageInstance } from 'antd/es/message/interface';
+import type { HookAPI } from 'antd/es/modal/useModal';
 import type { NotificationInstance } from 'antd/es/notification/interface';
 
 import { State, useAppStore } from '@/store';
@@ -16,6 +24,7 @@ interface IAppProps extends Required<ChildrenComponent> {}
 interface AppProvider {
   notification: NotificationInstance;
   message: MessageInstance;
+  modal: HookAPI;
 }
 
 /** app context, provider global tools */
@@ -27,10 +36,12 @@ const App: React.FC<IAppProps> = (props) => {
       maxCount: 1
     });
   const [messageApi, messageContextHolder] = message.useMessage();
+  const [modalApi, modelContextHolder] = Modal.useModal();
 
   const appProvider = useRef<AppProvider>({
     notification: notificationApi,
-    message: messageApi
+    message: messageApi,
+    modal: modalApi
   });
 
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
@@ -104,6 +115,7 @@ const App: React.FC<IAppProps> = (props) => {
     <>
       {notificationContextHolder}
       {messageContextHolder}
+      {modelContextHolder}
 
       <ConfigProvider
         theme={{

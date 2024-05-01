@@ -2,7 +2,7 @@ import type { ParsedQs } from 'qs';
 import { parse, stringify } from 'qs';
 import { cloneDeep, isEqual } from 'lodash-es';
 
-import { addListener } from '@/utils';
+import { addGlobalListener } from '@/utils';
 import EventEmitter from '@/utils/event';
 
 import type { AbstractHistory } from './history';
@@ -215,12 +215,12 @@ class Router {
     this.history = history;
     this.history.setRouter(this);
 
-    addListener('popstate', () => {
+    addGlobalListener('popstate', () => {
       const state = getState();
       this.navigateTo(state.path, state);
     });
 
-    addListener('hashchange', () => {
+    addGlobalListener('hashchange', () => {
       try {
         window.document
           .getElementById(window.location.hash.slice(1))
