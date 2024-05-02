@@ -147,6 +147,60 @@ function WebNotification() {
   );
 }
 
+function PersistentStorage() {
+  const [enablePersistent, setEnablePersistentStorage] = useState(false);
+  const { message } = useContext(AppContext);
+
+  const handleEnablePersistent = (enablePersistent: boolean) => {
+    if (enablePersistent) {
+      window.navigator.storage
+        .persist()
+        .then((persistent) => {
+          setEnablePersistentStorage(persistent);
+
+          if (!persistent) {
+            message.error('暂无法获取持久化存储权限。');
+          }
+        })
+        .catch(() => {
+          message.error('暂无法获取持久化存储权限。');
+
+          setEnablePersistentStorage(false);
+        });
+    }
+  };
+
+  useEffect(() => {
+    window.navigator.storage.persisted().then((persistent) => {
+      setEnablePersistentStorage(persistent);
+    });
+  }, []);
+
+  return (
+    <Row className={styles.row} gutter={20} align={'middle'}>
+      <Col span={21}>
+        <h5 className={styles.subTitle}>持久化存储</h5>
+
+        <Paragraph type="danger">
+          <Text type="secondary">
+            默认情况下，浏览器对于 Storage
+            存储的数据采用的策略是尽力而为的，这意味着在您的存储空间不足时，浏览器会通过指定的算法进行清理，您可以开启此选项以改变浏览器的默认策略。
+          </Text>
+          注意，此选项是一次性的，如果您需要关闭，请前往浏览器设置并重置本站权限。
+        </Paragraph>
+      </Col>
+
+      <Col span={3} style={{ textAlign: 'center' }}>
+        <Switch
+          disabled={enablePersistent}
+          value={enablePersistent}
+          onChange={handleEnablePersistent}
+        />
+      </Col>
+    </Row>
+  );
+}
+
 function StorageDetail() {
   const drawRef = useRef<CanvasInstance>(null);
   const [storage, setStorage] = useState<{
@@ -177,30 +231,32 @@ function StorageDetail() {
       const usageAngle = Math.PI * 2 * (res.usage / res.quota);
       const unUsageAngle = Math.PI * 2 * ((res.quota - res.usage) / res.quota);
 
-      const centerX = drawRef.current!.width() / 2;
-      const centerY = drawRef.current!.height() / 2;
+      const drawEl = drawRef.current!;
 
-      drawRef.current!.arc(centerX, centerY, centerX - 2, 0, Math.PI * 2);
-      drawRef.current!.strokeStyle('#f0f0f0');
-      drawRef.current!.stroke();
+      const centerX = drawEl.width() / 2;
+      const centerY = drawEl.height() / 2;
 
-      drawRef.current!.beginPath();
-      drawRef.current!.moveTo(centerX, centerY);
-      drawRef.current!.arc(centerX, centerY, centerX - 2, 0, usageAngle);
-      drawRef.current!.fillStyle('#ff9759');
-      drawRef.current!.fill();
+      drawEl.arc(centerX, centerY, centerX - 2, 0, Math.PI * 2);
+      drawEl.strokeStyle('#f0f0f0');
+      drawEl.stroke();
 
-      drawRef.current!.beginPath();
-      drawRef.current!.moveTo(centerX, centerY);
-      drawRef.current!.arc(
+      drawEl.beginPath();
+      drawEl.moveTo(centerX, centerY);
+      drawEl.arc(centerX, centerY, centerX - 2, 0, usageAngle);
+      drawEl.fillStyle('#ff9759');
+      drawEl.fill();
+
+      drawEl.beginPath();
+      drawEl.moveTo(centerX, centerY);
+      drawEl.arc(
         centerX,
         centerY,
         centerX - 2,
         usageAngle,
         usageAngle + unUsageAngle
       );
-      drawRef.current!.fillStyle('white');
-      drawRef.current!.fill();
+      drawEl.fillStyle('white');
+      drawEl.fill();
     });
   }, []);
 
@@ -267,6 +323,8 @@ const Settings = () => {
       <StorageDetail />
 
       <WebNotification />
+
+      <PersistentStorage />
     </Card>
   );
 };
