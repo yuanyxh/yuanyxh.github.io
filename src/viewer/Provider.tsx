@@ -214,11 +214,13 @@ export const useMDXComponents = (): MDXComponents => {
       const { href = '', ...rest } = props;
 
       let _href = href;
+      let rel: string | undefined = 'external nofollow noopener';
       if (['./', '../'].some((path) => href.startsWith(path))) {
         _href = '/articles/' + href.split('/').pop()!.replace('.mdx', '');
+        rel = void 0;
       }
 
-      return <Link to={_href} {...rest}></Link>;
+      return <Link to={_href} rel={rel} {...rest}></Link>;
     },
     code(props) {
       const { className, children, ...rest } = props;

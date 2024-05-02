@@ -14,15 +14,21 @@ import { relative, sep } from 'node:path';
 import path from 'path';
 import { codeToHtml } from 'shiki';
 
+interface RouteObject {
+  path: string;
+  children?: RouteObject[];
+  meta?: ArticleMeta;
+}
+
+export interface ResolveRouteObject extends RouteObject {
+  fullPath: string;
+  children?: ResolveRouteObject[];
+}
+
 export interface RoutePlace {
   books: string;
   articles: string;
   examples: string;
-}
-
-export interface PathRoute {
-  path: string;
-  children?: PathRoute[];
 }
 
 export const root = process.cwd();
@@ -209,10 +215,10 @@ export const replacePlaceRoute = (
     .replace('/** placeholder for books */', books)
     .replace('/** placeholder for coder */', examples);
 
-export function resolveFullPath(
-  routes: PathRoute[],
+export function resolveFullRoutes(
+  routes: ResolveRouteObject[],
   parent: string,
-  result: string[]
+  result: ResolveRouteObject[]
 ) {
   routes.map(function map(route) {
     const seps = parent.split('/');
@@ -220,7 +226,7 @@ export function resolveFullPath(
 
     if (route.path === 'index') {
       if (route.children?.length) {
-        resolveFullPath(route.children, parent, result);
+        resolveFullRoutes(route.children, parent, result);
       }
 
       return route;
@@ -229,10 +235,10 @@ export function resolveFullPath(
     let fullPath = [...seps, route.path].join('/');
     !fullPath.startsWith('/') && (fullPath = '/' + fullPath);
 
-    result.push(fullPath);
+    result.push({ ...route, fullPath });
 
     if (route.children?.length) {
-      resolveFullPath(route.children, fullPath, result);
+      resolveFullRoutes(route.children, fullPath, result);
     }
 
     return route;

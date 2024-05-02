@@ -2,11 +2,15 @@ import {
   generateRouteJSON,
   replacePlaceRoute,
   resolve,
-  resolveFullPath,
+  resolveFullRoutes,
+  ResolveRouteObject,
+  root,
   routesPath
 } from './utils';
+import { ArticleMeta } from './vite-route-generator';
 
 import { readdirSync, readFileSync } from 'node:fs';
+import { loadEnv } from 'vite';
 import selfVitePrerender from 'vite-plugin-prerender';
 
 export interface PostProcessParam {
@@ -30,6 +34,41 @@ const excludeOutPathRewrite = [
   '/profile'
 ];
 
+function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
+  const env = loadEnv('prod', root);
+
+  let html = `
+    <link rel="canonical" href="https://yuanyxh.com/" />
+    <link rel="author" href="https://yuanyxh.com/profile/about_me" />
+    <link rel="manifest" href="/manifest.json">
+    <meta property="og:url" content="https://yuanyxh.com${route.fullPath}">
+  `;
+
+  if (meta) {
+    html += `
+      <meta property="og:type" content="article" />
+      <meta property="article" content="https://yuanyxh.com${route.fullPath}" />
+      <meta property="article:published_time" content="${meta.date}" />
+      <meta property="article:author" content="https://yuanyxh.com/profile/about_me" />
+      <meta property="og:image" content="${meta.imageUrl}">
+      <meta property="og:description" content="${meta.description}">
+      <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
+      <meta name="description" content="${meta.description}">
+      <title>${env.VITE_APP_TITLE}: ${meta.title}</title>
+    `;
+  } else {
+    html += `
+      <meta property="og:type" content="website" />
+      <meta property="og:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta property="og:title" content="${env.VITE_APP_TITLE}">
+      <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <title>${env.VITE_APP_TITLE}</title>
+    `;
+  }
+
+  return html;
+}
+
 const match = text.match(reg);
 
 async function vitePrerender() {
@@ -43,11 +82,13 @@ async function vitePrerender() {
     excludeOutPathRewrite.push('/coder/' + dirs[i]);
   }
 
+  const routeJSON = await generateRouteJSON();
   const getRoutes = new Function(
-    `return ${replacePlaceRoute(`[${match[0]}]`, await generateRouteJSON())}`
+    `return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`
   );
 
-  const routes = resolveFullPath(getRoutes(), '', []);
+  const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
+  const routes = detailsRoutes.map((route) => route.fullPath);
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
   return selfVitePrerender({
@@ -80,21 +121,31 @@ async function vitePrerender() {
         'align-items'
       );
 
+      const route = detailsRoutes.find(
+        (route) => route.fullPath === renderedRoute.originalRoute
+      );
+      if (route) {
+        renderedRoute.html = renderedRoute.html.replace(
+          '<!-- meta_place -->',
+          getMetaTag(route.meta, route)
+        );
+      }
+
       // <link rel="alternate" hreflang="en" href="https://developer.chrome.com/docs">
-      // <meta property="og:title" content="文档 &nbsp;|&nbsp; Docs &nbsp;|&nbsp; Chrome for Developers">, see https://ogp.me/
-      // <meta name="description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
-      // <meta property="og:description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
-      // <meta property="og:url" content="https://developer.chrome.com/docs?hl=zh-cn">
+      // //<meta property="og:title" content="文档 &nbsp;|&nbsp; Docs &nbsp;|&nbsp; Chrome for Developers">, see https://ogp.me/
+      // //<meta name="description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
+      // //<meta property="og:description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
+      // //<meta property="og:url" content="https://developer.chrome.com/docs?hl=zh-cn">
       // rel="tag"
       // rel="pingback"
-      // rel=”noopener”
-      // rel="manifest"
-      // rel="external"
-      // rel="bookmar"
-      // <link rel="author" />, see https://www.zhangxinxu.com/wordpress/2019/06/html-a-link-rel/#alternateRel
-      // <meta name="robots" content="noindex" />, see https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag?hl=zh-cn
-      // <link rel="canonical" href="https://developer.chrome.com/docs?hl=zh-cn" />, see https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls?hl=zh-cn
-      // <title>title: subtitle</title>
+      // //rel=”noopener”
+      // //rel="manifest"
+      // //rel="external"
+      // //rel="bookmark"
+      // //<link rel="author" />, see https://www.zhangxinxu.com/wordpress/2019/06/html-a-link-rel/#alternateRel
+      // //<meta name="robots" content="noindex" />, see https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag?hl=zh-cn
+      // //<link rel="canonical" href="https://developer.chrome.com/docs?hl=zh-cn" />, see https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls?hl=zh-cn
+      // //<title>title: subtitle</title>
 
       return renderedRoute;
     }

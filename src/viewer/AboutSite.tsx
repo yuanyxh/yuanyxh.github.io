@@ -37,6 +37,7 @@ const AboutSite = () => {
           最开始想做博客是因为一个朋友分享了他的&nbsp;
           <Link
             style={{ color: 'var(--color-primary)' }}
+            rel="external nofollow noopener"
             to="https://yang-xianzhu.github.io/"
           >
             博客站点
@@ -44,6 +45,7 @@ const AboutSite = () => {
           ，心血来潮开始搭建自己的博客，从&nbsp;
           <Link
             style={{ color: 'var(--color-primary)' }}
+            rel="external nofollow noopener"
             to="https://hexo.io/zh-cn/"
           >
             Hexo
@@ -51,6 +53,7 @@ const AboutSite = () => {
           &nbsp;到&nbsp;
           <Link
             style={{ color: 'var(--color-primary)' }}
+            rel="external nofollow noopener"
             to="https://vuepress.vuejs.org/zh/"
           >
             Vuepress
@@ -59,6 +62,7 @@ const AboutSite = () => {
           也编写了一个在线演示效果的&nbsp;
           <Link
             style={{ color: 'var(--color-primary)' }}
+            rel="external nofollow noopener"
             to="https://github.com/yuanyxh/illustrate"
           >
             项目
@@ -102,9 +106,9 @@ const AboutSite = () => {
         <Paragraph style={{ fontSize: 16 }}>
           网站使用 <Text code>React</Text> + <Text code>Vite</Text> +{' '}
           <Text code>TypeScript</Text>
-          作为基础架构，<Text code>pnpm</Text> 作为包管理器，搭配 <Text code>ESLint</Text>、
-          <Text code>StyleLint</Text>、<Text code>CommitLint</Text>、
-          <Text code>Prettier</Text>
+          作为基础架构，<Text code>pnpm</Text> 作为包管理器，搭配{' '}
+          <Text code>ESLint</Text>、<Text code>StyleLint</Text>、
+          <Text code>CommitLint</Text>、<Text code>Prettier</Text>
           规范项目，<Text code>Antd</Text> 实现网站的部分 UI，图标使用{' '}
           <Text code>iconify/Material Symbols</Text> 与{' '}
           <Text code>@ant-design/icons</Text>，使用 <Text code>postcss</Text> 和{' '}

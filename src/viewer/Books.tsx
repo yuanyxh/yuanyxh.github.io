@@ -10,7 +10,7 @@ const { Title, Paragraph } = Typography;
 
 const BookItem = ({ book }: { book: ResolveRouteObject }) => {
   return (
-    <Link to={book.fullPath}>
+    <Link rel="bookmark" to={book.fullPath}>
       <div className={styles.bookItem}>
         <div className={styles.contentBox}>
           <Title className={styles.title} level={3}>

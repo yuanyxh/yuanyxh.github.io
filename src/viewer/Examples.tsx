@@ -10,7 +10,7 @@ const { Title, Paragraph } = Typography;
 
 const ExampleItem = ({ example }: { example: ResolveRouteObject }) => {
   return (
-    <Link to={example.fullPath}>
+    <Link rel="bookmark" to={example.fullPath}>
       <div className={styles.exampleItem}>
         <div className={styles.contentBox}>
           <Title className={styles.title} level={4}>

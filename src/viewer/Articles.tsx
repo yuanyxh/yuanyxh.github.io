@@ -8,7 +8,7 @@ import styles from './styles/Articles.module.less';
 
 const ArticleItem = ({ article }: { article: ResolveRouteObject }) => {
   return (
-    <Link to={article.fullPath}>
+    <Link rel="bookmark" to={article.fullPath}>
       <div className={styles.articleItem}>
         <div className={styles.preview}>
           <img
