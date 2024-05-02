@@ -80,6 +80,7 @@
     "vite-plugin-ejs": "^1.7.0",
     "vite-plugin-prerender": "^1.0.8",
     "vite-plugin-progress": "^0.0.7",
+    "vite-plugin-sitemap": "^0.5.3",
     "vite-plugin-svg-icons": "^2.0.1",
     "workbox-build": "^7.1.0"
   },

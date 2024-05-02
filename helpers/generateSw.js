@@ -65,6 +65,6 @@ generateSW({
         }
       }
     }
-  ]
-  // sourcemap: false
+  ],
+  sourcemap: false
 });

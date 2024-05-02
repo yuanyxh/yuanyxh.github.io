@@ -26,6 +26,8 @@ const text = readFileSync(routesPath, 'utf-8');
 
 const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
+const match = text.match(reg);
+
 const excludeOutPathRewrite = [
   '/',
   '/articles',
@@ -68,8 +70,6 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
 
   return html;
 }
-
-const match = text.match(reg);
 
 async function vitePrerender() {
   if (!match) {
