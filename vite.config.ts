@@ -41,6 +41,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     plugins: [
       viteRouteGenerator(),
 
+      viteGenerateSitemap(),
+
+      // vitePrerender(),
+
       /**
        * format
        * baseUrl
@@ -94,11 +98,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         iconDirs: [resolve('./src/assets/svgs')],
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
-      }),
-
-      viteGenerateSitemap(),
-
-      vitePrerender()
+      })
     ],
     resolve: {
       alias: [

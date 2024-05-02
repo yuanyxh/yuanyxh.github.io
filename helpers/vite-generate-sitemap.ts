@@ -6,7 +6,7 @@ import {
   routesPath
 } from './utils';
 
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
@@ -61,6 +61,10 @@ function viteGenerateSitemap(): PluginOption {
     apply: 'build',
     enforce: 'post',
     async closeBundle() {
+      if (!existsSync(resolve('./build'))) {
+        return;
+      }
+
       return generateSitemap();
     },
     transformIndexHtml() {
