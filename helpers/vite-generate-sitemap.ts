@@ -59,6 +59,7 @@ function viteGenerateSitemap(): PluginOption {
   return {
     name: 'vite-plugin-sitemap',
     apply: 'build',
+    enforce: 'post',
     async closeBundle() {
       return generateSitemap();
     },
