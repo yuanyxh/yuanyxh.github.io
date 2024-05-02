@@ -24,7 +24,7 @@ jobs:
           cache: npm
 
       - name: set pnpm
-        run: npm install pnpm -g
+        run: npm install pnpm
 
       - name: install dependencies
         run: pnpm install
