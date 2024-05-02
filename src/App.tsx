@@ -14,7 +14,13 @@ import type { NotificationInstance } from 'antd/es/notification/interface';
 
 import { State, useAppStore } from '@/store';
 
-import { getStorage, hasLocalStorage, ServiceWorkerManager } from '@/utils';
+import {
+  addGlobalListener,
+  getStorage,
+  hasLocalStorage,
+  notify,
+  ServiceWorkerManager
+} from '@/utils';
 
 import { resetProgressBar } from './routes';
 import './App.less';
@@ -47,9 +53,11 @@ const App: React.FC<IAppProps> = (props) => {
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
 
   const {
-    settings: { colorScheme, enableServiceWorkerCache },
+    settings: { colorScheme, enableServiceWorkerCache, enableNotification },
+    status: { frontDesk },
     setLanguage,
-    setColorScheme
+    setColorScheme,
+    setFrontDesk
   } = useAppStore();
 
   const listenerColorSchemeChange = useCallback((e: MediaQueryListEvent) => {
@@ -104,11 +112,30 @@ const App: React.FC<IAppProps> = (props) => {
         btn,
         duration: null
       });
+
+      if (!frontDesk && enableNotification) {
+        notify({
+          icon: '/favicon.ico',
+          title: '有新内容',
+          data: '网站内容有更新，您可以前往查看更新。'
+        });
+      }
     }
 
+    const removePageShowListener = addGlobalListener('pageshow', () =>
+      setFrontDesk(true)
+    );
+    const removePageHideListener = addGlobalListener('pagehide', () =>
+      setFrontDesk(false)
+    );
+
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
-    return () =>
+    return () => {
+      removePageShowListener();
+      removePageHideListener();
+
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
+    };
   }, []);
 
   return (

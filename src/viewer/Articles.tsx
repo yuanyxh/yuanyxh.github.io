@@ -53,8 +53,6 @@ const Articles = () => {
 
   return (
     <Row className={styles.articles} gutter={[60, 50]}>
-      <Link to="/coder/base64_coder">click me</Link>
-
       {articles?.map((article) => (
         <Col xs={24} sm={12} md={12} lg={12} xl={8} xxl={6} key={article.path}>
           <ArticleItem article={article} />

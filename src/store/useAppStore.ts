@@ -9,6 +9,9 @@ export interface State {
     enableServiceWorkerCache: boolean;
     enableNotification: boolean;
   };
+  status: {
+    frontDesk: boolean;
+  };
 }
 
 export interface Actions {
@@ -20,6 +23,7 @@ export interface Actions {
   setEnableNotification(
     enableNotification: State['settings']['enableNotification']
   ): void;
+  setFrontDesk(frontDesk: State['status']['frontDesk']): void;
 }
 
 const useAppStore = create<State & Actions>((set) => ({
@@ -29,11 +33,17 @@ const useAppStore = create<State & Actions>((set) => ({
       colorScheme: 'light',
       enableServiceWorkerCache: true,
       enableNotification: false
+    },
+    status: {
+      frontDesk: true
     }
   }),
   setLanguage(language) {
     set((state) => {
-      const app = { settings: { ...state.settings, language: language } };
+      const app = {
+        ...state,
+        settings: { ...state.settings, language: language }
+      };
 
       setStorage('app', app);
 
@@ -44,7 +54,10 @@ const useAppStore = create<State & Actions>((set) => ({
   },
   setColorScheme(colorScheme) {
     set((state) => {
-      const app = { settings: { ...state.settings, colorScheme: colorScheme } };
+      const app = {
+        ...state,
+        settings: { ...state.settings, colorScheme: colorScheme }
+      };
 
       setStorage('app', app);
 
@@ -55,7 +68,10 @@ const useAppStore = create<State & Actions>((set) => ({
   },
   setEnableServiceWorkerCache(enableServiceWorkerCache) {
     set((state) => {
-      const app = { settings: { ...state.settings, enableServiceWorkerCache } };
+      const app = {
+        ...state,
+        settings: { ...state.settings, enableServiceWorkerCache }
+      };
 
       setStorage('app', app);
 
@@ -64,12 +80,18 @@ const useAppStore = create<State & Actions>((set) => ({
   },
   setEnableNotification(enableNotification) {
     set((state) => {
-      const app = { settings: { ...state.settings, enableNotification } };
+      const app = {
+        ...state,
+        settings: { ...state.settings, enableNotification }
+      };
 
       setStorage('app', app);
 
       return app;
     });
+  },
+  setFrontDesk(frontDesk) {
+    set((state) => ({ ...state, status: { frontDesk: frontDesk } }));
   }
 }));
 

@@ -81,14 +81,15 @@ function AddFileModal({
   return (
     <Modal
       title={type === FileType.FILE ? '新建文件' : '新建文件夹'}
+      style={{ top: '30vh' }}
       open={open}
+      okText={'确认'}
+      cancelText={'取消'}
       onOk={handleOk}
       onCancel={() => {
         setInputStatus({ name: '', status: '', message: '' });
         onCancel();
       }}
-      okText={'确认'}
-      cancelText={'取消'}
     >
       <Input
         ref={inputRef}
