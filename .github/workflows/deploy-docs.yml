@@ -1,0 +1,40 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      # origin branch
+      - master
+
+jobs:
+  deploy-gh-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          # Git Submodules
+          # submodules: true
+
+      - name: set Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.11.0
+          cache: pnpm
+
+      - name: install dependencies
+        run: pnpm install
+
+      - name: build
+        env:
+          NODE_OPTIONS: --max_old_space_size=8192
+        run: |-
+          pnpm run build
+
+      - name: deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # 这是文档部署到的分支名称
+          branch: website
+          folder: build

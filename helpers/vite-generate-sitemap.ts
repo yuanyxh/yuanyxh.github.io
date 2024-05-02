@@ -31,7 +31,7 @@ async function viteGenerateSitemap() {
     hostname: 'https://yuanyxh.com/',
     dynamicRoutes: routes,
     outDir: 'build',
-    extensions: ['html', 'xml'],
+    extensions: ['xml', 'html'],
     generateRobotsTxt: false
   });
 }
