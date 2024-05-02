@@ -30,6 +30,9 @@ jobs:
       - name: install dependencies
         run: pnpm install
 
+      - name: see
+        run: ls
+
       - name: build
         env:
           NODE_OPTIONS: --max_old_space_size=8192

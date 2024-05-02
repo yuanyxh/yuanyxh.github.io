@@ -17,7 +17,7 @@ import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
 import viteRouteGenerator from './helpers/vite-route-generator';
 import vitePrerender from './helpers/vite-prerender';
-// import viteGenerateSitemap from './helpers/vite-generate-sitemap';
+import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 import rehypePrism from '@mapbox/rehype-prism';
 
 import type { ConfigEnv, UserConfig } from 'vite';
@@ -41,7 +41,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     plugins: [
       viteRouteGenerator(),
 
-      // viteGenerateSitemap(),
+      viteGenerateSitemap(),
 
       vitePrerender(),
 
