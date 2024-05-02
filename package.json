@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --mode dev",
     "test": "tsc && pnpm vite build --mode test",
-    "build": "tsc && pnpm vite build --mode prod --force && node ./helpers/generateSw.js",
+    "build": "tsc && pnpm vite build --mode prod && node ./helpers/generateSw.js",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "stylelint": "stylelint \"**/*.less\"",
