@@ -12,7 +12,8 @@ import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import type { NotificationInstance } from 'antd/es/notification/interface';
 
-import { State, useAppStore } from '@/store';
+import type { State } from '@/store';
+import { useAppStore } from '@/store';
 
 import {
   addGlobalListener,

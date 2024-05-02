@@ -17,6 +17,9 @@ export interface State {
 export interface Actions {
   setLanguage(language: string): void;
   setColorScheme(colorScheme: State['settings']['colorScheme']): void;
+  setColorSchemeNonPersistent(
+    colorScheme: State['settings']['colorScheme']
+  ): void;
   setEnableServiceWorkerCache(
     enableServiceWorkerCache: State['settings']['enableServiceWorkerCache']
   ): void;
@@ -61,6 +64,17 @@ const useAppStore = create<State & Actions>((set) => ({
 
       setStorage('app', app);
 
+      return app;
+    });
+
+    document.documentElement.setAttribute('mode', colorScheme);
+  },
+  setColorSchemeNonPersistent(colorScheme) {
+    set((state) => {
+      const app = {
+        ...state,
+        settings: { ...state.settings, colorScheme: colorScheme }
+      };
       return app;
     });
 

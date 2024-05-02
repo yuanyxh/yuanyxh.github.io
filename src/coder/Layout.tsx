@@ -7,16 +7,16 @@ import { useAppStore } from '@/store';
 const CoderLayout = () => {
   const {
     settings: { colorScheme },
-    setColorScheme
+    setColorSchemeNonPersistent
   } = useAppStore();
 
   const colorSchemeRef = useRef(colorScheme);
 
   useEffect(() => {
-    setColorScheme('dark');
+    setColorSchemeNonPersistent('dark');
 
     return () => {
-      setColorScheme(colorSchemeRef.current);
+      setColorSchemeNonPersistent(colorSchemeRef.current);
     };
   }, []);
 
