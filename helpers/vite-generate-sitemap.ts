@@ -6,7 +6,7 @@ import {
   routesPath
 } from './utils';
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
@@ -22,6 +22,8 @@ function viteGenerateSitemap(): PluginOption {
     if (!match) {
       throw Error('no match routes.');
     }
+
+    console.error(readdirSync(resolve()));
 
     const routeJSON = await generateRouteJSON();
     const getRoutes = new Function(
