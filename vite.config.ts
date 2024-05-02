@@ -161,7 +161,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     },
     build: {
       target: 'es2015',
-      outDir: 'build',
+      outDir: resolve('./build'),
       sourcemap: isBuild === false,
       rollupOptions: {
         plugins: isBuild
