@@ -21,7 +21,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
+
+      - name: set pnpm
+        run: npm install pnpm -g
 
       - name: install dependencies
         run: pnpm install
