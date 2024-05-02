@@ -10,8 +10,6 @@ jobs:
   deploy-gh-pages:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
       - name: Checkout
         uses: actions/checkout@v3
         with:
