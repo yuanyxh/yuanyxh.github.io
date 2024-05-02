@@ -43,7 +43,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
 
       viteGenerateSitemap(),
 
-      // vitePrerender(),
+      vitePrerender(),
 
       /**
        * format
