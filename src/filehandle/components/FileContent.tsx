@@ -212,7 +212,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         <ContextMenu
           getBindElement={() => sectionRef.current!}
           getContainer={props.getContainer}
-          onHide={() => setSelection([])}
+          onHide={() => selection.length && setSelection([])}
           menu={[
             {
               name: '新建文件',

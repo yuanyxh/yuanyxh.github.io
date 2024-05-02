@@ -72,7 +72,9 @@ const SubTitle = (
 
     // TODO: global event show the mesage to user
     window.navigator.clipboard.writeText(
-      new URL(`./#${children}`, location.href.split('#')[0]).href
+      new URL(
+        `${window.location.origin}${window.location.pathname}/#${children}`
+      ).href
     );
   };
 

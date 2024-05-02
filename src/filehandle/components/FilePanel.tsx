@@ -18,7 +18,8 @@ import { Icon } from '@/components';
 
 import FileContent from './FileContent';
 import styles from './styles/FilePanel.module.less';
-import { FileSystem, useFileSystem } from '../hooks/useFileSystem';
+import type { FileSystem } from '../hooks/useFileSystem';
+import { useFileSystem } from '../hooks/useFileSystem';
 
 export type DialogProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,

@@ -290,14 +290,27 @@ class Router {
 
       const _matchs = this.routeTree.match(to);
 
-      // we don't want stale requests
+      // We don't want stale requests
       let isObsolete = false;
       this.markObsolete = () => {
         isObsolete = true;
         this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
       };
+
+      // We want requests to go out simultaneously, but updates to be sequential
+      let normalIndex = 0;
       resolveComponents(_matchs, (matchs: ResolveRouteObject[]) => {
         if (!isObsolete) {
+          const completed = matchs.findIndex(
+            (match) => match.module?.status === 'fulfilled'
+          );
+
+          if (completed === normalIndex) {
+            normalIndex++;
+          } else if (completed > normalIndex) {
+            return;
+          }
+
           const safeMatchs = cloneDeep(matchs);
           const getMatch = () => safeMatchs.shift();
           this.event.emit('matchRoute', getMatch);
