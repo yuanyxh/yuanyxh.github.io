@@ -1,12 +1,15 @@
 import {
   generateRouteJSON,
   replacePlaceRoute,
+  resolve,
   resolveFullRoutes,
   routesPath
 } from './utils';
 
-import { readFileSync } from 'fs';
-import viteSitemap from 'vite-plugin-sitemap';
+import { readFileSync, writeFileSync } from 'fs';
+import { SitemapStream, streamToPromise } from 'sitemap';
+import { Readable } from 'stream';
+import type { PluginOption } from 'vite';
 
 const text = readFileSync(routesPath, 'utf-8');
 
@@ -14,26 +17,64 @@ const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
 const match = text.match(reg);
 
-async function viteGenerateSitemap() {
-  if (!match) {
-    throw Error('no match routes.');
+function viteGenerateSitemap(): PluginOption {
+  async function generateSitemap() {
+    if (!match) {
+      throw Error('no match routes.');
+    }
+
+    const routeJSON = await generateRouteJSON();
+    const getRoutes = new Function(
+      `return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`
+    );
+
+    const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
+
+    const links = detailsRoutes.map((route) => {
+      if (route.meta) {
+        return {
+          url: route.fullPath,
+          changefreq: 'daily',
+          lastmod: route.meta.date.split(' ')[0],
+          priority: 1.0
+        };
+      }
+
+      return {
+        url: route.fullPath,
+        changefreq: 'daily',
+        priority: route.fullPath === '/' ? 1.0 : 0.8
+      };
+    });
+
+    const smStream = new SitemapStream({ hostname: 'https://yuanyxh.com/' });
+
+    return streamToPromise(Readable.from(links).pipe(smStream)).then((data) =>
+      writeFileSync(resolve('./build/sitemap.xml'), data.toString(), 'utf-8')
+    );
   }
 
-  const routeJSON = await generateRouteJSON();
-  const getRoutes = new Function(
-    `return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`
-  );
-
-  const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
-  const routes = detailsRoutes.map((route) => route.fullPath);
-
-  return viteSitemap({
-    hostname: 'https://yuanyxh.com/',
-    dynamicRoutes: routes,
-    outDir: 'build',
-    extensions: ['xml', 'html'],
-    generateRobotsTxt: false
-  });
+  return {
+    name: 'vite-plugin-sitemap',
+    apply: 'build',
+    async closeBundle() {
+      return generateSitemap();
+    },
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'link',
+          injectTo: 'head',
+          attrs: {
+            rel: 'sitemap',
+            type: 'application/xml',
+            title: 'Sitemap',
+            href: '/sitemap.xml'
+          }
+        }
+      ];
+    }
+  };
 }
 
 export default viteGenerateSitemap;
