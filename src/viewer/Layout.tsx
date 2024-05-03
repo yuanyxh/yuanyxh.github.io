@@ -25,18 +25,22 @@ import {
   fallbackFullscreen,
   isFullScreen,
   onFullScreen,
-  requestFullScreen
+  requestFullScreen,
+  sleep
 } from '@/utils';
 
+import type { FilePanelFactory } from '@/filehandle';
+import { isSupportOPFS } from '@/filehandle/utils/checkSupport';
+
 import { Icon } from '@/components';
+
+import { AppContext } from '@/App';
 
 import LogoImage from '@/assets/images/logo.webp';
 
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
-import { AppContext } from '@/App';
-import filePanel, { isSupportOPFS } from '@/filehandle';
 
 const active = styles.active;
 
@@ -410,13 +414,25 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 
 const FileSystemTrigger = () => {
   const [support, setSupport] = useState(false);
+  const filePanelRef = useRef<FilePanelFactory>();
 
   useEffect(() => {
-    isSupportOPFS().then((res) => setSupport(res));
+    isSupportOPFS().then((res) => {
+      setSupport(res);
+    });
   }, []);
 
   const handleOpenFilePanel = () => {
-    filePanel.toggle();
+    if (!filePanelRef.current) {
+      return import('@/filehandle').then(({ default: filePanel }) => {
+        filePanelRef.current = filePanel;
+
+        // await render mounted
+        sleep(0, () => filePanelRef.current?.toggle());
+      });
+    }
+
+    filePanelRef.current?.toggle();
   };
 
   return support ? (

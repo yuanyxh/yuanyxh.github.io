@@ -1,4 +1,4 @@
-import { default as FilePanelFactory } from './FilePanelFactory';
+import { default as FilePanelFactoryInner } from './FilePanelFactory';
 
 export * from './components/FilePanel';
 export * from './components/FilePanelContainer';
@@ -8,4 +8,6 @@ export * from './utils/checkSupport';
 export * from './utils/error';
 export * from './utils/fileManager';
 
-export default new FilePanelFactory();
+export type FilePanelFactory = FilePanelFactoryInner;
+
+export default new FilePanelFactoryInner();

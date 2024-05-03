@@ -139,8 +139,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           replacement: `${resolve('src/components')}/`
         },
         {
-          find: /@\/filehandler\//,
-          replacement: `${resolve('src/filehandler')}/`
+          find: /@\/filehandle\//,
+          replacement: `${resolve('src/filehandle')}/`
         }
       ]
     },

@@ -31,7 +31,7 @@
       "@/examples/*": ["src/examples/*"],
       "@/utils/*": ["src/utils/*"],
       "@/components/*": ["src/components/*"],
-      "@/filehandler/*": ["src/filehandler/*"]
+      "@/filehandler/*": ["src/filehandle/*"]
     }
   },
   "include": ["src", "types"],
