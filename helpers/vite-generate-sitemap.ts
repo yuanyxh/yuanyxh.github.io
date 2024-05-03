@@ -6,7 +6,7 @@ import {
   routesPath
 } from './utils';
 
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
@@ -63,6 +63,13 @@ function viteGenerateSitemap(): PluginOption {
     closeBundle: {
       sequential: true,
       async handler() {
+        if (!existsSync('./build')) {
+          console.error('11111111111111111111111111111111111111111111111111');
+          return;
+        }
+
+        console.error('exec into here');
+
         return generateSitemap();
       }
     },
