@@ -44,6 +44,9 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
     <link rel="author" href="https://yuanyxh.com/profile/about_me" />
     <link rel="manifest" href="/manifest.json">
     <meta property="og:url" content="https://yuanyxh.com${route.fullPath}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:domain" content="yuanyxh.com">
+    <meta property="twitter:url" content="https://yuanyxh.com/">
   `;
 
   if (meta) {
@@ -55,6 +58,9 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta property="og:image" content="${meta.imageUrl}">
       <meta property="og:description" content="${meta.description}">
       <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
+      <meta name="twitter:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
+      <meta name="twitter:description" content="${meta.description}">
+      <meta name="twitter:image" content="${meta.imageUrl}">
       <meta name="description" content="${meta.description}">
       <title>${env.VITE_APP_TITLE}: ${meta.title}</title>
     `;
@@ -64,6 +70,9 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta property="og:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
       <meta property="og:title" content="${env.VITE_APP_TITLE}">
       <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
+      <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta name="twitter:image" content="/favicon.ico">
       <title>${env.VITE_APP_TITLE}</title>
     `;
   }
