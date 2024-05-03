@@ -421,6 +421,7 @@ const FileSystemTrigger = () => {
 
   return support ? (
     <FloatButton
+      aria-label="filesystem"
       icon={
         <Icon
           icon="octicon--file-directory-open-fill-16"
@@ -458,10 +459,15 @@ const Content = () => {
       <FloatButton.Group>
         <FileSystemTrigger />
 
-        <FloatButton icon={<CommentOutlined />} onClick={handleFeedback} />
+        <FloatButton
+          aria-label="feedback"
+          icon={<CommentOutlined />}
+          onClick={handleFeedback}
+        />
 
         {/* FIXME: antd internal error, using outdated findDOMNode api causes react to throw warning in strict mode */}
         <FloatButton.BackTop
+          aria-label="backtop"
           visibilityHeight={2000}
           target={() => mainRef.current!}
         />

@@ -216,6 +216,7 @@ export default function Wrapper() {
 
       <FloatButton.Group>
         <FloatButton
+          aria-label="settings"
           icon={<Icon icon="material-symbols:settings" />}
           onClick={() => setOpen(true)}
         />
