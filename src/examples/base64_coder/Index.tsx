@@ -11,9 +11,10 @@ import { Input } from 'antd';
 
 import { Icon } from '@/components';
 
+import { AppContext } from '@/App';
+
 import styles from './styles/Index.module.less';
 import base64 from './utils/base64';
-import { AppContext } from '@/App';
 
 type TChange = React.ChangeEventHandler<HTMLTextAreaElement>;
 
