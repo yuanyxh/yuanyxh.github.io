@@ -43,7 +43,7 @@ export const replaceFileExtension = (name: string) =>
   name.slice(0, name.lastIndexOf('.')) + '.tsx';
 
 export const generateRouteJSONWithArticle = async () => {
-  const paths = await fast.glob(['src/markdowns/**/*.mdx']);
+  const paths = await fast.glob(['./src/markdowns/**/*.mdx']);
   let articles = ',';
   let books = ',';
 
@@ -56,7 +56,7 @@ export const generateRouteJSONWithArticle = async () => {
       );
 
       const aliasPath = path
-        .replace('src/markdowns', '@/markdowns')
+        .replace('./src/markdowns', '@/markdowns')
         .replace(/\\/g, '/');
 
       const str = `

@@ -45,9 +45,6 @@ function viteRouteGenerator(): PluginOption {
 
       if (resolve(routesPath) === resolve(id.split('?')[0])) {
         const json = await generateRouteJSON();
-
-        console.error(json);
-
         const result = replacePlaceRoute(code, json);
 
         return result;
