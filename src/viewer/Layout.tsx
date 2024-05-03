@@ -43,7 +43,7 @@ const active = styles.active;
 const Logo = () => {
   return (
     <Link to="/" title="logo">
-      <img className={styles.logo} src={LogoImage} />
+      <img className={styles.logo} src={LogoImage} alt="logo" />
 
       <span className={styles.title}>{import.meta.env.VITE_APP_TITLE}</span>
     </Link>
@@ -222,7 +222,7 @@ const Actions = () => {
           onClick: handleLanuageChange
         }}
       >
-        <a onClick={(e) => e.preventDefault()}>
+        <span>
           <Space>
             <Icon
               title="切换显示语言"
@@ -231,7 +231,7 @@ const Actions = () => {
               size={20}
             />
           </Space>
-        </a>
+        </span>
       </Dropdown>
 
       <Icon

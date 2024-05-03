@@ -41,7 +41,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   const env = loadEnv('prod', root);
 
   let html = `
-    <link rel="canonical" href="https://yuanyxh.com/" />
+    <link rel="canonical" href="https://yuanyxh.com${route.fullPath}" />
     <link rel="author" href="https://yuanyxh.com/profile/about_me.html" />
     <link rel="manifest" href="/manifest.json">
     <meta property="og:url" content="https://yuanyxh.com${route.fullPath}">

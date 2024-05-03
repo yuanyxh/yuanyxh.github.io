@@ -5,12 +5,12 @@ import { addGlobalListener, sleep } from '@/utils';
 import styles from './ContextMenu.module.less';
 
 export interface SubMenu
-  extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> {
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   name: string;
 }
 
 export interface Menu
-  extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> {
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   name: string;
   // subMenu?: SubMenu[];
   icon?: React.ReactNode;
@@ -99,7 +99,7 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
         const { name, icon, onClick, ...rest } = item;
 
         return (
-          <a
+          <span
             className={styles.item}
             key={name}
             title={name}
@@ -111,7 +111,7 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
           >
             <span className={styles.icon}>{icon}</span>
             {name}
-          </a>
+          </span>
         );
       })}
     </section>
