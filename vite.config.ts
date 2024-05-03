@@ -16,7 +16,7 @@ import remarkBraks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
 import viteRouteGenerator from './helpers/vite-route-generator';
-// import vitePrerender from './helpers/vite-prerender';
+import vitePrerender from './helpers/vite-prerender';
 import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 import rehypePrism from '@mapbox/rehype-prism';
 
@@ -43,7 +43,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
 
       viteGenerateSitemap(),
 
-      // vitePrerender(),
+      vitePrerender(),
 
       /**
        * format
