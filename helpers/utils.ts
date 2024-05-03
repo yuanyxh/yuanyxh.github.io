@@ -61,7 +61,7 @@ export const generateRouteJSONWithArticle = async () => {
 
       const str = `
         {
-          path: "${route}",
+          path: "${route + '.html'}",
           element: () => import("${aliasPath}"),
           meta: ${JSON.stringify(attributes)}
         },
@@ -140,10 +140,6 @@ export const generateRouteJSONWithExample = async () => {
 
       const code = readFileSync(fullname, 'utf-8');
 
-      // if (hierarchy === 0 && name === 'Index.tsx') {
-      //   continue;
-      // }
-
       const html = await codeToHtml(code, {
         lang: dirs[i].split('.').pop()!,
         theme: 'one-dark-pro'
@@ -174,7 +170,7 @@ export const generateRouteJSONWithExample = async () => {
             : newName;
 
       result += `{
-        path: '${route}',
+        path: '${route + '.html'}',
         element: () => import('@/examples/${root}/code/${paths.length === 0 ? '' : paths.length > 1 ? paths.join('/') : paths[0] + '/'}${newName}')
       },
       `;

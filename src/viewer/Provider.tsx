@@ -216,7 +216,7 @@ export const useMDXComponents = (): MDXComponents => {
       let _href = href;
       let rel: string | undefined = 'external nofollow noopener';
       if (['./', '../'].some((path) => href.startsWith(path))) {
-        _href = '/articles/' + href.split('/').pop()!.replace('.mdx', '');
+        _href = '/articles/' + href.split('/').pop()!.replace('.mdx', '.html');
         rel = void 0;
       }
 

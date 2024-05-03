@@ -12,16 +12,16 @@
     "key": "about",
     "children": [
       {
-        "path": "/profile/about_me",
+        "path": "/profile/about_me.html",
         "label": "关于我",
         "title": "关于我",
-        "key": "/profile/about_me"
+        "key": "/profile/about_me.html"
       },
       {
-        "path": "/profile/about_site",
+        "path": "/profile/about_site.html",
         "label": "关于网站",
         "title": "关于网站",
-        "key": "/profile/about_site"
+        "key": "/profile/about_site.html"
       }
     ]
   }

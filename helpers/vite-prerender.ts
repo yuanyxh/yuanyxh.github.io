@@ -31,6 +31,7 @@ const match = text.match(reg);
 const excludeOutPathRewrite = [
   '/',
   '/articles',
+  '/examples',
   '/books',
   '/coder',
   '/profile'
@@ -41,7 +42,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
 
   let html = `
     <link rel="canonical" href="https://yuanyxh.com/" />
-    <link rel="author" href="https://yuanyxh.com/profile/about_me" />
+    <link rel="author" href="https://yuanyxh.com/profile/about_me.html" />
     <link rel="manifest" href="/manifest.json">
     <meta property="og:url" content="https://yuanyxh.com${route.fullPath}">
     <meta name="twitter:card" content="summary_large_image">
@@ -54,7 +55,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta property="og:type" content="article" />
       <meta property="article" content="https://yuanyxh.com${route.fullPath}" />
       <meta property="article:published_time" content="${meta.date}" />
-      <meta property="article:author" content="https://yuanyxh.com/profile/about_me" />
+      <meta property="article:author" content="https://yuanyxh.com/profile/about_me.html" />
       <meta property="og:image" content="${meta.imageUrl}">
       <meta property="og:description" content="${meta.description}">
       <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">

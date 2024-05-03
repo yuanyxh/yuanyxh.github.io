@@ -43,11 +43,11 @@ export const routes: RouteObject[] = [
             element: () => import('@/viewer/Settings')
           },
           {
-            path: 'about_me',
+            path: 'about_me.html',
             element: () => import('@/viewer/AboutMe')
           },
           {
-            path: 'about_site',
+            path: 'about_site.html',
             element: () => import('@/viewer/AboutSite')
           }
         ]
