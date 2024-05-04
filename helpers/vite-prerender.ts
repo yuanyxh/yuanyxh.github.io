@@ -68,11 +68,11 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   } else {
     html += `
       <meta property="og:type" content="website" />
-      <meta property="og:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta property="og:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta property="og:title" content="${env.VITE_APP_TITLE}">
-      <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
-      <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。">
+      <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta name="twitter:image" content="/favicon.ico">
       <title>${env.VITE_APP_TITLE}</title>
     `;
