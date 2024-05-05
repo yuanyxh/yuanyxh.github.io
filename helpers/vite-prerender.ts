@@ -74,7 +74,8 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
       <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta property="og:image" content="https://yuanyxh.com/favicon.ico">
-      <meta name="twitter:image" content="https://yuanyxh.com/favicon.ic
+      <meta name="twitter:image" content="https://yuanyxh.com/favicon.ico">
+      <title>${env.VITE_APP_TITLE}</title>
     `;
   }
 
