@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { cloneDeep } from 'lodash-es';
+
 import FileLinkedList from '../FileLinkedList';
-import type { DH, FileDataType, FileInfo } from '../utils/fileManager';
+import type { DH, FH, FileDataType, FileInfo } from '../utils/fileManager';
 import {
   createDirectory,
   createFile,
@@ -11,16 +13,30 @@ import {
   remove as removeFile
 } from '../utils/fileManager';
 
+export interface FileHandle {
+  id: string;
+  ext: string;
+  icon?: React.ReactNode;
+  open(handler: FH): any;
+  contextMenu?: {
+    name: string;
+    icon?: React.ReactNode;
+    handler(handle: DH | FH): any;
+  };
+}
+
 export interface FileSystem {
   current: DH;
   children: FileInfo[];
   fileLinked: FileLinkedList;
+  fileHandles: FileHandle[];
   create(name: string, type: FileType, data?: FileDataType): Promise<any>;
   remove(name: string): Promise<any>;
   move(): void;
-  register(): void;
+  register(handler: FileHandle): void;
   returnToRoot(): void;
   enterDirectory(name: string): Promise<any>;
+  forceUpdate(): any;
 }
 
 export function useFileSystem(): FileSystem {
@@ -34,6 +50,7 @@ export function useFileSystem(): FileSystem {
     React.Dispatch<React.SetStateAction<DH>>
   ];
   const [children, setChildren] = useState<FileInfo[]>([]);
+  const fileHandleRef = useRef<FileHandle[]>([]);
 
   const update = () => {
     if (!current) return;
@@ -50,7 +67,13 @@ export function useFileSystem(): FileSystem {
   }, [current]);
 
   const fileSystem = useMemo(() => {
-    function register() {}
+    function register(handler: FileHandle) {
+      if (fileHandleRef.current.some((curr) => handler.id === curr.id)) {
+        return false;
+      }
+
+      fileHandleRef.current.push(cloneDeep(handler));
+    }
 
     function move() {}
 
@@ -88,12 +111,14 @@ export function useFileSystem(): FileSystem {
       current,
       children,
       fileLinked: fileLinked.current,
+      fileHandles: fileHandleRef.current,
       register,
       returnToRoot,
       enterDirectory,
       move,
       remove,
-      create
+      create,
+      forceUpdate: update
     };
   }, [current, children, fileLinked.current]);
 

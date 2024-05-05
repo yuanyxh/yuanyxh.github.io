@@ -24,7 +24,7 @@ export async function getChildren(directory: DH) {
 
     let ext: string | undefined = void 0;
     if (key.includes('.')) {
-      ext = key.split('.').pop();
+      ext = '.' + key.split('.').pop();
     }
 
     children[children.length] = { name: key, type, icon: '', ext };
@@ -60,6 +60,33 @@ export async function getHandleType(directory: DH, name: string) {
   throw new FileTypeError(name);
 }
 
+export async function importFile(directory: DH, options?: FilePickerOptions) {
+  if (!window.showOpenFilePicker) return false;
+
+  const files = await window.showOpenFilePicker(options);
+
+  await Promise.all(
+    files.map(async (file) =>
+      createFile(directory, file.name, await file.getFile())
+    )
+  );
+
+  return true;
+}
+
+export async function importDirectory(
+  directory: DH,
+  options?: DirectoryPickerOptions
+) {
+  if (!window.showDirectoryPicker) return false;
+
+  const folder = await window.showDirectoryPicker(options);
+
+  await move(folder, await createDirectory(directory, folder.name));
+
+  return true;
+}
+
 export async function createFile(
   directory: DH,
   name: string,
@@ -84,22 +111,32 @@ export async function remove(directory: DH, name: string) {
   return directory.removeEntry(name, { recursive: true });
 }
 
-export async function moveFile(origin: DH, target: DH, name: string) {
+export async function moveFile(
+  origin: DH,
+  target: DH,
+  name: string,
+  copy = true
+) {
   const file = await (await origin.getFileHandle(name)).getFile();
 
   const handle = await createFile(target, name, file);
-  await remove(origin, name);
+  copy === false && (await remove(origin, name));
 
   return handle;
 }
 
-export async function moveDirectory(origin: DH, target: DH, name: string) {
+export async function moveDirectory(
+  origin: DH,
+  target: DH,
+  name: string,
+  copy = true
+) {
   const _origin = await origin.getDirectoryHandle(name);
   const _target = await createDirectory(target, name);
 
   for await (const key of _origin.keys()) {
     if ((await getHandleType(_origin, key)) === FileType.FILE) {
-      return await moveFile(_origin, _target, key);
+      return await moveFile(_origin, _target, key, copy);
     } else {
       return await moveDirectory(_origin, _target, key);
     }
@@ -108,14 +145,25 @@ export async function moveDirectory(origin: DH, target: DH, name: string) {
   return _target;
 }
 
-export async function move(origin: DH, target: DH, names: string[]) {
+export async function move(
+  origin: DH,
+  target: DH,
+  options?: { names?: string[]; copy?: boolean }
+) {
+  let { names } = options || {};
+  const { copy = true } = options || {};
+
+  if (!names) {
+    names = (await getChildren(origin)).map((child) => child.name);
+  }
+
   return Promise.all(
     names.map(async (name) => {
       if ((await getHandleType(origin, name)) === FileType.FILE) {
-        return moveFile(origin, target, name);
+        return moveFile(origin, target, name, copy);
       } else {
-        const handle = await moveDirectory(origin, target, name);
-        await remove(origin, name);
+        const handle = await moveDirectory(origin, target, name, copy);
+        copy === false && (await remove(origin, name));
 
         return handle;
       }

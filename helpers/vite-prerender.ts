@@ -61,7 +61,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
       <meta name="twitter:description" content="${meta.description}">
-      <meta name="twitter:image" content="${meta.imageUrl}">
+      <meta name="twitter:image" content="${meta.imageUrl || 'https://yuanyxh.com/favicon.ico'}">
       <meta name="description" content="${meta.description}">
       <title>${env.VITE_APP_TITLE}: ${meta.title}</title>
     `;
@@ -73,8 +73,8 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
       <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
-      <meta name="twitter:image" content="/favicon.ico">
-      <title>${env.VITE_APP_TITLE}</title>
+      <meta property="og:image" content="https://yuanyxh.com/favicon.ico">
+      <meta name="twitter:image" content="https://yuanyxh.com/favicon.ic
     `;
   }
 

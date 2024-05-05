@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import type { DialogProps } from './FilePanel';
+import type { IDialogProps } from '@/components';
+
 import FilePanel from './FilePanel';
 
-interface IFilePanelContainerProps extends DialogProps {
+interface IFilePanelContainerProps extends Omit<IDialogProps, 'open'> {
   show(cb?: AsyncFunction): void;
   hide(cb?: AsyncFunction): void;
 }
@@ -14,6 +15,8 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
   const { show, hide, ...rest } = props;
 
   const renderResolveRef = useRef<(value: boolean) => void>();
+
+  const [open, setOpen] = useState(false);
 
   useMemo(() => {
     show(
@@ -32,8 +35,6 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
     );
   }, []);
 
-  const [open, setOpen] = useState(false);
-
   const onAnimationEnd = useCallback(() => {
     renderResolveRef.current?.(true);
     renderResolveRef.current = void 0;
@@ -48,6 +49,7 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
       open={open}
       onAnimationEnd={onAnimationEnd}
       onMinimize={onMinimize}
+      onClose={onMinimize}
       {...rest}
     />
   );

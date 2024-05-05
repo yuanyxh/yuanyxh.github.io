@@ -1,18 +1,24 @@
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import { App, Input, type InputProps, InputRef, Modal, Typography } from 'antd';
+import type { InputProps } from 'antd';
+import { App, Input, InputRef, Modal, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import { sleep, validateFileName } from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
-import FileLocation from './FileLocation';
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
+import mdHandler from '../md_editor';
 import { isAlwaysExist } from '../utils';
 import type { DH, FileInfo } from '../utils/fileManager';
-import { FileType } from '../utils/fileManager';
+import {
+  FileType,
+  getHandle,
+  importDirectory,
+  importFile
+} from '../utils/fileManager';
 
 function AddFileModal({
   open,
@@ -115,21 +121,32 @@ interface IFileItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
 const FileItem: React.FC<Readonly<IFileItemProps>> = (props) => {
   const { file, ...rest } = props;
 
-  return (
-    <a className={styles.fileItem} data-name={file.name} {...rest}>
-      {file.icon ? (
-        file.icon
-      ) : (
+  const { fileHandles } = useContext(FileSystemContext);
+
+  const getIcon = (file: FileInfo) => {
+    if (file.type === FileType.DIRECTORY) {
+      return (
         <Icon
-          className={styles.fileIcon}
-          icon={
-            file.type === FileType.FILE
-              ? 'ph--file-fill'
-              : 'material-symbols-light--folder'
-          }
+          icon="material-symbols-light--folder"
           color="var(--color-primary)"
         />
-      )}
+      );
+    }
+
+    const handle = fileHandles.find((handle) =>
+      handle.ext.split(',').some((ext) => ext.trim() === file.ext)
+    );
+
+    if (handle && handle.icon) {
+      return handle.icon;
+    }
+
+    return <Icon icon="ph--file-fill" color="var(--color-primary)" />;
+  };
+
+  return (
+    <a className={styles.fileItem} data-name={file.name} {...rest}>
+      <span className={styles.fileIcon}>{getIcon(file)}</span>
 
       <Typography.Paragraph
         style={{ flex: 1, marginBottom: 0 }}
@@ -146,17 +163,42 @@ interface IFileContentProps {
 }
 
 const FileContent: React.FC<IFileContentProps> = (props) => {
-  const [isModalOpen, setModalOpen] = useState(false);
   const titleRef = useRef<FileType>(0);
-
-  const [selection, setSelection] = useState<string[]>([]);
-
   const sectionRef = useRef<HTMLElement>(null);
 
-  const { current, children, enterDirectory, create, remove } =
-    useContext(FileSystemContext);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [selection, setSelection] = useState<string[]>([]);
 
-  const { modal } = App.useApp();
+  const {
+    current,
+    children,
+    fileHandles,
+    register,
+    enterDirectory,
+    create,
+    remove,
+    forceUpdate
+  } = useContext(FileSystemContext);
+
+  const { modal, message } = App.useApp();
+
+  useEffect(() => {
+    register(mdHandler);
+
+    forceUpdate();
+  }, []);
+
+  const contextMenu = fileHandles
+    .filter((handle) => handle.contextMenu)
+    .map((handle) => ({
+      name: handle.contextMenu!.name,
+      icon: handle.contextMenu!.icon,
+      onClick() {
+        getHandle(current, selection[0]).then((value) => {
+          handle.contextMenu!.handler(value);
+        });
+      }
+    }));
 
   const handleAddFile = () => {
     titleRef.current = FileType.FILE;
@@ -165,6 +207,42 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   const handleAddDirectory = () => {
     titleRef.current = FileType.DIRECTORY;
     setModalOpen(true);
+  };
+
+  const handleImportFile = () => {
+    importFile(current)
+      .then((value) => {
+        if (!value) {
+          return message.warning('暂无法导入文件');
+        }
+        forceUpdate();
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
+  };
+
+  const handleImportDirectory = () => {
+    importDirectory(current)
+      .then((value) => {
+        if (!value) {
+          return message.warning('暂无法导入文件夹');
+        }
+        forceUpdate();
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
+  };
+
+  const open = async (file: FileInfo) => {
+    const handle = fileHandles.find((handle) =>
+      handle.ext.split(',').some((ext) => ext.trim() === file.ext)
+    );
+
+    if (handle) {
+      handle.open(await current.getFileHandle(file.name));
+    }
   };
 
   const handleDeleteFile = () => {
@@ -193,8 +271,6 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   return (
     <>
       <section ref={sectionRef} className={styles.content}>
-        <FileLocation />
-
         {children.map((child) => (
           <FileItem
             key={child.name}
@@ -205,7 +281,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
             onDoubleClick={
               child.type === FileType.DIRECTORY
                 ? () => enterDirectory(child.name)
-                : void 0
+                : () => open(child)
             }
           />
         ))}
@@ -215,6 +291,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
           getContainer={props.getContainer}
           onHide={() => selection.length && setSelection([])}
           menu={[
+            ...contextMenu,
             {
               name: '新建文件',
               icon: <Icon icon="ph--file-fill" color="var(--color-primary)" />,
@@ -229,6 +306,20 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
                 />
               ),
               onClick: handleAddDirectory
+            },
+            {
+              name: '导入文件',
+              icon: (
+                <Icon icon="mdi--file-import" color="var(--color-primary)" />
+              ),
+              onClick: handleImportFile
+            },
+            {
+              name: '导入文件夹',
+              icon: (
+                <Icon icon="ri--import-line" color="var(--color-primary)" />
+              ),
+              onClick: handleImportDirectory
             },
             {
               name: '删除',
