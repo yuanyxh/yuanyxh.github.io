@@ -40,4 +40,3 @@ Disallow: /
 Crawl-delay: 120
 Disallow: /
 Sitemap: https://yuanyxh.com/sitemap.xml
-Sitemap: https://yuanyxh.com/sitemap.html

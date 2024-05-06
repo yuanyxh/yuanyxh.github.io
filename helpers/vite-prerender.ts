@@ -52,6 +52,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   `;
 
   if (meta) {
+    // TODO: route add keywords list?
     html += `
       <meta property="og:type" content="article" />
       <meta property="article" content="https://yuanyxh.com${route.fullPath}" />
@@ -64,6 +65,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta name="twitter:description" content="${meta.description}">
       <meta name="twitter:image" content="${meta.imageUrl || 'https://yuanyxh.com/logo.webp'}">
       <meta name="description" content="${meta.description}">
+      <meta name="keywords" content="yuanyxh, 文章, 代码示例, 在线操作">
 
       <script type="application/ld+json">
         {
@@ -94,6 +96,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta property="og:image" content="https://yuanyxh.com/logo.webp">
       <meta name="twitter:image" content="https://yuanyxh.com/logo.webp">
+      <meta name="keywords" content="yuanyxh, 个人博客, 个人网站, 首页, web 前端, JavaScript, css, html">
 
       <script type="application/ld+json">
         {
