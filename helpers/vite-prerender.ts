@@ -9,6 +9,7 @@ import {
 } from './utils';
 import { ArticleMeta } from './vite-route-generator';
 
+import dayjs from 'dayjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { loadEnv } from 'vite';
 import selfVitePrerender from 'vite-plugin-prerender';
@@ -56,13 +57,31 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta property="article" content="https://yuanyxh.com${route.fullPath}" />
       <meta property="article:published_time" content="${meta.date}" />
       <meta property="article:author" content="https://yuanyxh.com/profile/about_me.html" />
-      <meta property="og:image" content="${meta.imageUrl}">
+      <meta property="og:image" content="${meta.imageUrl || 'https://yuanyxh.com/logo.webp'}">
       <meta property="og:description" content="${meta.description}">
       <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
       <meta name="twitter:description" content="${meta.description}">
-      <meta name="twitter:image" content="${meta.imageUrl || 'https://yuanyxh.com/favicon.ico'}">
+      <meta name="twitter:image" content="${meta.imageUrl || 'https://yuanyxh.com/logo.webp'}">
       <meta name="description" content="${meta.description}">
+
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": "${meta.title}",
+          "image": [
+            "${meta.imageUrl || 'https://yuanyxh.com/logo.webp'}"
+          ],
+          "datePublished": "${dayjs(meta.date).toISOString()}",
+          "author": [{
+              "@type": "Person",
+              "name": "yuanyxh",
+              "url": "https://yuanyxh.com/profile/about_me.html"
+            }]
+        }
+      </script>
+
       <title>${env.VITE_APP_TITLE}: ${meta.title}</title>
     `;
   } else {
@@ -73,8 +92,26 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
       <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
       <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
       <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
-      <meta property="og:image" content="https://yuanyxh.com/favicon.ico">
-      <meta name="twitter:image" content="https://yuanyxh.com/favicon.ico">
+      <meta property="og:image" content="https://yuanyxh.com/logo.webp">
+      <meta name="twitter:image" content="https://yuanyxh.com/logo.webp">
+
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": "${env.VITE_APP_TITLE}",
+          "image": [
+            "https://yuanyxh.com/logo.webp"
+          ],
+          "dateModified": "${dayjs().toISOString()}",
+          "author": [{
+              "@type": "Person",
+              "name": "yuanyxh",
+              "url": "https://yuanyxh.com/profile/about_me.html"
+            }]
+        }
+      </script>
+
       <title>${env.VITE_APP_TITLE}</title>
     `;
   }
