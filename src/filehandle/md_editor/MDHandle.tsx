@@ -4,7 +4,7 @@ import { Dialog } from '@/components';
 
 import MDEditor from './component/MDEditor';
 import styles from './styles/MDHandle.module.less';
-import { DH, FH } from '../utils/fileManager';
+import type { DH, FH } from '../utils/fileManager';
 
 interface IMDHandle {
   handle: DH | FH;

@@ -1,7 +1,8 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 
 import type { InputProps } from 'antd';
-import { App, Input, InputRef, Modal, Typography } from 'antd';
+import type { InputRef } from 'antd';
+import { App, Input, Modal, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import { sleep, validateFileName } from '@/utils';
@@ -10,7 +11,6 @@ import { ContextMenu, Icon } from '@/components';
 
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
-import mdHandler from '../md_editor';
 import { isAlwaysExist } from '../utils';
 import type { DH, FileInfo } from '../utils/fileManager';
 import {
@@ -33,6 +33,8 @@ function AddFileModal({
   onOk: (name: string, type: FileType) => any;
   onCancel: () => any;
 }) {
+  const { message } = App.useApp();
+
   const [inputStatus, setInputStatus] = useState<{
     name: string;
     status: InputProps['status'];
@@ -47,25 +49,32 @@ function AddFileModal({
 
   useMemo(() => {
     if (open) {
-      sleep(100, () => {
-        inputRef.current?.focus();
-      });
+      // Delay to make the input box get the focus
+      sleep(100, () => inputRef.current?.focus());
     }
   }, [open]);
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
 
-    if (value !== '' && !validateFileName(value)) {
-      setInputStatus({ name: value, status: 'error', message: '无效的文件名' });
-    } else if (await isAlwaysExist(current, value)) {
-      setInputStatus({
-        name: value,
-        status: 'error',
-        message: '当前目录已包含同名的文件'
-      });
-    } else {
-      setInputStatus({ name: value, status: '', message: '' });
+    try {
+      if (value !== '' && !validateFileName(value)) {
+        setInputStatus({
+          name: value,
+          status: 'error',
+          message: '无效的文件名'
+        });
+      } else if (await isAlwaysExist(current, value)) {
+        setInputStatus({
+          name: value,
+          status: 'error',
+          message: '当前目录已包含同名的文件'
+        });
+      } else {
+        setInputStatus({ name: value, status: '', message: '' });
+      }
+    } catch (err) {
+      message.error((err as Error).message);
     }
   };
 
@@ -145,7 +154,7 @@ const FileItem: React.FC<Readonly<IFileItemProps>> = (props) => {
   };
 
   return (
-    <a className={styles.fileItem} data-name={file.name} {...rest}>
+    <span className={styles.fileItem} data-name={file.name} {...rest}>
       <span className={styles.fileIcon}>{getIcon(file)}</span>
 
       <Typography.Paragraph
@@ -154,7 +163,7 @@ const FileItem: React.FC<Readonly<IFileItemProps>> = (props) => {
       >
         {file.name}
       </Typography.Paragraph>
-    </a>
+    </span>
   );
 };
 
@@ -163,40 +172,39 @@ interface IFileContentProps {
 }
 
 const FileContent: React.FC<IFileContentProps> = (props) => {
-  const titleRef = useRef<FileType>(0);
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [selection, setSelection] = useState<string[]>([]);
+  const { modal, message } = App.useApp();
 
   const {
     current,
     children,
     fileHandles,
-    register,
     enterDirectory,
     create,
     remove,
     forceUpdate
   } = useContext(FileSystemContext);
 
-  const { modal, message } = App.useApp();
+  const titleRef = useRef<FileType>(0);
+  const sectionRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    register(mdHandler);
-
-    forceUpdate();
-  }, []);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [selection, setSelection] = useState<string[]>([]);
 
   const contextMenu = fileHandles
     .filter((handle) => handle.contextMenu)
     .map((handle) => ({
       name: handle.contextMenu!.name,
       icon: handle.contextMenu!.icon,
-      onClick() {
-        getHandle(current, selection[0]).then((value) => {
-          handle.contextMenu!.handler(value);
-        });
+      async onClick() {
+        try {
+          let value = current;
+          if (selection[0]) {
+            value = (await getHandle(current, selection[0])) as DH;
+          }
+          await handle.contextMenu!.handler(value);
+        } catch (err) {
+          message.error((err as Error).message);
+        }
       }
     }));
 
@@ -204,6 +212,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     titleRef.current = FileType.FILE;
     setModalOpen(true);
   };
+
   const handleAddDirectory = () => {
     titleRef.current = FileType.DIRECTORY;
     setModalOpen(true);
@@ -236,12 +245,16 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   };
 
   const open = async (file: FileInfo) => {
-    const handle = fileHandles.find((handle) =>
-      handle.ext.split(',').some((ext) => ext.trim() === file.ext)
-    );
+    try {
+      const handle = fileHandles.find((handle) =>
+        handle.ext.split(',').some((ext) => ext.trim() === file.ext)
+      );
 
-    if (handle) {
-      handle.open(await current.getFileHandle(file.name));
+      if (handle) {
+        handle.open(await current.getFileHandle(file.name));
+      }
+    } catch (err) {
+      message.error((err as Error).message);
     }
   };
 
@@ -253,7 +266,11 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       icon: <ExclamationCircleFilled />,
       content: '您确认要删除这个文件吗？',
       async onOk() {
-        await Promise.all(names.map((name) => remove(name)));
+        try {
+          await Promise.all(names.map((name) => remove(name)));
+        } catch (err) {
+          message.error((err as Error).message);
+        }
       },
       okText: '确认',
       cancelText: '取消'
@@ -261,8 +278,12 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   };
 
   const handleOk = async (name: string, type: FileType) => {
-    await create(name, type);
-    setModalOpen(false);
+    try {
+      await create(name, type);
+      setModalOpen(false);
+    } catch (err) {
+      message.error((err as Error).message);
+    }
   };
   const handleCancel = () => {
     setModalOpen(false);

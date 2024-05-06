@@ -10,7 +10,6 @@ export { useScrollStore } from './hooks/useScrollStore';
 export type {
   ComponentModule,
   LazyComponent,
-  Meta,
   NavigateOptions,
   ResolveRouteObject,
   RouteObject,

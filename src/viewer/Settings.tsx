@@ -12,7 +12,8 @@ import {
 
 import { getStorageUsage } from '@/filehandle';
 
-import { Canvas, CanvasInstance } from '@/components';
+import type { CanvasInstance } from '@/components';
+import { Canvas } from '@/components';
 
 import { AppContext } from '@/App';
 
@@ -23,13 +24,15 @@ const { Paragraph, Text } = Typography;
 const isLocal = import.meta.env.PROD === false;
 
 function ServiceWorkerCache() {
+  const { message } = useContext(AppContext);
+
   const {
     settings: { enableServiceWorkerCache },
     setEnableServiceWorkerCache
   } = useAppStore();
 
   const [spinning, setSpinning] = useState(false);
-  const { message } = useContext(AppContext);
+
   const serviceWorkerRef = useRef(new ServiceWorkerManager());
 
   const handleSwitchServiceWorkerCache = (
@@ -49,19 +52,27 @@ function ServiceWorkerCache() {
             : '无法启用 service worker 缓存，您可联系作者反馈。';
 
           message[installed ? 'success' : 'error'](info);
+        })
+        .catch((err) => {
+          message.error((err as Error).message);
         });
     }
 
-    serviceWorkerRef.current.unregisterServiceWorker().then((uninstalled) => {
-      setSpinning(false);
-      uninstalled && setEnableServiceWorkerCache(enableServiceWorkerCache);
+    serviceWorkerRef.current
+      .unregisterServiceWorker()
+      .then((uninstalled) => {
+        setSpinning(false);
+        uninstalled && setEnableServiceWorkerCache(enableServiceWorkerCache);
 
-      const info = uninstalled
-        ? '已为您禁用 service worker 缓存'
-        : '无法禁用 service worker 缓存，您可联系作者反馈。';
+        const info = uninstalled
+          ? '已为您禁用 service worker 缓存'
+          : '无法禁用 service worker 缓存，您可联系作者反馈。';
 
-      message[uninstalled ? 'success' : 'error'](info);
-    });
+        message[uninstalled ? 'success' : 'error'](info);
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
   };
 
   return (
@@ -90,18 +101,23 @@ function ServiceWorkerCache() {
 }
 
 function WebNotification() {
+  const { message } = useContext(AppContext);
+
   const {
     settings: { enableNotification },
     setEnableNotification
   } = useAppStore();
 
   const [spinning, setSpinning] = useState(false);
-  const { message } = useContext(AppContext);
 
   useEffect(() => {
-    hasPermission('notifications').then((value) => {
-      setEnableNotification(value);
-    });
+    hasPermission('notifications')
+      .then((value) => {
+        setEnableNotification(value);
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
   }, []);
 
   const handleSwitchWebNotification = (enableNotification: boolean) => {
@@ -121,6 +137,9 @@ function WebNotification() {
           setEnableNotification(true);
           return true;
         }
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
       })
       .finally(() => {
         setSpinning(false);
@@ -150,12 +169,12 @@ function WebNotification() {
 }
 
 function PersistentStorage() {
-  const [enablePersistent, setEnablePersistentStorage] = useState(false);
   const { message } = useContext(AppContext);
+  const [enablePersistent, setEnablePersistentStorage] = useState(false);
 
   const handleEnablePersistent = (enablePersistent: boolean) => {
     if (enablePersistent) {
-      window.navigator.storage
+      window.navigator?.storage
         .persist()
         .then((persistent) => {
           setEnablePersistentStorage(persistent);
@@ -164,8 +183,8 @@ function PersistentStorage() {
             message.error('暂无法获取持久化存储权限。');
           }
         })
-        .catch(() => {
-          message.error('暂无法获取持久化存储权限。');
+        .catch((err) => {
+          message.error((err as Error).message);
 
           setEnablePersistentStorage(false);
         });
@@ -173,9 +192,14 @@ function PersistentStorage() {
   };
 
   useEffect(() => {
-    window.navigator.storage.persisted().then((persistent) => {
-      setEnablePersistentStorage(persistent);
-    });
+    window.navigator?.storage
+      .persisted()
+      .then((persistent) => {
+        setEnablePersistentStorage(persistent);
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
   }, []);
 
   return (
@@ -204,7 +228,10 @@ function PersistentStorage() {
 }
 
 function StorageDetail() {
+  const { message } = useContext(AppContext);
+
   const drawRef = useRef<CanvasInstance>(null);
+
   const [storage, setStorage] = useState<{
     quota: number;
     usage: number;
@@ -216,50 +243,55 @@ function StorageDetail() {
   });
 
   useEffect(() => {
-    getStorageUsage().then((res) => {
-      if (!(typeof res.quota === 'number' && typeof res.usage === 'number')) {
-        return false;
-      }
+    getStorageUsage()
+      .then((res) => {
+        if (!(typeof res.quota === 'number' && typeof res.usage === 'number')) {
+          return false;
+        }
 
-      const { quota, usage } = res;
-      const unUsage = quota - usage;
+        const { quota, usage } = res;
+        const unUsage = quota - usage;
 
-      setStorage({
-        quota: quota / 1000 / 1000,
-        usage: usage / 1000 / 1000,
-        unUsage: unUsage / 1000 / 1000
+        setStorage({
+          quota: quota / 1000 / 1000,
+          usage: usage / 1000 / 1000,
+          unUsage: unUsage / 1000 / 1000
+        });
+
+        const usageAngle = Math.PI * 2 * (res.usage / res.quota);
+        const unUsageAngle =
+          Math.PI * 2 * ((res.quota - res.usage) / res.quota);
+
+        const drawEl = drawRef.current!;
+
+        const centerX = drawEl.width() / 2;
+        const centerY = drawEl.height() / 2;
+
+        drawEl.arc(centerX, centerY, centerX - 2, 0, Math.PI * 2);
+        drawEl.strokeStyle('#f0f0f0');
+        drawEl.stroke();
+
+        drawEl.beginPath();
+        drawEl.moveTo(centerX, centerY);
+        drawEl.arc(centerX, centerY, centerX - 2, 0, usageAngle);
+        drawEl.fillStyle('#ff9759');
+        drawEl.fill();
+
+        drawEl.beginPath();
+        drawEl.moveTo(centerX, centerY);
+        drawEl.arc(
+          centerX,
+          centerY,
+          centerX - 2,
+          usageAngle,
+          usageAngle + unUsageAngle
+        );
+        drawEl.fillStyle('white');
+        drawEl.fill();
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
       });
-
-      const usageAngle = Math.PI * 2 * (res.usage / res.quota);
-      const unUsageAngle = Math.PI * 2 * ((res.quota - res.usage) / res.quota);
-
-      const drawEl = drawRef.current!;
-
-      const centerX = drawEl.width() / 2;
-      const centerY = drawEl.height() / 2;
-
-      drawEl.arc(centerX, centerY, centerX - 2, 0, Math.PI * 2);
-      drawEl.strokeStyle('#f0f0f0');
-      drawEl.stroke();
-
-      drawEl.beginPath();
-      drawEl.moveTo(centerX, centerY);
-      drawEl.arc(centerX, centerY, centerX - 2, 0, usageAngle);
-      drawEl.fillStyle('#ff9759');
-      drawEl.fill();
-
-      drawEl.beginPath();
-      drawEl.moveTo(centerX, centerY);
-      drawEl.arc(
-        centerX,
-        centerY,
-        centerX - 2,
-        usageAngle,
-        usageAngle + unUsageAngle
-      );
-      drawEl.fillStyle('white');
-      drawEl.fill();
-    });
   }, []);
 
   return (

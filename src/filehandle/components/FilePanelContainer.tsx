@@ -33,12 +33,12 @@ const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
           renderResolveRef.current = resolve;
         })
     );
-  }, []);
+  }, [show, hide]);
 
   const onAnimationEnd = useCallback(() => {
     renderResolveRef.current?.(true);
     renderResolveRef.current = void 0;
-  }, []);
+  }, [show, hide]);
 
   const onMinimize = () => {
     hide();

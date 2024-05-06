@@ -33,3 +33,16 @@ export const validateFileName = (name: string) => {
 
   return /^[^\\/:*?'`"<>|]{0,255}[^\\/:*?"`<>|.']$/.test(name.trim());
 };
+
+export const createElementContainer = () => {
+  const container = window.document.createElement('div');
+
+  container.style.position = 'relative';
+  container.style.zIndex = 'var(--z-gighest)';
+  container.style.width = '0';
+  container.style.height = '0';
+
+  window.document.body.appendChild(container);
+
+  return container;
+};

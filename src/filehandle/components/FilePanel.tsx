@@ -1,11 +1,13 @@
-import React, { createContext, useRef } from 'react';
+import React, { createContext, useEffect, useRef } from 'react';
 
-import { Dialog, IDialogExpose, IDialogProps } from '@/components';
+import type { IDialogExpose, IDialogProps } from '@/components';
+import { Dialog } from '@/components';
 
 import FileContent from './FileContent';
 import FileLocation from './FileLocation';
 import type { FileSystem } from '../hooks/useFileSystem';
 import { useFileSystem } from '../hooks/useFileSystem';
+import mdHandler from '../md_editor';
 
 export const FileSystemContext = createContext({} as FileSystem);
 
@@ -15,15 +17,19 @@ const FilePanel: React.FC<Readonly<IDialogProps>> = function FilePanel(props) {
   const dialogRef = useRef<IDialogExpose>(null);
   const fileSystem = useFileSystem();
 
+  useEffect(() => {
+    fileSystem.register(mdHandler);
+  }, []);
+
   return (
     <FileSystemContext.Provider value={fileSystem}>
       <Dialog
         ref={dialogRef}
-        {...rest}
         onClose={() => {
           onClose?.();
           fileSystem.returnToRoot();
         }}
+        {...rest}
       >
         <FileLocation />
 

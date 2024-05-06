@@ -19,6 +19,7 @@ interface Toc {
   attributes: Attributes;
   children: Toc[];
 }
+
 interface Attributes {
   id?: string;
 }
@@ -144,6 +145,8 @@ function calcImageSize({
   containerWidth: number;
   // containerHeight: number;
 }) {
+  containerWidth = containerWidth > 648 ? 648 : containerWidth;
+
   if ([width, height, containerWidth].includes(0)) {
     return { width: 0, height: 0 };
   }

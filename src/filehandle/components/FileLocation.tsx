@@ -7,9 +7,7 @@ import { Icon } from '@/components';
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileLocation.module.less';
 
-interface IFileLocationProps {}
-
-const FileLocation: React.FC<Readonly<IFileLocationProps>> = () => {
+const FileLocation: React.FC = () => {
   const { fileLinked } = useContext(FileSystemContext);
 
   return (

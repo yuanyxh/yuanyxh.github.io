@@ -214,18 +214,6 @@ code {
       }
     }
 
-    &:hover {
-      .copy {
-        visibility: visible;
-        opacity: 1;
-      }
-    }
-
-    &::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-
     + ul {
       margin-top: 40px;
     }
@@ -233,6 +221,22 @@ code {
     + img {
       margin-top: 30px;
     }
+  }
+
+  pre + pre {
+    margin-top: 30px;
+  }
+
+  pre:hover {
+    .copy {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  pre::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
   }
 
   blockquote {

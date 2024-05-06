@@ -14,6 +14,7 @@ import {
 import { CommentOutlined } from '@ant-design/icons';
 
 import classnames from 'classnames';
+import classNames from 'classnames';
 import { AuthType, createClient } from 'webdav';
 
 import type { IOutletRef } from '@/router';
@@ -42,18 +43,17 @@ import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
 
-const active = styles.active;
-
 const Logo = () => {
   return (
     <Link to="/" title="logo">
       <img className={styles.logo} src={LogoImage} alt="logo" />
 
-      <span className={styles.title}>{import.meta.env.VITE_APP_TITLE}</span>
+      <h1 className={styles.title}>{import.meta.env.VITE_APP_TITLE}</h1>
     </Link>
   );
 };
 
+// TODO: add serach
 const SearchWrap = (props: { onFocus: () => void; onBlur: () => void }) => {
   return (
     <>
@@ -89,7 +89,7 @@ const TopNavbar = () => {
       <ul>
         {navbarData.map((item) => (
           <li key={item.path}>
-            <Link to={item.path} activeClass={active} title={item.label}>
+            <Link to={item.path} activeClass={styles.active} title={item.label}>
               {item.label}
             </Link>
           </li>
@@ -103,9 +103,11 @@ const TopNavbar = () => {
 
 const SideNavbar = (props: { visible: boolean; onClick: () => void }) => {
   const sideContainerActiveClass = classnames(styles.sideContainer, {
-    [active]: props.visible
+    [styles.active]: props.visible
   });
-  const maskActiveClass = classnames(styles.mask, { [active]: props.visible });
+  const maskActiveClass = classnames(styles.mask, {
+    [styles.active]: props.visible
+  });
 
   return (
     <>
@@ -125,7 +127,11 @@ const SideNavbar = (props: { visible: boolean; onClick: () => void }) => {
           <ul>
             {navbarData.map((item) => (
               <li key={item.path} onClick={props.onClick}>
-                <Link to={item.path} activeClass={active} title={item.label}>
+                <Link
+                  to={item.path}
+                  activeClass={styles.active}
+                  title={item.label}
+                >
                   {item.label}
                 </Link>
               </li>
@@ -239,7 +245,7 @@ const Actions = () => {
       </Dropdown>
 
       <Icon
-        className={`${styles.action} ${styles.settings}`}
+        className={classNames(styles.action, styles.settings)}
         title="进入设置页"
         icon="material-symbols:settings"
         size={20}
@@ -413,6 +419,8 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 };
 
 const FileSystemTrigger = () => {
+  const { message } = useContext(AppContext);
+
   const [support, setSupport] = useState(false);
   const filePanelRef = useRef<FilePanelFactory>();
 
@@ -424,12 +432,16 @@ const FileSystemTrigger = () => {
 
   const handleOpenFilePanel = () => {
     if (!filePanelRef.current) {
-      return import('@/filehandle').then(({ default: filePanel }) => {
-        filePanelRef.current = filePanel;
+      return import('@/filehandle')
+        .then(({ default: filePanel }) => {
+          filePanelRef.current = filePanel;
 
-        // await render mounted
-        sleep(0, () => filePanelRef.current?.toggle());
-      });
+          // await render mounted
+          sleep(0, () => filePanelRef.current?.toggle());
+        })
+        .catch((err) => {
+          message.error((err as Error).message);
+        });
     }
 
     filePanelRef.current?.toggle();
@@ -499,7 +511,6 @@ const ViewerLayout = () => {
     <div className={styles.layout}>
       <Header />
 
-      {/* TIPS: main wrapper */}
       <Content />
     </div>
   );

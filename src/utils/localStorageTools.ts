@@ -1,3 +1,5 @@
+import { merge } from 'lodash-es';
+
 export const KEYS = {
   /** Website configuration key */
   APP_KEY: 'app'
@@ -40,7 +42,7 @@ export function getStorage<T>(key: TKEYS, fallback?: T): T | undefined {
   }
 
   try {
-    return window.JSON.parse(value);
+    return merge({}, fallback, window.JSON.parse(value));
   } catch (err) {
     return fallback;
   }

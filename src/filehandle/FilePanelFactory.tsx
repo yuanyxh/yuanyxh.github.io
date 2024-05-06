@@ -2,26 +2,12 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from 'antd';
 
+import { createElementContainer } from '@/utils';
+
 import FilePanelContainer from './components/FilePanelContainer';
 
-const setStyles = (el: HTMLElement) => {
-  el.style.position = 'relative';
-  el.style.zIndex = 'var(--z-gighest)';
-  el.style.width = '0';
-  el.style.height = '0';
-};
-
-const getContainer = () => {
-  const container = window.document.createElement('div');
-  setStyles(container);
-
-  window.document.body.appendChild(container);
-
-  return container;
-};
-
 class FilePanelFactory {
-  private container = getContainer();
+  private container = createElementContainer();
 
   private root = createRoot(this.container);
 
@@ -85,7 +71,6 @@ class FilePanelFactory {
   }
 
   destroy() {
-    // window.document.documentElement.removeEventListener('click', onClick, true);
     this.root.unmount();
     Promise.resolve().then(() => this.container.remove());
   }

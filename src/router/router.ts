@@ -16,10 +16,6 @@ interface ComponentModule {
 
 type LazyComponent = (props?: any) => Promise<ComponentModule>;
 
-interface Meta {
-  title: string;
-}
-
 interface ArticleMeta {
   title: string;
   date: string;
@@ -417,7 +413,6 @@ export default Router;
 export type {
   ComponentModule,
   LazyComponent,
-  Meta,
   Module,
   NavigateOptions,
   ResolveRouteObject,
