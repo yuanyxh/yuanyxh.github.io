@@ -1,5 +1,6 @@
 import {
   generateRouteJSON,
+  getEnv,
   replacePlaceRoute,
   resolve,
   resolveFullRoutes,
@@ -47,7 +48,7 @@ function viteGenerateSitemap(): PluginOption {
       };
     });
 
-    const smStream = new SitemapStream({ hostname: 'https://yuanyxh.com/' });
+    const smStream = new SitemapStream({ hostname: getEnv().VITE_DOMAIN_PATH });
 
     return streamToPromise(Readable.from(links).pipe(smStream)).then((data) =>
       writeFileSync(resolve('./build/sitemap.xml'), data.toString(), 'utf-8')

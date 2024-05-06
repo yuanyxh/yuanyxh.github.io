@@ -22,16 +22,9 @@ import rehypePrism from '@mapbox/rehype-prism';
 
 import type { ConfigEnv, UserConfig } from 'vite';
 
-interface ProjectEnv {
-  /** base path */
-  VITE_BASE_PATH: string;
-  /** app title */
-  VITE_APP_TITLE: string;
-}
-
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
-  const env = loadEnv(mode, root) as unknown as ProjectEnv;
+  const env = loadEnv(mode, root) as unknown as Env;
 
   const isBuild = command === 'build';
 
@@ -40,9 +33,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       viteRouteGenerator(),
-
       viteGenerateSitemap(),
-
       vitePrerender(),
 
       /**

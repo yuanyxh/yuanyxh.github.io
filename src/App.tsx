@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useRef } from 'react';
+import { createContext, useEffect, useRef } from 'react';
 
 import {
   Button,
@@ -34,22 +34,27 @@ interface AppProvider {
   modal: HookAPI;
 }
 
+const APP_PROVIDER = {} as AppProvider;
+
 /** app context, provider global tools */
-export const AppContext = createContext({} as AppProvider);
+export const AppContext = createContext(APP_PROVIDER);
+
+const { useNotification } = notification;
+const { useMessage } = message;
+const { useModal } = Modal;
 
 const App: React.FC<IAppProps> = (props) => {
-  const [notificationApi, notificationContextHolder] =
-    notification.useNotification({
-      maxCount: 1
-    });
-  const [messageApi, messageContextHolder] = message.useMessage();
-  const [modalApi, modelContextHolder] = Modal.useModal();
-
-  const appProvider = useRef<AppProvider>({
-    notification: notificationApi,
-    message: messageApi,
-    modal: modalApi
+  const [notificationApi, notificationContextHolder] = useNotification({
+    maxCount: 1
   });
+  const [messageApi, messageContextHolder] = useMessage();
+  const [modalApi, modelContextHolder] = useModal();
+
+  APP_PROVIDER.notification = notificationApi;
+  APP_PROVIDER.message = messageApi;
+  APP_PROVIDER.modal = modalApi;
+
+  const appProvider = useRef<AppProvider>(APP_PROVIDER);
 
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
 
@@ -61,9 +66,9 @@ const App: React.FC<IAppProps> = (props) => {
     setFrontDesk
   } = useAppStore();
 
-  const listenerColorSchemeChange = useCallback((e: MediaQueryListEvent) => {
+  const listenerColorSchemeChange = (e: MediaQueryListEvent) => {
     setColorScheme(e.matches ? 'dark' : 'light');
-  }, []);
+  };
 
   useEffect(() => {
     resetProgressBar();
@@ -84,13 +89,6 @@ const App: React.FC<IAppProps> = (props) => {
       if (darkModeQuery.matches) {
         setColorScheme('dark');
       }
-    }
-
-    serviceWorkerRef.current = new ServiceWorkerManager({ update });
-    if (import.meta.env.PROD && enableServiceWorkerCache) {
-      serviceWorkerRef.current.registerServiceWorker();
-    } else {
-      serviceWorkerRef.current.unregisterServiceWorker();
     }
 
     function update() {
@@ -122,19 +120,24 @@ const App: React.FC<IAppProps> = (props) => {
         });
       }
     }
+    serviceWorkerRef.current = new ServiceWorkerManager({ update });
+    if (import.meta.env.PROD && enableServiceWorkerCache) {
+      serviceWorkerRef.current.registerServiceWorker();
+    } else {
+      serviceWorkerRef.current.unregisterServiceWorker();
+    }
 
-    const removePageShowListener = addGlobalListener('pageshow', () =>
-      setFrontDesk(true)
-    );
-    const removePageHideListener = addGlobalListener('pagehide', () =>
-      setFrontDesk(false)
-    );
-
+    const removePageShowListener = addGlobalListener('pageshow', () => {
+      setFrontDesk(true);
+    });
+    const removePageHideListener = addGlobalListener('pagehide', () => {
+      setFrontDesk(false);
+    });
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
+
     return () => {
       removePageShowListener();
       removePageHideListener();
-
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
     };
   }, []);

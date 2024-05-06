@@ -13,6 +13,7 @@ import {
 import { relative, sep } from 'node:path';
 import path from 'path';
 import { codeToHtml } from 'shiki';
+import { loadEnv } from 'vite';
 
 interface RouteObject {
   path: string;
@@ -32,6 +33,10 @@ export interface RoutePlace {
 }
 
 export const root = process.cwd();
+
+export const getEnv = () => {
+  return loadEnv('prod', root) as unknown as Env;
+};
 
 export const resolve = (...paths: string[]) => path.resolve(root, ...paths);
 

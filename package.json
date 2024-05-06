@@ -18,7 +18,7 @@
     "clean": "node ./helpers/clean.js"
   },
   "dependencies": {
-    "@ant-design/icons": "^5.3.6",
+    "@ant-design/icons": "^5.3.7",
     "@milkdown/core": "^7.3.6",
     "@milkdown/plugin-clipboard": "^7.3.6",
     "@milkdown/plugin-cursor": "^7.3.6",
@@ -76,7 +76,7 @@
     "husky": "^9.0.11",
     "less": "^4.2.0",
     "postcss-less": "^6.0.0",
-    "postcss-preset-env": "^9.5.9",
+    "postcss-preset-env": "^9.5.11",
     "prettier": "^3.2.5",
     "remark-breaks": "^4.0.0",
     "remark-emoji": "^4.0.1",
