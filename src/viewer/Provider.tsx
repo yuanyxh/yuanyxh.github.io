@@ -3,7 +3,6 @@ import { createElement, useId, useMemo } from 'react';
 import { Anchor, Divider } from 'antd';
 import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
-import type { Meta } from '@/router';
 import { Link, useLocation } from '@/router';
 
 import { Icon } from '@/components';
@@ -185,7 +184,7 @@ export const useMDXComponents = (): MDXComponents => {
     wrapper(props) {
       return <Wrapper>{props.children}</Wrapper>;
     },
-    Header(props: { frontmatter: Meta }) {
+    Header(props: { frontmatter: { title: string } }) {
       return (
         <header>
           <h1>{props.frontmatter.title}</h1>
