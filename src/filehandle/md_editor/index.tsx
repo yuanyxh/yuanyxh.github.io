@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { createElementContainer } from '@/utils';
@@ -16,7 +17,11 @@ async function createMDHandleInstance(handle: DH | FH) {
     root.unmount();
     el.remove();
   };
-  root.render(<MDHandle handle={handle} destroy={destroy} />);
+  root.render(
+    <StrictMode>
+      <MDHandle handle={handle} destroy={destroy} />
+    </StrictMode>
+  );
 }
 
 const mdHandler: FileHandle = {

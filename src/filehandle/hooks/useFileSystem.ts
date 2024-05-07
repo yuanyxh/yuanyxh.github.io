@@ -2,6 +2,8 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { cloneDeep } from 'lodash-es';
 
+import { useUserStore } from '@/store';
+
 import { AppContext } from '@/App';
 
 import FileLinkedList from '../FileLinkedList';
@@ -44,6 +46,8 @@ export interface FileSystem {
 export function useFileSystem(): FileSystem {
   const { message } = useContext(AppContext);
 
+  const { webdavs } = useUserStore();
+
   const root =
     useRef<DH>() as React.MutableRefObject<FileSystemDirectoryHandle>;
   const fileLinked =
@@ -60,7 +64,7 @@ export function useFileSystem(): FileSystem {
     if (!current) return;
 
     getChildren(current).then((_children) => {
-      setChildren(_children);
+      setChildren([..._children]);
     });
   };
 
@@ -68,7 +72,7 @@ export function useFileSystem(): FileSystem {
     if (!current) return void 0;
 
     update();
-  }, [current]);
+  }, [current, webdavs]);
 
   useMemo(() => {
     if (!fileLinked.current) return;

@@ -15,6 +15,10 @@ export interface FileInfo {
   type: FileType;
   icon: React.ReactNode;
   handle: DH | FH;
+  /** this is webdav file? */
+  remote?: boolean;
+  /** webdav file full path */
+  fullPath?: string;
   ext?: string;
 }
 

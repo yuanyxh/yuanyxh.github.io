@@ -2,8 +2,11 @@ import { useContext, useMemo, useRef, useState } from 'react';
 
 import type { InputProps } from 'antd';
 import type { InputRef } from 'antd';
-import { App, Input, Modal, Typography } from 'antd';
+import { App, Form, Input, Modal, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
+
+import type { WebdavInfo } from '@/store';
+import { useUserStore } from '@/store';
 
 import { sleep, validateFileName } from '@/utils';
 
@@ -123,6 +126,101 @@ function AddFileModal({
   );
 }
 
+function MountWebdavModal(props: { open: boolean; close(): void }) {
+  const { open, close } = props;
+
+  const { modal, message } = App.useApp();
+
+  const [form] = Form.useForm();
+
+  const { webdavs, addWebdav } = useUserStore();
+
+  const handleOk = () => {
+    form
+      .validateFields()
+      .then(() => {
+        const webdav: WebdavInfo = form.getFieldsValue();
+
+        if (webdavs.some((w) => w.name === webdav.name.trim())) {
+          modal.error({
+            title: '提示',
+            content: `已包含名称为 "${webdav.name.trim()}" 的挂载目录！`
+          });
+
+          return void 0;
+        }
+
+        addWebdav({ ...webdav, name: webdav.name.trim() });
+
+        message.success('已添加 webdav 目录。');
+
+        sleep(35, close);
+      })
+      .catch(() => {
+        /* empty */
+      });
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
+    close();
+  };
+
+  return (
+    <Modal
+      title="挂载 webdav 目录"
+      style={{ top: '30vh' }}
+      open={open}
+      okText={'确认'}
+      cancelText={'取消'}
+      onOk={handleOk}
+      onCancel={handleCancel}
+    >
+      <Form
+        name="mount_webdav"
+        layout="vertical"
+        form={form}
+        style={{ maxWidth: 600 }}
+        autoComplete="off"
+      >
+        <Form.Item<WebdavInfo>
+          label="webdav 路径"
+          name="url"
+          rules={[{ required: true, message: 'Please input your webdav url!' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item<WebdavInfo>
+          label="目录名称"
+          name="name"
+          rules={[
+            { required: true, message: 'Please input your webdav locale name!' }
+          ]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item<WebdavInfo>
+          label="用户名"
+          name="username"
+          rules={[{ required: true, message: 'Please input your username!' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item<WebdavInfo>
+          label="密码"
+          name="password"
+          rules={[{ required: true, message: 'Please input your password!' }]}
+        >
+          <Input.Password />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}
+
 interface IFileItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   file: FileInfo;
 }
@@ -178,16 +276,21 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     current,
     children,
     fileHandles,
+    fileLinked,
     enterDirectory,
     create,
     remove,
     forceUpdate
   } = useContext(FileSystemContext);
 
+  const root = fileLinked?.root?.value;
+
   const titleRef = useRef<FileType>(0);
   const sectionRef = useRef<HTMLElement>(null);
 
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isMountModalOpen, setMountModalOpen] = useState(false);
+
   const [selection, setSelection] = useState<string[]>([]);
 
   const contextMenu = fileHandles
@@ -216,6 +319,10 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   const handleAddDirectory = () => {
     titleRef.current = FileType.DIRECTORY;
     setModalOpen(true);
+  };
+
+  const handleMountWebdav = () => {
+    setMountModalOpen(true);
   };
 
   const handleImportFile = () => {
@@ -314,6 +421,14 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
           menu={[
             ...contextMenu,
             {
+              name: '挂载 webdav 目录',
+              icon: <Icon icon="mdi--web" color="var(--color-primary)" />,
+              style: {
+                display: current === root ? void 0 : 'none'
+              },
+              onClick: handleMountWebdav
+            },
+            {
               name: '新建文件',
               icon: <Icon icon="ph--file-fill" color="var(--color-primary)" />,
               onClick: handleAddFile
@@ -365,6 +480,11 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         current={current}
         onOk={handleOk}
         onCancel={handleCancel}
+      />
+
+      <MountWebdavModal
+        open={isMountModalOpen}
+        close={() => setMountModalOpen(false)}
       />
     </>
   );

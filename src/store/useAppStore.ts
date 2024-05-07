@@ -2,7 +2,7 @@ import { getStorage, setStorage } from '@/utils';
 
 import { create } from 'zustand';
 
-export interface State {
+export interface AppState {
   settings: {
     language: string;
     colorScheme: 'light' | 'dark';
@@ -14,23 +14,23 @@ export interface State {
   };
 }
 
-export interface Actions {
+export interface AppActions {
   setLanguage(language: string): void;
-  setColorScheme(colorScheme: State['settings']['colorScheme']): void;
+  setColorScheme(colorScheme: AppState['settings']['colorScheme']): void;
   setColorSchemeNonPersistent(
-    colorScheme: State['settings']['colorScheme']
+    colorScheme: AppState['settings']['colorScheme']
   ): void;
   setEnableServiceWorkerCache(
-    enableServiceWorkerCache: State['settings']['enableServiceWorkerCache']
+    enableServiceWorkerCache: AppState['settings']['enableServiceWorkerCache']
   ): void;
   setEnableNotification(
-    enableNotification: State['settings']['enableNotification']
+    enableNotification: AppState['settings']['enableNotification']
   ): void;
-  setFrontDesk(frontDesk: State['status']['frontDesk']): void;
+  setFrontDesk(frontDesk: AppState['status']['frontDesk']): void;
 }
 
-const useAppStore = create<State & Actions>((set) => ({
-  ...getStorage<State>('app', {
+const useAppStore = create<AppState & AppActions>((set) => ({
+  ...getStorage<AppState>('app', {
     settings: {
       language: 'zh-CN',
       colorScheme: 'light',

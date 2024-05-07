@@ -12,7 +12,7 @@ import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import type { NotificationInstance } from 'antd/es/notification/interface';
 
-import type { State } from '@/store';
+import type { AppState } from '@/store';
 import { useAppStore } from '@/store';
 
 import {
@@ -80,9 +80,9 @@ const App: React.FC<IAppProps> = (props) => {
     const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     if (hasLocalStorage('app')) {
-      setLanguage(getStorage<State>('app')?.settings?.language || 'zh-CN');
+      setLanguage(getStorage<AppState>('app')?.settings?.language || 'zh-CN');
       setColorScheme(
-        getStorage<State>('app')?.settings?.colorScheme || 'light'
+        getStorage<AppState>('app')?.settings?.colorScheme || 'light'
       );
     } else {
       setLanguage(language);

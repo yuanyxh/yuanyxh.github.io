@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from 'antd';
@@ -20,15 +21,15 @@ class FilePanelFactory {
 
   constructor() {
     const show = (cb?: AsyncFunction) => {
-      if (!this._show && cb) {
-        return (this._show = cb);
+      if (cb) {
+        this._show = cb;
       }
 
       this.show();
     };
     const hide = (cb?: AsyncFunction) => {
-      if (!this._hide && cb) {
-        return (this._hide = cb);
+      if (cb) {
+        this._hide = cb;
       }
 
       this.hide();
@@ -36,9 +37,11 @@ class FilePanelFactory {
 
     this.root.render(
       // antd App provider Modal, Message, Notification
-      <App>
-        <FilePanelContainer show={show} hide={hide} />
-      </App>
+      <StrictMode>
+        <App>
+          <FilePanelContainer show={show} hide={hide} />
+        </App>
+      </StrictMode>
     );
   }
 

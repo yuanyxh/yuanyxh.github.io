@@ -2,7 +2,8 @@ import { merge } from 'lodash-es';
 
 export const KEYS = {
   /** Website configuration key */
-  APP_KEY: 'app'
+  APP_KEY: 'app',
+  USER_KEY: 'user'
 } as const;
 
 type TKEYS = (typeof KEYS)[keyof typeof KEYS];
