@@ -1,6 +1,4 @@
-/* Copyright 2021, Milkdown by Mirone. */
-
-import styles from '../styles/MDEditor.module.less';
+import styles from './styles/MDEditor.module.less';
 
 import { Editor } from '@milkdown/core';
 import { editorViewOptionsCtx } from '@milkdown/core';

@@ -106,6 +106,7 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
             onClick={(e) => {
               onClick?.(e);
               sleep(35, () => setShowMenu(false));
+              onHide && onHide();
             }}
             {...rest}
           >

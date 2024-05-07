@@ -95,6 +95,14 @@
       }
     }
 
+    .directoryIcon svg {
+      transition: transform 0.2s ease;
+    }
+
+    .directoryIcon.expand svg {
+      transform: rotate(90deg);
+    }
+
     .list .item .row {
       border-radius: 2px;
       transition: background-color 0.2s ease;
@@ -103,16 +111,6 @@
       &:not(.directory):hover {
         background-color: #37373d;
       }
-
-      > .directoryIcon {
-        svg {
-          transition: transform 0.2s ease;
-        }
-      }
-    }
-
-    .list .item.expand .row > .directoryIcon svg {
-      transform: rotate(90deg);
     }
   }
 }

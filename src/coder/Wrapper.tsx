@@ -129,7 +129,9 @@ function Menu({ items }: { items: IMenu[] }) {
             >
               {item.children ? (
                 <Icon
-                  className={styles.directoryIcon}
+                  className={classNames(styles.directoryIcon, {
+                    [styles.expand]: expands.includes(item.fullPath + item.path)
+                  })}
                   icon="material-symbols:keyboard-arrow-right"
                 />
               ) : null}

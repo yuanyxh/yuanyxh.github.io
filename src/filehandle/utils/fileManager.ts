@@ -14,6 +14,7 @@ export interface FileInfo {
   name: string;
   type: FileType;
   icon: React.ReactNode;
+  handle: DH | FH;
   ext?: string;
 }
 
@@ -21,13 +22,14 @@ export async function getChildren(directory: DH) {
   const children: FileInfo[] = [];
   for await (const key of directory.keys()) {
     const type = await getHandleType(directory, key);
+    const handle = await getHandle(directory, key);
 
     let ext: string | undefined = void 0;
     if (key.includes('.')) {
       ext = '.' + key.split('.').pop();
     }
 
-    children[children.length] = { name: key, type, icon: '', ext };
+    children[children.length] = { name: key, type, icon: '', handle, ext };
   }
 
   return children

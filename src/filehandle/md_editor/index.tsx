@@ -8,7 +8,7 @@ import type { FileHandle } from '../hooks/useFileSystem';
 import type { DH, FH } from '../utils/fileManager';
 
 async function createMDHandleInstance(handle: DH | FH) {
-  const { default: MDHandle } = await import('./MDHandle');
+  const { default: MDHandle } = await import('./component/MDHandle');
 
   const el = createElementContainer();
   const root = createRoot(el);
@@ -17,10 +17,6 @@ async function createMDHandleInstance(handle: DH | FH) {
     el.remove();
   };
   root.render(<MDHandle handle={handle} destroy={destroy} />);
-  // .catch((err) => {
-  //   // TODO: add global error sender
-  //   window.alert((err as Error).message);
-  // });
 }
 
 const mdHandler: FileHandle = {
