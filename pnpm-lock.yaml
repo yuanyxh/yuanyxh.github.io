@@ -3845,7 +3845,7 @@ packages:
       rc-tabs: 15.0.0(react-dom@18.3.1)(react@18.3.1)
       rc-textarea: 1.6.3(react-dom@18.3.1)(react@18.3.1)
       rc-tooltip: 6.2.0(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.5(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
       rc-tree-select: 5.20.0(react-dom@18.3.1)(react@18.3.1)
       rc-upload: 4.5.2(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
@@ -9984,7 +9984,7 @@ packages:
       array-tree-filter: 2.1.0
       classnames: 2.5.1
       rc-select: 14.13.1(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.5(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -10424,14 +10424,14 @@ packages:
       '@babel/runtime': 7.24.5
       classnames: 2.5.1
       rc-select: 14.13.1(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.5(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
     dev: false
 
-  /rc-tree@5.8.5(react-dom@18.3.1)(react@18.3.1):
-    resolution: {integrity: sha512-PRfcZtVDNkR7oh26RuNe1hpw11c1wfgzwmPFL0lnxGnYefe9lDAO6cg5wJKIAwyXFVt5zHgpjYmaz0CPy1ZtKg==}
+  /rc-tree@5.8.6(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-6dtpMaWBZ/I8su1Ub2CeUYwmkKNg9YpGJqXYUDd0KYnOnrW0wCjncxpdYrf28NLPJtUwBR5dFxeGOiFox5YaHg==}
     engines: {node: '>=10.x'}
     peerDependencies:
       react: '*'

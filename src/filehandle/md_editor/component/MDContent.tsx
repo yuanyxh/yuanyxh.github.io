@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { App } from 'antd';
 
-import { type DH, type FH, writeFile } from '@/filehandle/utils/fileManager';
+import type { DH, FH } from '@/filehandle/utils/fileManager';
+import { writeFile } from '@/filehandle/utils/fileManager';
 
+import type { IMDEditorExpose } from './MDEditor';
 import MDEditor from './MDEditor';
 import { Sidebar } from './MDSidebar';
 import styles from './styles/MDContent.module.less';
@@ -19,10 +21,13 @@ interface IMDContentProps {
 export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   const { handle } = props;
 
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
 
   const [markdown, setMarkdown] = useState('');
+  const [changed, setChanged] = useState(false);
   const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
+
+  const editorRef = useRef<IMDEditorExpose>(null);
 
   useMemo(() => {
     currentHandle &&
@@ -38,25 +43,60 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   }, []);
 
   const handleSelect = (handle: FH) => {
-    setCurrentHandle(handle);
+    if (!changed) return setCurrentHandle(handle);
+
+    modal.confirm({
+      title: '温馨提示',
+      content: '是否保存更改？如果不保存，您的更改会丢失。',
+      okText: '保存',
+      cancelText: '放弃更改',
+      onOk() {
+        if (currentHandle && editorRef.current) {
+          writeFile(currentHandle, editorRef.current.getMarkdown())
+            .then(() => {
+              setCurrentHandle(handle);
+            })
+            .catch((err) => {
+              message.error((err as Error).message);
+            });
+        }
+      },
+      onCancel() {
+        setCurrentHandle(handle);
+      }
+    });
+  };
+
+  const handleSetChanged = (changed: boolean) => {
+    setChanged(changed);
   };
 
   const handleSave = (md: string) => {
     if (currentHandle) {
-      writeFile(currentHandle, md).catch((err) => {
-        message.error((err as Error).message);
-      });
+      writeFile(currentHandle, md)
+        .then(() => {
+          setChanged(false);
+        })
+        .catch((err) => {
+          message.error((err as Error).message);
+        });
     }
   };
 
   return (
     <div className={styles.content}>
       {handle instanceof FileSystemDirectoryHandle ? (
-        <Sidebar handle={handle} onSelect={handleSelect} />
+        <Sidebar handle={handle} changed={changed} onSelect={handleSelect} />
       ) : null}
 
       <div className={styles.mdEditor}>
-        <MDEditor markdown={markdown} onSave={handleSave} />
+        <MDEditor
+          ref={editorRef}
+          markdown={markdown}
+          changed={changed}
+          onChanged={handleSetChanged}
+          onSave={handleSave}
+        />
       </div>
     </div>
   );

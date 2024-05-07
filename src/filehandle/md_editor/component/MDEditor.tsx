@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
 import styles from './styles/MDEditor.module.less';
 import { reduce } from './theme-reduce';
@@ -36,7 +36,13 @@ import { /* callCommand, */ getMarkdown /* insert */ } from '@milkdown/utils';
 
 interface IMDEditorProps {
   markdown?: string;
+  changed: boolean;
+  onChanged(changed: boolean): any;
   onSave(markdown: string): any;
+}
+
+export interface IMDEditorExpose {
+  getMarkdown(): string;
 }
 
 function createMDEditor(
@@ -85,52 +91,58 @@ function createMDEditor(
 
 const getMDString = getMarkdown();
 
-const MDEditor: React.FC<IMDEditorProps> = (props) => {
-  const { markdown = '', onSave } = props;
+const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
+  function MDEditor(props, ref) {
+    const { markdown = '', changed, onChanged, onSave } = props;
 
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<Editor>();
-  const mdStringRef = useRef('');
+    const editorContainerRef = useRef<HTMLDivElement>(null);
+    const editorRef = useRef<Editor>();
+    const mdStringRef = useRef('');
 
-  const [changed, setChanged] = useState(false);
-
-  useMemo(() => {
-    (async () => {
-      if (editorRef.current) {
-        await editorRef.current.destroy(true);
+    useImperativeHandle(ref, () => ({
+      getMarkdown() {
+        return editorRef.current ? getMDString(editorRef.current.ctx) : '';
       }
+    }));
 
-      setChanged(false);
-      createMDEditor(editorContainerRef.current!, markdown, onUpdate).then(
-        (value) => {
-          editorRef.current = value;
-          mdStringRef.current = markdown;
+    useMemo(() => {
+      (async () => {
+        if (editorRef.current) {
+          await editorRef.current.destroy(true);
         }
-      );
-    })();
-  }, [markdown]);
 
-  function onUpdate(md: string) {
-    setChanged(true);
-    mdStringRef.current = md;
-  }
+        createMDEditor(editorContainerRef.current!, markdown, onUpdate).then(
+          (value) => {
+            editorRef.current = value;
+            mdStringRef.current = markdown;
+            onChanged(false);
+          }
+        );
+      })();
+    }, [markdown]);
 
-  const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
-      e.preventDefault();
-
-      changed && onSave(getMDString(editorRef.current!.ctx));
+    function onUpdate(md: string) {
+      onChanged(true);
+      mdStringRef.current = md;
     }
-  };
 
-  return (
-    <div
-      ref={editorContainerRef}
-      id="md-editor"
-      className={styles.editorContainer}
-      onKeyDown={handleSave}
-    ></div>
-  );
-};
+    const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
+        e.preventDefault();
+
+        changed && onSave(getMDString(editorRef.current!.ctx));
+      }
+    };
+
+    return (
+      <div
+        ref={editorContainerRef}
+        id="md-editor"
+        className={styles.editorContainer}
+        onKeyDown={handleSave}
+      ></div>
+    );
+  }
+);
 
 export default MDEditor;

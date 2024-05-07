@@ -20,6 +20,7 @@ import styles from './styles/MDSidebar.module.less';
 
 interface ISidebarProps {
   handle: DH;
+  changed: boolean;
   onSelect(handle: FH): void;
 }
 
@@ -57,10 +58,12 @@ async function getDeepChildren(handle: DH): Promise<ExtendFileInfo[]> {
 
 function Menu({
   activeId,
+  changed,
   items,
   onItemClick
 }: {
   activeId: string;
+  changed: boolean;
   items: ExtendFileInfo[];
   onItemClick: (file: ExtendFileInfo) => void;
 }) {
@@ -94,7 +97,8 @@ function Menu({
               className={classNames(styles.row, {
                 [styles.active]:
                   activeId === item.id && !expands.includes(activeId),
-                [styles.directory]: item.children
+                [styles.directory]: item.children,
+                [styles.changed]: changed
               })}
               onClick={
                 item.children
@@ -118,6 +122,7 @@ function Menu({
             <Menu
               items={item.children}
               activeId={activeId}
+              changed={changed}
               onItemClick={onItemClick}
             />
           ) : null}
@@ -128,7 +133,7 @@ function Menu({
 }
 
 export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
-  const { handle, onSelect } = props;
+  const { handle, changed, onSelect } = props;
 
   const { message } = App.useApp();
 
@@ -154,7 +159,12 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
 
   return (
     <Sider className={styles.sidebar} width={250}>
-      <Menu items={list} onItemClick={handleSelect} activeId={activeId} />
+      <Menu
+        items={list}
+        changed={changed}
+        activeId={activeId}
+        onItemClick={handleSelect}
+      />
     </Sider>
   );
 };
