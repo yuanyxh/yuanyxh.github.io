@@ -89,6 +89,12 @@ export async function importDirectory(
   return true;
 }
 
+export async function writeFile(file: FH, data: FileDataType) {
+  const writable = await file.createWritable();
+  await writable.write(data);
+  await writable.close();
+}
+
 export async function createFile(
   directory: DH,
   name: string,
@@ -98,9 +104,7 @@ export async function createFile(
 
   if (!data) return handle;
 
-  const writable = await handle.createWritable();
-  await writable.write(data);
-  await writable.close();
+  await writeFile(handle, data);
 
   return handle;
 }

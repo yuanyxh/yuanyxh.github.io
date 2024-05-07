@@ -116,7 +116,7 @@ const MDEditor: React.FC<IMDEditorProps> = (props) => {
   }
 
   const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.ctrlKey && e.key.toLocaleLowerCase() === 'c') {
+    if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
       e.preventDefault();
 
       changed && onSave(getMDString(editorRef.current!.ctx));

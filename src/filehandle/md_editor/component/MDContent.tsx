@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { DH, FH } from '@/filehandle/utils/fileManager';
+import { App } from 'antd';
+
+import { type DH, type FH, writeFile } from '@/filehandle/utils/fileManager';
 
 import MDEditor from './MDEditor';
 import { Sidebar } from './MDSidebar';
@@ -16,6 +18,8 @@ interface IMDContentProps {
 
 export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   const { handle } = props;
+
+  const { message } = App.useApp();
 
   const [markdown, setMarkdown] = useState('');
   const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
@@ -38,7 +42,11 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   };
 
   const handleSave = (md: string) => {
-    md;
+    if (currentHandle) {
+      writeFile(currentHandle, md).catch((err) => {
+        message.error((err as Error).message);
+      });
+    }
   };
 
   return (
