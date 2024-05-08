@@ -46,7 +46,10 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
     backgroundManager.bringToBackground({
       id: handleId,
       icon: <Icon icon="bxs--file-md" color="var(--color-primary)" />,
-      open: () => setOpen(true)
+      open: () => {
+        setOpen(true);
+        backgroundManager.removeBackground(handleId);
+      }
     });
   };
 
