@@ -42,6 +42,7 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
 
     this.fullPath = fullPath;
   }
+
   createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle> {
     throw new Error('Method not implemented.');
   }

@@ -15,6 +15,7 @@ export interface UserState {
 
 export interface UserActions {
   addWebdav(webdav: WebdavInfo): void;
+  setWebdavs(webdavs: WebdavInfo[]): void;
 }
 
 const useAppStore = create<UserState & UserActions>((set) => ({
@@ -29,6 +30,11 @@ const useAppStore = create<UserState & UserActions>((set) => ({
 
       return webdavs;
     });
+  },
+  setWebdavs(webdavs) {
+    set({ webdavs });
+
+    setStorage('user', webdavs);
   }
 }));
 

@@ -267,6 +267,8 @@ interface IFileContentProps {
 const FileContent: React.FC<IFileContentProps> = (props) => {
   const { modal, message } = App.useApp();
 
+  const { webdavs, setWebdavs } = useUserStore();
+
   const {
     current,
     children,
@@ -361,7 +363,11 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   };
 
   const handleDeleteFile = () => {
-    const names = selection.slice(0).map((file) => file.name);
+    const _selection = selection.slice(0);
+
+    const names = _selection
+      .filter((file) => !file.remote)
+      .map((file) => file.name);
 
     modal.confirm({
       title: '温馨提示',
@@ -369,6 +375,14 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       content: '您确认要删除这个文件吗？',
       async onOk() {
         try {
+          let _webdavs = webdavs.slice(0);
+          selection.map((file) => {
+            if (file.remote) {
+              _webdavs = _webdavs.filter((webdav) => webdav.name !== file.name);
+            }
+          });
+          setWebdavs(_webdavs);
+
           await Promise.all(names.map((name) => remove(name)));
         } catch (err) {
           message.error((err as Error).message);

@@ -169,7 +169,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       cors: true,
       proxy: {
         '/api': {
-          target: '',
+          target: 'http://8.222.131.201:8362',
           changeOrigin: true,
           ws: true,
           rewrite: (path) => path.replace(/^\/api/, 'notes')

@@ -99,6 +99,8 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
     const editorRef = useRef<Editor>();
     const mdStringRef = useRef('');
 
+    const creatingRef = useRef(false);
+
     useImperativeHandle(ref, () => ({
       getMarkdown() {
         return editorRef.current ? getMDString(editorRef.current.ctx) : '';
@@ -106,19 +108,29 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
     }));
 
     useMemo(() => {
-      (async () => {
-        if (editorRef.current) {
-          await editorRef.current.destroy(true);
-        }
+      if (creatingRef.current) {
+        return void 0;
+      }
 
-        createMDEditor(editorContainerRef.current!, markdown, onUpdate).then(
-          (value) => {
-            editorRef.current = value;
-            mdStringRef.current = markdown;
-            onChanged(false);
-          }
-        );
-      })();
+      if (editorRef.current) {
+        editorRef.current.destroy(true);
+      }
+
+      creatingRef.current = true;
+
+      createMDEditor(editorContainerRef.current!, markdown, onUpdate)
+        .then((value) => {
+          editorRef.current = value;
+          mdStringRef.current = markdown;
+          onChanged(false);
+        })
+        .finally(() => {
+          creatingRef.current = false;
+        });
+
+      return () => {
+        editorRef.current?.destroy(true);
+      };
     }, [markdown]);
 
     function onUpdate(md: string) {
