@@ -13,7 +13,6 @@ import {
   createFile,
   FileType,
   getChildren,
-  getHandle,
   remove as removeFile
 } from '../utils/fileManager';
 
@@ -39,7 +38,7 @@ export interface FileSystem {
   move(): void;
   register(handler: FileHandle): void;
   returnToRoot(): void;
-  enterDirectory(name: string): any;
+  enterDirectory(file: FileInfo): any;
   forceUpdate(): any;
 }
 
@@ -63,9 +62,13 @@ export function useFileSystem(): FileSystem {
   const update = () => {
     if (!current) return;
 
-    getChildren(current).then((_children) => {
-      setChildren([..._children]);
-    });
+    getChildren(current, root.current === current ? webdavs : void 0)
+      .then((_children) => {
+        setChildren([..._children]);
+      })
+      .catch((err) => {
+        message.error((err as Error).message);
+      });
   };
 
   useMemo(() => {
@@ -92,7 +95,7 @@ export function useFileSystem(): FileSystem {
 
   const fileSystem = useMemo(() => {
     function register(handler: FileHandle | FileHandle[]) {
-      const handlers = handler instanceof Array ? handler : [handler];
+      const handlers = Array.isArray(handler) ? handler : [handler];
 
       handlers.forEach((handler) => {
         if (fileHandlesRef.current.some((curr) => handler.id === curr.id)) {
@@ -134,17 +137,11 @@ export function useFileSystem(): FileSystem {
       }
     }
 
-    function enterDirectory(name: string) {
-      getHandle(current, name)
-        .then((res) => {
-          if (res.kind === 'directory') {
-            setCurrent(res);
-            fileLinked.current.inset(res);
-          }
-        })
-        .catch((err) => {
-          message.error((err as Error).message);
-        });
+    function enterDirectory(file: FileInfo) {
+      if (file.handle.kind === 'directory') {
+        setCurrent(file.handle);
+        fileLinked.current.inset(file.handle);
+      }
     }
 
     function returnToRoot() {

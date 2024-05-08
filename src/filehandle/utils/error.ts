@@ -19,3 +19,13 @@ export class FileTypeError extends FileBaseError {
     );
   }
 }
+
+export class FilePathNotExistsError extends FileBaseError {
+  name = 'FileTypeError';
+
+  status = 411;
+
+  constructor(filePath: string) {
+    super(`This file path "${filePath}" does not exist.`);
+  }
+}

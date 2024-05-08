@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { App } from 'antd';
 
+import {
+  isDirectoryHandle,
+  isFileHandle
+} from '@/filehandle/utils/checkFileType';
 import type { DH, FH } from '@/filehandle/utils/fileManager';
 import { writeFile } from '@/filehandle/utils/fileManager';
 
@@ -37,7 +41,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   }, [currentHandle]);
 
   useEffect(() => {
-    if (handle instanceof FileSystemFileHandle) {
+    if (isFileHandle(handle)) {
       setCurrentHandle(handle);
     }
   }, []);
@@ -85,7 +89,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
 
   return (
     <div className={styles.content}>
-      {handle instanceof FileSystemDirectoryHandle ? (
+      {isDirectoryHandle(handle) ? (
         <Sidebar handle={handle} changed={changed} onSelect={handleSelect} />
       ) : null}
 

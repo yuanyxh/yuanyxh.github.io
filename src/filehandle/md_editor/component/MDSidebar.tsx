@@ -6,12 +6,12 @@ import classNames from 'classnames';
 
 import { uuid } from '@/utils';
 
+import { isFileHandle } from '@/filehandle/utils/checkFileType';
 import type { DH, FH } from '@/filehandle/utils/fileManager';
 import {
   FileInfo,
   FileType,
-  getChildren,
-  getHandle
+  getChildren
 } from '@/filehandle/utils/fileManager';
 
 import { Icon } from '@/components';
@@ -46,9 +46,7 @@ async function getDeepChildren(handle: DH): Promise<ExtendFileInfo[]> {
       .map(async (child) => {
         const newChild = wrapperFileItem(child);
         if (child.type === FileType.DIRECTORY) {
-          newChild.children = await getDeepChildren(
-            (await getHandle(handle, child.name)) as DH
-          );
+          newChild.children = await getDeepChildren(child.handle as DH);
         }
 
         return newChild;
@@ -151,7 +149,7 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
   }, [handle]);
 
   const handleSelect = (file: ExtendFileInfo) => {
-    if (file.handle instanceof FileSystemFileHandle) {
+    if (isFileHandle(file.handle)) {
       onSelect(file.handle);
       setActiveId(file.id);
     }

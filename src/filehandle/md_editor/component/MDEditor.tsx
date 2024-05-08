@@ -130,7 +130,7 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
       if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
 
-        changed && onSave(getMDString(editorRef.current!.ctx));
+        changed && onSave(mdStringRef.current);
       }
     };
 

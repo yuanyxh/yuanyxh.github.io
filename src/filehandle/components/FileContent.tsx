@@ -16,12 +16,7 @@ import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
 import { isAlwaysExist } from '../utils';
 import type { DH, FileInfo } from '../utils/fileManager';
-import {
-  FileType,
-  getHandle,
-  importDirectory,
-  importFile
-} from '../utils/fileManager';
+import { FileType, importDirectory, importFile } from '../utils/fileManager';
 
 function AddFileModal({
   open,
@@ -291,7 +286,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isMountModalOpen, setMountModalOpen] = useState(false);
 
-  const [selection, setSelection] = useState<string[]>([]);
+  const [selection, setSelection] = useState<FileInfo[]>([]);
 
   const contextMenu = fileHandles
     .filter((handle) => handle.contextMenu)
@@ -302,7 +297,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         try {
           let value = current;
           if (selection[0]) {
-            value = (await getHandle(current, selection[0])) as DH;
+            value = selection[0].handle as DH;
           }
           await handle.contextMenu!.handler(value);
         } catch (err) {
@@ -366,7 +361,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   };
 
   const handleDeleteFile = () => {
-    const names = selection.slice(0);
+    const names = selection.slice(0).map((file) => file.name);
 
     modal.confirm({
       title: '温馨提示',
@@ -404,11 +399,11 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
             key={child.name}
             file={child}
             onContextMenu={() => {
-              setSelection([child.name]);
+              setSelection([child]);
             }}
             onDoubleClick={
               child.type === FileType.DIRECTORY
-                ? () => enterDirectory(child.name)
+                ? () => enterDirectory(child)
                 : () => open(child)
             }
           />

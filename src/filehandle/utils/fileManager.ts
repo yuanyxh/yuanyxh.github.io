@@ -1,4 +1,7 @@
+import type { WebdavInfo } from '@/store';
+
 import { FileTypeError } from './error';
+import WebdavFile from '../WebdavFile';
 
 export type FileDataType = ArrayBuffer | Blob | string;
 
@@ -17,16 +20,13 @@ export interface FileInfo {
   handle: DH | FH;
   /** this is webdav file? */
   remote?: boolean;
-  /** webdav file full path */
-  fullPath?: string;
   ext?: string;
 }
 
-export async function getChildren(directory: DH) {
+export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
   const children: FileInfo[] = [];
-  for await (const key of directory.keys()) {
-    const type = await getHandleType(directory, key);
-    const handle = await getHandle(directory, key);
+  for await (const [key, handle] of directory.entries()) {
+    const type = await getHandleType(handle);
 
     let ext: string | undefined = void 0;
     if (key.includes('.')) {
@@ -38,6 +38,7 @@ export async function getChildren(directory: DH) {
 
   return children
     .filter((child) => child.type === FileType.DIRECTORY)
+    .concat(webdavs.map((webdav) => new WebdavFile(webdav)))
     .sort((a, b) => a.name.localeCompare(b.name))
     .concat(
       children
@@ -52,10 +53,8 @@ export async function getHandle(directory: DH, name: string) {
     .catch(() => directory.getDirectoryHandle(name));
 }
 
-export async function getHandleType(directory: DH, name: string) {
-  const handle = await directory
-    .getFileHandle(name)
-    .catch(() => directory.getDirectoryHandle(name));
+export async function getHandleType(handle: DH | FH) {
+  const name = handle.name;
 
   if (handle.kind === 'file') {
     return FileType.FILE;
@@ -144,8 +143,8 @@ export async function moveDirectory(
   const _origin = await origin.getDirectoryHandle(name);
   const _target = await createDirectory(target, name);
 
-  for await (const key of _origin.keys()) {
-    if ((await getHandleType(_origin, key)) === FileType.FILE) {
+  for await (const [key, handle] of _origin.entries()) {
+    if ((await getHandleType(handle)) === FileType.FILE) {
       return await moveFile(_origin, _target, key, copy);
     } else {
       return await moveDirectory(_origin, _target, key);
@@ -169,7 +168,8 @@ export async function move(
 
   return Promise.all(
     names.map(async (name) => {
-      if ((await getHandleType(origin, name)) === FileType.FILE) {
+      const handle = await getHandle(origin, name);
+      if ((await getHandleType(handle)) === FileType.FILE) {
         return moveFile(origin, target, name, copy);
       } else {
         const handle = await moveDirectory(origin, target, name, copy);

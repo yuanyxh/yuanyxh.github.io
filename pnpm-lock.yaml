@@ -1594,7 +1594,7 @@ packages:
     engines: {node: '>=v18'}
     dependencies:
       '@commitlint/types': 19.0.3
-      semver: 7.6.0
+      semver: 7.6.1
     dev: true
 
   /@commitlint/lint@19.2.2:
@@ -3525,7 +3525,7 @@ packages:
       graphemer: 1.4.0
       ignore: 5.3.1
       natural-compare: 1.4.0
-      semver: 7.6.0
+      semver: 7.6.1
       ts-api-utils: 1.3.0(typescript@5.4.5)
       typescript: 5.4.5
     transitivePeerDependencies:
@@ -3601,7 +3601,7 @@ packages:
       globby: 11.1.0
       is-glob: 4.0.3
       minimatch: 9.0.4
-      semver: 7.6.0
+      semver: 7.6.1
       ts-api-utils: 1.3.0(typescript@5.4.5)
       typescript: 5.4.5
     transitivePeerDependencies:
@@ -3621,7 +3621,7 @@ packages:
       '@typescript-eslint/types': 7.8.0
       '@typescript-eslint/typescript-estree': 7.8.0(typescript@5.4.5)
       eslint: 8.57.0
-      semver: 7.6.0
+      semver: 7.6.1
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -3845,7 +3845,7 @@ packages:
       rc-tabs: 15.0.0(react-dom@18.3.1)(react@18.3.1)
       rc-textarea: 1.6.3(react-dom@18.3.1)(react@18.3.1)
       rc-tooltip: 6.2.0(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.7(react-dom@18.3.1)(react@18.3.1)
       rc-tree-select: 5.20.0(react-dom@18.3.1)(react@18.3.1)
       rc-upload: 4.5.2(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
@@ -9984,7 +9984,7 @@ packages:
       array-tree-filter: 2.1.0
       classnames: 2.5.1
       rc-select: 14.13.1(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.7(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -10424,14 +10424,14 @@ packages:
       '@babel/runtime': 7.24.5
       classnames: 2.5.1
       rc-select: 14.13.1(react-dom@18.3.1)(react@18.3.1)
-      rc-tree: 5.8.6(react-dom@18.3.1)(react@18.3.1)
+      rc-tree: 5.8.7(react-dom@18.3.1)(react@18.3.1)
       rc-util: 5.39.3(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
     dev: false
 
-  /rc-tree@5.8.6(react-dom@18.3.1)(react@18.3.1):
-    resolution: {integrity: sha512-6dtpMaWBZ/I8su1Ub2CeUYwmkKNg9YpGJqXYUDd0KYnOnrW0wCjncxpdYrf28NLPJtUwBR5dFxeGOiFox5YaHg==}
+  /rc-tree@5.8.7(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-cpsIQZ4nNYwpj6cqPRt52e/69URuNdgQF9wZ10InmEf8W3+i0A41OVmZWwHuX9gegQSqj+DPmaDkZFKQZ+ZV1w==}
     engines: {node: '>=10.x'}
     peerDependencies:
       react: '*'
@@ -11008,6 +11008,12 @@ packages:
     hasBin: true
     dependencies:
       lru-cache: 6.0.0
+    dev: true
+
+  /semver@7.6.1:
+    resolution: {integrity: sha512-f/vbBsu+fOiYt+lmwZV0rVwJScl46HppnOA1ZvIuBWKOTlllpyJ3bfVax76/OrhCH38dyxoDIA8K7uB963IYgA==}
+    engines: {node: '>=10'}
+    hasBin: true
     dev: true
 
   /send@0.18.0:
