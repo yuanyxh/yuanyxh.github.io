@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { MenuProps } from 'antd';
 import {
@@ -23,19 +23,19 @@ import { Link, Outlet, useHistory, useScrollStore } from '@/router';
 import { useAppStore } from '@/store';
 
 import {
+  error,
   fallbackFullscreen,
   isFullScreen,
   onFullScreen,
   requestFullScreen,
-  sleep
+  sleep,
+  success
 } from '@/utils';
 
 import type { FilePanelFactory } from '@/filehandle';
 import { isSupportOPFS } from '@/filehandle/utils/checkSupport';
 
 import { Icon } from '@/components';
-
-import { AppContext } from '@/App';
 
 import LogoImage from '@/assets/images/logo.webp';
 
@@ -299,7 +299,6 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
   const [uploading, setUploading] = useState(false);
 
   const [form] = Form.useForm();
-  const { message } = useContext(AppContext);
 
   const onTypeChange = (type: string) => {
     form.setFieldValue('type', type);
@@ -341,15 +340,9 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 
       form.resetFields();
 
-      message.open({
-        type: 'success',
-        content: '已添加反馈建议。'
-      });
+      success('已添加反馈建议。');
     } catch (err) {
-      message.open({
-        type: 'error',
-        content: '抱歉，暂时无法添加反馈，请稍后再试或前往 Github 留言。'
-      });
+      error('抱歉，暂时无法添加反馈，请稍后再试或前往 Github 留言。');
     } finally {
       setUploading(false);
     }
@@ -419,8 +412,6 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
 };
 
 const FileSystemTrigger = () => {
-  const { message } = useContext(AppContext);
-
   const [support, setSupport] = useState(false);
   const filePanelRef = useRef<FilePanelFactory>();
 
@@ -440,7 +431,7 @@ const FileSystemTrigger = () => {
           sleep(0, () => filePanelRef.current?.toggle());
         })
         .catch((err) => {
-          message.error((err as Error).message);
+          error((err as Error).message);
         });
     }
 

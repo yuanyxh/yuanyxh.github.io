@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { App } from 'antd';
+import { confirm, error } from '@/utils';
 
 import {
   isDirectoryHandle,
@@ -25,8 +25,6 @@ interface IMDContentProps {
 export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   const { handle } = props;
 
-  const { message, modal } = App.useApp();
-
   const [markdown, setMarkdown] = useState('');
   const [changed, setChanged] = useState(false);
   const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
@@ -49,7 +47,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   const handleSelect = (handle: FH) => {
     if (!changed) return setCurrentHandle(handle);
 
-    modal.confirm({
+    confirm({
       title: '温馨提示',
       content: '是否保存更改？如果不保存，您的更改会丢失。',
       okText: '保存',
@@ -61,7 +59,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
               setCurrentHandle(handle);
             })
             .catch((err) => {
-              message.error((err as Error).message);
+              error((err as Error).message);
             });
         }
       },
@@ -82,7 +80,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
           setChanged(false);
         })
         .catch((err) => {
-          message.error((err as Error).message);
+          error((err as Error).message);
         });
     }
   };

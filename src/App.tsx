@@ -18,6 +18,7 @@ import { useAppStore } from '@/store';
 import {
   addGlobalListener,
   getStorage,
+  globalEvent,
   hasLocalStorage,
   notify,
   ServiceWorkerManager
@@ -135,9 +136,24 @@ const App: React.FC<IAppProps> = (props) => {
     });
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
 
+    const cancelGlobalUserTipsEventListener = globalEvent.on(
+      'user_tips',
+      ({ type, message: _message }) => {
+        message[type](_message);
+      }
+    );
+    const cancelGlobalUserAlertEventListener = globalEvent.on(
+      'user_alert',
+      ({ type, ...props }) => {
+        modalApi[type](props);
+      }
+    );
+
     return () => {
       removePageShowListener();
       removePageHideListener();
+      cancelGlobalUserTipsEventListener();
+      cancelGlobalUserAlertEventListener();
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
     };
   }, []);

@@ -1,10 +1,10 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cloneDeep } from 'lodash-es';
 
 import { useUserStore } from '@/store';
 
-import { AppContext } from '@/App';
+import { error } from '@/utils';
 
 import BackgroundManager from '../BackgroundManager';
 import FileLinkedList from '../FileLinkedList';
@@ -45,8 +45,6 @@ export interface FileSystem {
 }
 
 export function useFileSystem(): FileSystem {
-  const { message } = useContext(AppContext);
-
   const { webdavs } = useUserStore();
 
   const root =
@@ -70,7 +68,7 @@ export function useFileSystem(): FileSystem {
         setChildren([..._children]);
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   };
 
@@ -122,7 +120,7 @@ export function useFileSystem(): FileSystem {
           update();
         })
         .catch((err) => {
-          message.error((err as Error).message);
+          error((err as Error).message);
         });
     }
 
@@ -136,7 +134,7 @@ export function useFileSystem(): FileSystem {
 
         update();
       } catch (err) {
-        message.error((err as Error).message);
+        error((err as Error).message);
       }
     }
 

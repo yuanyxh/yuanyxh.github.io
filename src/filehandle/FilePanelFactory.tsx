@@ -1,8 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { App } from 'antd';
-
 import { createElementContainer } from '@/utils';
 
 import FilePanelContainer from './components/FilePanelContainer';
@@ -36,11 +34,8 @@ class FilePanelFactory {
     };
 
     this.root.render(
-      // antd App provider Modal, Message, Notification
       <StrictMode>
-        <App>
-          <FilePanelContainer show={show} hide={hide} />
-        </App>
+        <FilePanelContainer show={show} hide={hide} />
       </StrictMode>
     );
   }

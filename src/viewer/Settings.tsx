@@ -1,21 +1,21 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Card, Col, Row, Spin, Switch, Typography } from 'antd';
 
 import { useAppStore } from '@/store';
 
 import {
+  error,
   hasPermission,
   requestNotifyPermission,
-  ServiceWorkerManager
+  ServiceWorkerManager,
+  success
 } from '@/utils';
 
 import { getStorageUsage } from '@/filehandle';
 
 import type { CanvasInstance } from '@/components';
 import { Canvas } from '@/components';
-
-import { AppContext } from '@/App';
 
 import styles from './styles/Settings.module.less';
 
@@ -24,8 +24,6 @@ const { Paragraph, Text } = Typography;
 const isLocal = import.meta.env.PROD === false;
 
 function ServiceWorkerCache() {
-  const { message } = useContext(AppContext);
-
   const {
     settings: { enableServiceWorkerCache },
     setEnableServiceWorkerCache
@@ -51,10 +49,10 @@ function ServiceWorkerCache() {
             ? '已为您启用 service worker 缓存'
             : '无法启用 service worker 缓存，您可联系作者反馈。';
 
-          message[installed ? 'success' : 'error'](info);
+          (installed ? success : error)(info);
         })
         .catch((err) => {
-          message.error((err as Error).message);
+          error((err as Error).message);
         });
     }
 
@@ -68,10 +66,10 @@ function ServiceWorkerCache() {
           ? '已为您禁用 service worker 缓存'
           : '无法禁用 service worker 缓存，您可联系作者反馈。';
 
-        message[uninstalled ? 'success' : 'error'](info);
+        (uninstalled ? success : error)(info);
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   };
 
@@ -101,8 +99,6 @@ function ServiceWorkerCache() {
 }
 
 function WebNotification() {
-  const { message } = useContext(AppContext);
-
   const {
     settings: { enableNotification },
     setEnableNotification
@@ -116,7 +112,7 @@ function WebNotification() {
         setEnableNotification(value);
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   }, []);
 
@@ -129,7 +125,7 @@ function WebNotification() {
     requestNotifyPermission()
       .then((e) => {
         if (e === 'cancel' || e === 'reject') {
-          message.error('无法获取通知权限。');
+          error('无法获取通知权限。');
           return false;
         }
 
@@ -139,7 +135,7 @@ function WebNotification() {
         }
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       })
       .finally(() => {
         setSpinning(false);
@@ -169,7 +165,6 @@ function WebNotification() {
 }
 
 function PersistentStorage() {
-  const { message } = useContext(AppContext);
   const [enablePersistent, setEnablePersistentStorage] = useState(false);
 
   const handleEnablePersistent = (enablePersistent: boolean) => {
@@ -180,11 +175,11 @@ function PersistentStorage() {
           setEnablePersistentStorage(persistent);
 
           if (!persistent) {
-            message.error('暂无法获取持久化存储权限。');
+            error('暂无法获取持久化存储权限。');
           }
         })
         .catch((err) => {
-          message.error((err as Error).message);
+          error((err as Error).message);
 
           setEnablePersistentStorage(false);
         });
@@ -198,7 +193,7 @@ function PersistentStorage() {
         setEnablePersistentStorage(persistent);
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   }, []);
 
@@ -228,8 +223,6 @@ function PersistentStorage() {
 }
 
 function StorageDetail() {
-  const { message } = useContext(AppContext);
-
   const drawRef = useRef<CanvasInstance>(null);
 
   const [storage, setStorage] = useState<{
@@ -290,7 +283,7 @@ function StorageDetail() {
         drawEl.fill();
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   }, []);
 

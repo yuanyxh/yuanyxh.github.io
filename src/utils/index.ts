@@ -1,5 +1,7 @@
 export { default as EventEmitter } from './event';
 export * from './fullscreen';
+export { default as globalEvent } from './globalEventEmitter';
+export * from './globalEventEmitter';
 export * from './localStorageTools';
 export * from './notification';
 export * from './permissions';

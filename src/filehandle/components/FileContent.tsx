@@ -2,13 +2,21 @@ import { useContext, useMemo, useRef, useState } from 'react';
 
 import type { InputProps } from 'antd';
 import type { InputRef } from 'antd';
-import { App, Form, Input, Modal, Typography } from 'antd';
+import { Form, Input, Modal, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import type { WebdavInfo } from '@/store';
 import { useUserStore } from '@/store';
 
-import { sleep, validateFileName } from '@/utils';
+import {
+  alert,
+  confirm,
+  error,
+  sleep,
+  success,
+  validateFileName,
+  warning
+} from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
@@ -31,8 +39,6 @@ function AddFileModal({
   onOk: (name: string, type: FileType) => any;
   onCancel: () => any;
 }) {
-  const { message } = App.useApp();
-
   const [inputStatus, setInputStatus] = useState<{
     name: string;
     status: InputProps['status'];
@@ -72,7 +78,7 @@ function AddFileModal({
         setInputStatus({ name: value, status: '', message: '' });
       }
     } catch (err) {
-      message.error((err as Error).message);
+      error((err as Error).message);
     }
   };
 
@@ -124,8 +130,6 @@ function AddFileModal({
 function MountWebdavModal(props: { open: boolean; close(): void }) {
   const { open, close } = props;
 
-  const { modal, message } = App.useApp();
-
   const [form] = Form.useForm();
 
   const { webdavs, addWebdav } = useUserStore();
@@ -137,7 +141,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
         const webdav: WebdavInfo = form.getFieldsValue();
 
         if (webdavs.some((w) => w.name === webdav.name.trim())) {
-          modal.error({
+          alert({
             title: '提示',
             content: `已包含名称为 "${webdav.name.trim()}" 的挂载目录！`
           });
@@ -147,7 +151,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
 
         addWebdav({ ...webdav, name: webdav.name.trim() });
 
-        message.success('已添加 webdav 目录。');
+        success('已添加 webdav 目录。');
 
         sleep(35, close);
       })
@@ -265,8 +269,6 @@ interface IFileContentProps {
 }
 
 const FileContent: React.FC<IFileContentProps> = (props) => {
-  const { modal, message } = App.useApp();
-
   const { webdavs, setWebdavs } = useUserStore();
 
   const {
@@ -305,7 +307,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
           await handle.contextMenu!.handler(value, backgroundManager);
         } catch (err) {
-          message.error((err as Error).message);
+          error((err as Error).message);
         }
       }
     }));
@@ -328,12 +330,13 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     importFile(current)
       .then((value) => {
         if (!value) {
-          return message.warning('暂无法导入文件');
+          return warning('暂无法导入文件');
         }
+
         forceUpdate();
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   };
 
@@ -341,12 +344,12 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     importDirectory(current)
       .then((value) => {
         if (!value) {
-          return message.warning('暂无法导入文件夹');
+          return warning('暂无法导入文件夹');
         }
         forceUpdate();
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       });
   };
 
@@ -360,7 +363,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         handle.open(await current.getFileHandle(file.name), backgroundManager);
       }
     } catch (err) {
-      message.error((err as Error).message);
+      error((err as Error).message);
     }
   };
 
@@ -371,7 +374,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       .filter((file) => !file.remote)
       .map((file) => file.name);
 
-    modal.confirm({
+    confirm({
       title: '温馨提示',
       icon: <ExclamationCircleFilled />,
       content: '您确认要删除这个文件吗？',
@@ -387,7 +390,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
           await Promise.all(names.map((name) => remove(name)));
         } catch (err) {
-          message.error((err as Error).message);
+          error((err as Error).message);
         }
       },
       okText: '确认',
@@ -400,7 +403,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       await create(name, type);
       setModalOpen(false);
     } catch (err) {
-      message.error((err as Error).message);
+      error((err as Error).message);
     }
   };
   const handleCancel = () => {

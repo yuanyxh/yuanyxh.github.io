@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 
-import { App, Layout } from 'antd';
+import { Layout } from 'antd';
 
 import classNames from 'classnames';
 
-import { uuid } from '@/utils';
+import { error, uuid } from '@/utils';
 
 import { isFileHandle } from '@/filehandle/utils/checkFileType';
 import type { DH, FH } from '@/filehandle/utils/fileManager';
@@ -133,8 +133,6 @@ function Menu({
 export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
   const { handle, changed, onSelect } = props;
 
-  const { message } = App.useApp();
-
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
 
@@ -152,7 +150,7 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
         setList(list);
       })
       .catch((err) => {
-        message.error((err as Error).message);
+        error((err as Error).message);
       })
       .finally(() => {
         queryingRef.current = false;
