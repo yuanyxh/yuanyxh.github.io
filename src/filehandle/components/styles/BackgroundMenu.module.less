@@ -1,21 +1,21 @@
 .backgroundMenu {
   position: fixed;
   top: 68px;
-  bottom: 20px;
   right: 18px;
+  bottom: 20px;
   z-index: var(--z-gighest);
-  width: 60px;
-  // background-color: hsla(0, 0%, 100%, 0.75);
-  background-color: rgba(241, 243, 245, 0.5);
-  backdrop-filter: blur(3px);
-  overflow-y: auto;
-  scrollbar-color: transparent transparent;
-  border-radius: var(--border-radius-base);
   display: flex;
   flex-direction: column;
-  align-items: center;
   row-gap: 10px;
+  align-items: center;
+  width: 60px;
   padding-block: 15px;
+  overflow-y: auto;
+  // background-color: hsla(0, 0%, 100%, 0.75);
+  background-color: rgb(241 243 245 / 50%);
+  backdrop-filter: blur(3px);
+  border-radius: var(--border-radius-base);
+  scrollbar-color: transparent transparent;
 
   &::-webkit-scrollbar {
     width: 0;
@@ -27,12 +27,12 @@
 
   .program {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 40px;
     height: 40px;
-    justify-content: center;
-    align-items: center;
-    border-radius: var(--border-radius-base);
     cursor: pointer;
+    border-radius: var(--border-radius-base);
 
     i {
       font-size: 22px !important;

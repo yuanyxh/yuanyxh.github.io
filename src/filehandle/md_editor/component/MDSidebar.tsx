@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { App, Layout } from 'antd';
 
@@ -138,13 +138,24 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
 
+  const queryingRef = useRef(false);
+
   useMemo(() => {
+    if (queryingRef.current) {
+      return void 0;
+    }
+
+    queryingRef.current = true;
+
     getDeepChildren(handle)
       .then((list) => {
         setList(list);
       })
       .catch((err) => {
         message.error((err as Error).message);
+      })
+      .finally(() => {
+        queryingRef.current = false;
       });
   }, [handle]);
 
