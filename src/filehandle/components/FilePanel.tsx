@@ -3,6 +3,7 @@ import React, { createContext, useEffect, useRef } from 'react';
 import type { IDialogExpose, IDialogProps } from '@/components';
 import { Dialog } from '@/components';
 
+import BackgroundMenu from './BackgroundMenu';
 import FileContent from './FileContent';
 import FileLocation from './FileLocation';
 import type { FileSystem } from '../hooks/useFileSystem';
@@ -35,6 +36,8 @@ const FilePanel: React.FC<Readonly<IDialogProps>> = function FilePanel(props) {
 
         <FileContent getContainer={() => dialogRef.current!.dialog!} />
       </Dialog>
+
+      <BackgroundMenu backgroundManager={fileSystem.backgroundManager} />
     </FileSystemContext.Provider>
   );
 };

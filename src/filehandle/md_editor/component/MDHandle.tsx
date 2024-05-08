@@ -1,26 +1,28 @@
-import { useEffect, /* useId, */ useRef, useState } from 'react';
+import { useEffect, useId, /* useId, */ useRef, useState } from 'react';
 
 import { App } from 'antd';
 
-import { Dialog } from '@/components';
+import type BackgroundManager from '@/filehandle/BackgroundManager';
+
+import { Dialog, Icon } from '@/components';
 
 import { MDContent } from './MDContent';
 import styles from './styles/MDHandle.module.less';
-// import type BackgroundManager from '../../backgroundManager';
 import type { DH, FH } from '../../utils/fileManager';
 
 interface IMDHandle {
   handle: DH | FH;
-  // backgroundManager: BackgroundManager;
+  backgroundManager: BackgroundManager;
   destroy(): void;
 }
 
 const MDHandle: React.FC<IMDHandle> = (props) => {
-  // const handleId = useId();
+  const { handle, backgroundManager, destroy } = props;
 
-  const { handle, /* backgroundManager, */ destroy } = props;
+  const handleId = useId();
 
   const [open, setOpen] = useState(false);
+
   const initialRef = useRef(false);
   const destroyRef = useRef(false);
 
@@ -32,8 +34,20 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
   }, []);
 
   const onClose = () => {
+    backgroundManager.removeBackground(handleId);
+
     setOpen(false);
     destroyRef.current = true;
+  };
+
+  const handleMinimize = () => {
+    setOpen(false);
+
+    backgroundManager.bringToBackground({
+      id: handleId,
+      icon: <Icon icon="bxs--file-md" color="var(--color-primary)" />,
+      open: () => setOpen(true)
+    });
   };
 
   const onAnimationEnd = () => {
@@ -48,7 +62,7 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
       open={open}
       draggable={false}
       onAnimationEnd={onAnimationEnd}
-      onMinimize={() => setOpen(false)}
+      onMinimize={handleMinimize}
       onClose={onClose}
     >
       <App>

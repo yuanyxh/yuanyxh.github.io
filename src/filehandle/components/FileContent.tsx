@@ -274,6 +274,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     children,
     fileHandles,
     fileLinked,
+    backgroundManager,
     enterDirectory,
     create,
     remove,
@@ -301,7 +302,8 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
           if (selection[0]) {
             value = selection[0].handle as DH;
           }
-          await handle.contextMenu!.handler(value);
+
+          await handle.contextMenu!.handler(value, backgroundManager);
         } catch (err) {
           message.error((err as Error).message);
         }
@@ -355,7 +357,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       );
 
       if (handle) {
-        handle.open(await current.getFileHandle(file.name));
+        handle.open(await current.getFileHandle(file.name), backgroundManager);
       }
     } catch (err) {
       message.error((err as Error).message);

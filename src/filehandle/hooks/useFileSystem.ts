@@ -6,6 +6,7 @@ import { useUserStore } from '@/store';
 
 import { AppContext } from '@/App';
 
+import BackgroundManager from '../BackgroundManager';
 import FileLinkedList from '../FileLinkedList';
 import type { DH, FH, FileDataType, FileInfo } from '../utils/fileManager';
 import {
@@ -20,11 +21,11 @@ export interface FileHandle {
   id: string;
   ext: string;
   icon?: React.ReactNode;
-  open(handler: FH): any;
+  open(handler: FH, bgm: BackgroundManager): any;
   contextMenu?: {
     name: string;
     icon?: React.ReactNode;
-    handler(handle: DH | FH): any;
+    handler(handle: DH | FH, bgm: BackgroundManager): any;
   };
 }
 
@@ -33,6 +34,7 @@ export interface FileSystem {
   children: FileInfo[];
   fileLinked: FileLinkedList;
   fileHandles: FileHandle[];
+  backgroundManager: BackgroundManager;
   create(name: string, type: FileType, data?: FileDataType): Promise<any>;
   remove(name: string): any;
   move(): void;
@@ -52,6 +54,7 @@ export function useFileSystem(): FileSystem {
   const fileLinked =
     useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
   const fileHandlesRef = useRef<FileHandle[]>([]);
+  const backgroundManager = useRef(new BackgroundManager());
 
   const [current, setCurrent] = useState<DH>() as [
     DH,
@@ -154,6 +157,7 @@ export function useFileSystem(): FileSystem {
       children,
       fileLinked: fileLinked.current,
       fileHandles: fileHandlesRef.current,
+      backgroundManager: backgroundManager.current,
       register,
       returnToRoot,
       enterDirectory,
@@ -162,7 +166,7 @@ export function useFileSystem(): FileSystem {
       create,
       forceUpdate: update
     };
-  }, [current, children, fileLinked.current]);
+  }, [current, children, fileLinked.current, backgroundManager.current]);
 
   return fileSystem;
 }

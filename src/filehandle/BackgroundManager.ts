@@ -1,12 +1,19 @@
 import { cloneDeep } from 'lodash-es';
 
-interface BackgroundProgram {
+import { EventEmitter } from '@/utils';
+
+export interface BackgroundProgram {
   readonly id: string;
   icon: React.ReactNode;
+  open(): void;
 }
+
+const UPDATE_EVENT = 'background_update';
 
 class BackgroundManager {
   private _list: BackgroundProgram[] = [];
+
+  private event = new EventEmitter();
 
   get list() {
     return cloneDeep(this._list);
@@ -22,10 +29,18 @@ class BackgroundManager {
     }
 
     this._list.push(cloneDeep(program));
+
+    this.event.emit(UPDATE_EVENT, this.list);
   }
 
-  bringToForeground(id: string) {
+  removeBackground(id: string) {
     this._list = this._list.filter((value) => value.id !== id);
+
+    this.event.emit(UPDATE_EVENT, this.list);
+  }
+
+  onUpdate(fn: (bpList: BackgroundProgram[]) => any) {
+    return this.event.on(UPDATE_EVENT, fn);
   }
 }
 
