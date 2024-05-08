@@ -139,7 +139,7 @@ const App: React.FC<IAppProps> = (props) => {
     const cancelGlobalUserTipsEventListener = globalEvent.on(
       'user_tips',
       ({ type, message: _message }) => {
-        message[type](_message);
+        messageApi[type](_message);
       }
     );
     const cancelGlobalUserAlertEventListener = globalEvent.on(

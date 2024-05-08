@@ -153,6 +153,8 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
 
         success('已添加 webdav 目录。');
 
+        form.resetFields();
+
         sleep(35, close);
       })
       .catch(() => {
