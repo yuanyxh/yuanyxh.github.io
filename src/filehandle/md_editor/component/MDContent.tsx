@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { confirm, error } from '@/utils';
 
@@ -14,10 +14,6 @@ import MDEditor from './MDEditor';
 import { Sidebar } from './MDSidebar';
 import styles from './styles/MDContent.module.less';
 
-const getMarkdown = async (handle: FH) => {
-  return handle.getFile().then((file) => file.text());
-};
-
 interface IMDContentProps {
   handle: DH | FH;
 }
@@ -25,18 +21,10 @@ interface IMDContentProps {
 export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   const { handle } = props;
 
-  const [markdown, setMarkdown] = useState('');
   const [changed, setChanged] = useState(false);
   const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
 
   const editorRef = useRef<IMDEditorExpose>(null);
-
-  useMemo(() => {
-    currentHandle &&
-      getMarkdown(currentHandle).then((text) => {
-        setMarkdown(text);
-      });
-  }, [currentHandle]);
 
   useEffect(() => {
     if (isFileHandle(handle)) {
@@ -52,19 +40,21 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
       content: '是否保存更改？如果不保存，您的更改会丢失。',
       okText: '保存',
       cancelText: '放弃更改',
-      onOk() {
+      async onOk() {
         if (currentHandle && editorRef.current) {
-          writeFile(currentHandle, editorRef.current.getMarkdown())
-            .then(() => {
-              setCurrentHandle(handle);
-            })
-            .catch((err) => {
-              error((err as Error).message);
-            });
+          try {
+            writeFile(currentHandle, editorRef.current.getMarkdown());
+
+            setCurrentHandle(handle);
+            setChanged(false);
+          } catch (err) {
+            error((err as Error).message);
+          }
         }
       },
       onCancel() {
         setCurrentHandle(handle);
+        setChanged(false);
       }
     });
   };
@@ -73,15 +63,15 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
     setChanged(changed);
   };
 
-  const handleSave = (md: string) => {
+  const handleSave = async (md: string) => {
     if (currentHandle) {
-      writeFile(currentHandle, md)
-        .then(() => {
-          setChanged(false);
-        })
-        .catch((err) => {
-          error((err as Error).message);
-        });
+      try {
+        await writeFile(currentHandle, md);
+
+        setChanged(false);
+      } catch (err) {
+        error((err as Error).message);
+      }
     }
   };
 
@@ -94,7 +84,7 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
       <div className={styles.mdEditor}>
         <MDEditor
           ref={editorRef}
-          markdown={markdown}
+          currentHandle={currentHandle}
           changed={changed}
           onChanged={handleSetChanged}
           onSave={handleSave}

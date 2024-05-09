@@ -1,5 +1,7 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
+import type { FH } from '@/filehandle/utils/fileManager';
+
 import styles from './styles/MDEditor.module.less';
 import { reduce } from './theme-reduce';
 
@@ -35,7 +37,7 @@ import { gfm } from '@milkdown/preset-gfm';
 import { /* callCommand, */ getMarkdown /* insert */ } from '@milkdown/utils';
 
 interface IMDEditorProps {
-  markdown?: string;
+  currentHandle: FH | null;
   changed: boolean;
   onChanged(changed: boolean): any;
   onSave(markdown: string): any;
@@ -93,7 +95,7 @@ const getMDString = getMarkdown();
 
 const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
   function MDEditor(props, ref) {
-    const { markdown = '', changed, onChanged, onSave } = props;
+    const { currentHandle, changed, onChanged, onSave } = props;
 
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<Editor>();
@@ -116,22 +118,29 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
         editorRef.current.destroy(true);
       }
 
-      creatingRef.current = true;
+      if (currentHandle) {
+        creatingRef.current = true;
 
-      createMDEditor(editorContainerRef.current!, markdown, onUpdate)
-        .then((value) => {
-          editorRef.current = value;
-          mdStringRef.current = markdown;
-          onChanged(false);
-        })
-        .finally(() => {
-          creatingRef.current = false;
-        });
+        currentHandle
+          .getFile()
+          .then((file) => file.text())
+          .then((markdown) => {
+            createMDEditor(editorContainerRef.current!, markdown, onUpdate)
+              .then((value) => {
+                editorRef.current = value;
+                mdStringRef.current = markdown;
+                onChanged(false);
+              })
+              .finally(() => {
+                creatingRef.current = false;
+              });
+          });
+      }
 
       return () => {
         editorRef.current?.destroy(true);
       };
-    }, [markdown]);
+    }, [currentHandle]);
 
     function onUpdate(md: string) {
       onChanged(true);
