@@ -167,20 +167,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       port: 3000,
       strictPort: true,
       cors: true,
-      proxy: {
-        '/api': {
-          target: 'http://8.222.131.201:8362',
-          changeOrigin: true,
-          ws: true,
-          rewrite: (path) => path.replace(/^\/api/, 'notes')
-        },
-        '/apache2': {
-          target: 'http://8.222.131.201:8364',
-          changeOrigin: true,
-          ws: true,
-          rewrite: (path) => path.replace(/^\/apache2/, 'notes')
-        }
-      }
+      proxy: {}
       // https: {},
     },
     optimizeDeps: {
