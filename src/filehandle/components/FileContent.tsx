@@ -68,7 +68,12 @@ function AddFileModal({
           status: 'error',
           message: '无效的文件名'
         });
-      } else if (await isAlwaysExist(current, value)) {
+      } else if (
+        /** TODO: When we use webdav this will always initiate the request */ await isAlwaysExist(
+          current,
+          value
+        )
+      ) {
         setInputStatus({
           name: value,
           status: 'error',

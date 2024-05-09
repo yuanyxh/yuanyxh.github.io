@@ -18,11 +18,52 @@ function createWebdavFileSystemHandle(
   if (file.type == 'directory') {
     return new WebdavFileSystemDirectoryHandle(
       webdav,
-      parentPath,
+      parentPath + '/',
       file.basename
     );
   } else {
     return new WebdavFileSystemFileHandle(webdav, parentPath, file.basename);
+  }
+}
+
+class WebdavFileSystemWritableFileStream
+  implements FileSystemWritableFileStream
+{
+  locked: boolean = false;
+
+  private webdav: WebDAVClient;
+  private fullPath: string;
+
+  constructor(webdav: WebDAVClient, fullPath: string) {
+    this.webdav = webdav;
+    this.fullPath = fullPath;
+  }
+
+  seek(): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+  truncate(): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  abort(): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  getWriter(): WritableStreamDefaultWriter<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  async write(data: FileSystemWriteChunkType): Promise<void> {
+    if (data instanceof Blob) {
+      data = await data.arrayBuffer();
+    }
+
+    await this.webdav.putFileContents(this.fullPath, data as string);
+  }
+
+  async close(): Promise<void> {
+    return void 0;
   }
 }
 
@@ -49,29 +90,19 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
 
   isSameEntry(other: FileSystemHandle): Promise<boolean>;
   isSameEntry(arg: FileSystemHandle): boolean;
-  isSameEntry(arg: unknown): boolean | Promise<boolean> {
-    arg;
+  isSameEntry(): boolean | Promise<boolean> {
     throw new Error('Method not implemented.');
   }
 
-  queryPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus> {
-    arg;
+  queryPermission(): Promise<PermissionStatus> {
     throw new Error('Method not implemented.');
   }
 
-  requestPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus> {
-    arg;
+  requestPermission(): Promise<PermissionStatus> {
     throw new Error('Method not implemented.');
   }
 
-  remove(
-    options?: FileSystemHandleRecursiveOptions | undefined
-  ): Promise<undefined> {
-    options;
+  remove(): Promise<undefined> {
     throw new Error('Method not implemented.');
   }
 
@@ -94,14 +125,7 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
 
     const { webdav, fullPath } = this;
 
-    return {
-      async write(data) {
-        webdav.putFileContents(fullPath, data as string);
-      },
-      async close() {
-        return void 0;
-      }
-    } as FileSystemWritableFileStream;
+    return new WebdavFileSystemWritableFileStream(webdav, fullPath);
   }
 }
 
@@ -127,8 +151,7 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
 
   resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
   resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
-  resolve(possibleDescendant: unknown): Promise<string[] | null> {
-    possibleDescendant;
+  resolve(): Promise<string[] | null> {
     throw new Error('Method not implemented.');
   }
 
@@ -144,29 +167,19 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
 
   isSameEntry(other: FileSystemHandle): Promise<boolean>;
   isSameEntry(arg: FileSystemHandle): boolean;
-  isSameEntry(arg: unknown): boolean | Promise<boolean> {
-    arg;
+  isSameEntry(): boolean | Promise<boolean> {
     throw new Error('Method not implemented.');
   }
 
-  queryPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus> {
-    arg;
+  queryPermission(): Promise<PermissionStatus> {
     throw new Error('Method not implemented.');
   }
 
-  requestPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus> {
-    arg;
+  requestPermission(): Promise<PermissionStatus> {
     throw new Error('Method not implemented.');
   }
 
-  remove(
-    options?: FileSystemHandleRecursiveOptions | undefined
-  ): Promise<undefined> {
-    options;
+  remove(): Promise<undefined> {
     throw new Error('Method not implemented.');
   }
 
@@ -201,7 +214,7 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
               createWebdavFileSystemHandle(
                 curr,
                 webdav,
-                fullPath + curr.basename + '/'
+                fullPath + curr.basename
               )
             ],
             done: false
@@ -217,9 +230,11 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
   ): Promise<WebdavFileSystemDirectoryHandle> {
     const { create = false } = options || {};
 
-    const subFullPath = this.fullPath + name + '/';
+    const subFullPath = this.fullPath + name;
 
-    if (!(await this.webdav.exists(subFullPath))) {
+    const isNotExists = await this.webdav.exists(subFullPath);
+
+    if (isNotExists === false) {
       if (create === false) {
         throw new FilePathNotExistsError(subFullPath);
       } else {
@@ -233,7 +248,11 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
       }
     }
 
-    return new WebdavFileSystemDirectoryHandle(this.webdav, subFullPath, name);
+    return new WebdavFileSystemDirectoryHandle(
+      this.webdav,
+      subFullPath + '/',
+      name
+    );
   }
 
   async getFileHandle(
@@ -242,13 +261,13 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
   ): Promise<WebdavFileSystemFileHandle> {
     const { create = false } = options || {};
 
-    const subFullPath = this.fullPath + name + '/';
+    const subFullPath = this.fullPath + name;
 
     if (!(await this.webdav.exists(subFullPath))) {
       if (create === false) {
         throw new FilePathNotExistsError(subFullPath);
       } else {
-        await this.webdav.createDirectory(subFullPath);
+        await this.webdav.putFileContents(subFullPath, '');
       }
     } else {
       const stat = (await this.webdav.stat(subFullPath)) as FileStat;

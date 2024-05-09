@@ -24,17 +24,21 @@ const useAppStore = create<UserState & UserActions>((set) => ({
   }),
   addWebdav(webdav) {
     set((prev) => {
-      const webdavs = { webdavs: [...prev.webdavs, webdav] };
+      const store = { ...prev, webdavs: [...prev.webdavs, webdav] };
 
-      setStorage('user', webdavs);
+      setStorage('user', { ...prev, ...store });
 
-      return webdavs;
+      return store;
     });
   },
   setWebdavs(webdavs) {
-    set({ webdavs });
+    set((prev) => {
+      const store = { ...prev, webdavs: webdavs };
 
-    setStorage('user', webdavs);
+      setStorage('user', { ...prev, ...store });
+
+      return store;
+    });
   }
 }));
 

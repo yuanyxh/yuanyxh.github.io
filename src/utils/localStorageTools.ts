@@ -43,7 +43,7 @@ export function getStorage<T>(key: TKEYS, fallback?: T): T | undefined {
   }
 
   try {
-    return merge({}, fallback, window.JSON.parse(value));
+    return merge(fallback, window.JSON.parse(value));
   } catch (err) {
     return fallback;
   }
