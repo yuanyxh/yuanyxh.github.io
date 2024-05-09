@@ -295,7 +295,7 @@ class WebdavFile {
     this.name = webdav.name;
 
     this.webdav = createClient(webdav.url, {
-      authType: AuthType.Digest,
+      authType: AuthType.Auto,
       username: webdav.username,
       password: webdav.password
     });
