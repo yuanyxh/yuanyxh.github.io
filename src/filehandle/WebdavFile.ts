@@ -84,6 +84,10 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
     this.fullPath = fullPath;
   }
 
+  get name() {
+    return this._name;
+  }
+
   createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle> {
     throw new Error('Method not implemented.');
   }
@@ -106,14 +110,10 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
     throw new Error('Method not implemented.');
   }
 
-  get name() {
-    return this._name;
-  }
-
   async getFile() {
     const data = (await this.webdav.getFileContents(this.fullPath, {
       format: 'binary'
-    })) as string;
+    })) as ArrayBuffer;
 
     return new File([data], this._name);
   }
@@ -198,28 +198,22 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
       [Symbol.asyncIterator]() {
         return this;
       },
-      next() {
-        return (async function next() {
-          const values = await p;
+      async next() {
+        const values = await p;
 
-          const curr = values[i++];
+        const curr = values[i++];
 
-          if (!curr) {
-            return { value: undefined, done: true };
-          }
+        if (!curr) {
+          return { value: undefined, done: true };
+        }
 
-          return {
-            value: [
-              curr.basename,
-              createWebdavFileSystemHandle(
-                curr,
-                webdav,
-                fullPath + curr.basename
-              )
-            ],
-            done: false
-          };
-        })();
+        return {
+          value: [
+            curr.basename,
+            createWebdavFileSystemHandle(curr, webdav, fullPath + curr.basename)
+          ],
+          done: false
+        };
       }
     };
   }
@@ -280,12 +274,7 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
     return new WebdavFileSystemFileHandle(this.webdav, subFullPath, name);
   }
 
-  async removeEntry(
-    name: string,
-    options?: FileSystemHandleRecursiveOptions
-  ): Promise<undefined> {
-    options;
-
+  async removeEntry(name: string): Promise<undefined> {
     const subFullPath = this.fullPath + name;
 
     await this.webdav.deleteFile(subFullPath);

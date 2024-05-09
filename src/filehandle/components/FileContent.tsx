@@ -2,7 +2,7 @@ import { useContext, useMemo, useRef, useState } from 'react';
 
 import type { InputProps } from 'antd';
 import type { InputRef } from 'antd';
-import { Form, Input, Modal, Typography } from 'antd';
+import { Form, Input, Modal, Spin, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import type { WebdavInfo } from '@/store';
@@ -14,27 +14,23 @@ import {
   error,
   sleep,
   success,
-  validateFileName,
-  warning
+  validateFileName
 } from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
-import { isAlwaysExist } from '../utils';
 import type { DH, FileInfo } from '../utils/fileManager';
-import { FileType, importDirectory, importFile } from '../utils/fileManager';
+import { FileType } from '../utils/fileManager';
 
 function AddFileModal({
   open,
-  current,
   type,
   onOk,
   onCancel
 }: {
   open: boolean;
-  current: DH;
   type: FileType;
   onOk: (name: string, type: FileType) => any;
   onCancel: () => any;
@@ -49,6 +45,8 @@ function AddFileModal({
     message: ''
   });
 
+  const { children } = useContext(FileSystemContext);
+
   const inputRef = useRef<InputRef>(null);
 
   useMemo(() => {
@@ -59,31 +57,22 @@ function AddFileModal({
   }, [open]);
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
+    const value = e.target.value.trim();
 
-    try {
-      if (value !== '' && !validateFileName(value)) {
-        setInputStatus({
-          name: value,
-          status: 'error',
-          message: '无效的文件名'
-        });
-      } else if (
-        /** TODO: When we use webdav this will always initiate the request */ await isAlwaysExist(
-          current,
-          value
-        )
-      ) {
-        setInputStatus({
-          name: value,
-          status: 'error',
-          message: '当前目录已包含同名的文件'
-        });
-      } else {
-        setInputStatus({ name: value, status: '', message: '' });
-      }
-    } catch (err) {
-      error((err as Error).message);
+    if (value !== '' && !validateFileName(value)) {
+      setInputStatus({
+        name: value,
+        status: 'error',
+        message: '无效的文件名'
+      });
+    } else if (children.some((c) => c.name === value)) {
+      setInputStatus({
+        name: value,
+        status: 'error',
+        message: '当前目录已包含同名的文件'
+      });
+    } else {
+      setInputStatus({ name: value, status: '', message: '' });
     }
   };
 
@@ -96,10 +85,13 @@ function AddFileModal({
   };
 
   const handleOk = () => {
-    if (inputStatus.name.trim() === '' || inputStatus.status === 'error') {
+    if (inputStatus.name === '' || inputStatus.status === 'error') {
       return false;
     }
-    onOk(inputStatus.name.trim(), type);
+
+    onOk(inputStatus.name, type);
+
+    setInputStatus({ name: '', status: '', message: '' });
   };
 
   return (
@@ -137,7 +129,9 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
 
   const [form] = Form.useForm();
 
-  const { webdavs, addWebdav } = useUserStore();
+  const { children } = useContext(FileSystemContext);
+
+  const { addWebdav } = useUserStore();
 
   const handleOk = () => {
     form
@@ -145,10 +139,10 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
       .then(() => {
         const webdav: WebdavInfo = form.getFieldsValue();
 
-        if (webdavs.some((w) => w.name === webdav.name.trim())) {
+        if (children.some((w) => w.name === webdav.name.trim())) {
           alert({
             title: '提示',
-            content: `已包含名称为 "${webdav.name.trim()}" 的挂载目录！`
+            content: `已包含名称为 "${webdav.name.trim()}" 的目录！`
           });
 
           return void 0;
@@ -281,13 +275,16 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   const {
     current,
     children,
+    isBusy,
     fileHandles,
     fileLinked,
     backgroundManager,
+
     enterDirectory,
     create,
     remove,
-    forceUpdate
+    importFile,
+    importDirectory
   } = useContext(FileSystemContext);
 
   const root = fileLinked?.root?.value;
@@ -331,33 +328,6 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
   const handleMountWebdav = () => {
     setMountModalOpen(true);
-  };
-
-  const handleImportFile = () => {
-    importFile(current)
-      .then((value) => {
-        if (!value) {
-          return warning('暂无法导入文件');
-        }
-
-        forceUpdate();
-      })
-      .catch((err) => {
-        error((err as Error).message);
-      });
-  };
-
-  const handleImportDirectory = () => {
-    importDirectory(current)
-      .then((value) => {
-        if (!value) {
-          return warning('暂无法导入文件夹');
-        }
-        forceUpdate();
-      })
-      .catch((err) => {
-        error((err as Error).message);
-      });
   };
 
   const open = async (file: FileInfo) => {
@@ -420,20 +390,22 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   return (
     <>
       <section ref={sectionRef} className={styles.content}>
-        {children.map((child) => (
-          <FileItem
-            key={child.name}
-            file={child}
-            onContextMenu={() => {
-              setSelection([child]);
-            }}
-            onDoubleClick={
-              child.type === FileType.DIRECTORY
-                ? () => enterDirectory(child)
-                : () => open(child)
-            }
-          />
-        ))}
+        <Spin spinning={isBusy}>
+          {children.map((child) => (
+            <FileItem
+              key={child.name}
+              file={child}
+              onContextMenu={() => {
+                setSelection([child]);
+              }}
+              onDoubleClick={
+                child.type === FileType.DIRECTORY
+                  ? () => enterDirectory(child)
+                  : () => open(child)
+              }
+            />
+          ))}
+        </Spin>
 
         <ContextMenu
           getBindElement={() => sectionRef.current!}
@@ -469,14 +441,14 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
               icon: (
                 <Icon icon="mdi--file-import" color="var(--color-primary)" />
               ),
-              onClick: handleImportFile
+              onClick: importFile
             },
             {
               name: '导入文件夹',
               icon: (
                 <Icon icon="ri--import-line" color="var(--color-primary)" />
               ),
-              onClick: handleImportDirectory
+              onClick: importDirectory
             },
             {
               name: '删除',
@@ -498,7 +470,6 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       <AddFileModal
         open={isModalOpen}
         type={titleRef.current}
-        current={current}
         onOk={handleOk}
         onCancel={handleCancel}
       />
