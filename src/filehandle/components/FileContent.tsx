@@ -358,7 +358,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       async onOk() {
         try {
           let _webdavs = webdavs.slice(0);
-          selection.map((file) => {
+          _selection.map((file) => {
             if (file.remote) {
               _webdavs = _webdavs.filter((webdav) => webdav.name !== file.name);
             }
@@ -366,6 +366,12 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
           setWebdavs(_webdavs);
 
           await Promise.all(names.map((name) => remove(name)));
+
+          _selection.map(
+            (file) =>
+              file.type === FileType.DIRECTORY &&
+              fileLinked.unlink(file.handle as DH)
+          );
         } catch (err) {
           error((err as Error).message);
         }

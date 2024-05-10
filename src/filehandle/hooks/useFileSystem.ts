@@ -104,7 +104,7 @@ export function useFileSystem(): FileSystem {
 
   useMemo(
     () => fileLinked.current?.listener((directory) => update(directory)),
-    [fileLinked.current]
+    [fileLinked.current, webdavs]
   );
 
   useEffect(() => {
@@ -224,6 +224,7 @@ export function useFileSystem(): FileSystem {
   }, [
     current,
     children,
+    webdavs,
     fileLinked.current,
     backgroundManager.current,
     isBusy

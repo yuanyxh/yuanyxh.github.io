@@ -14,6 +14,8 @@ export class Node {
   }
 }
 
+const UPDATE_KEY = 'update';
+
 class FileLinkedList {
   root: Node;
 
@@ -33,19 +35,28 @@ class FileLinkedList {
   set current(val) {
     this._current = val;
 
-    this.event.emit('update', val.value);
+    this.event.emit(UPDATE_KEY, val.value);
   }
 
   listener(fn: (directory: DH) => any) {
-    return this.event.on('update', fn);
+    return this.event.on(UPDATE_KEY, fn);
   }
 
   inset(handle: DH) {
-    // TODO: When I enter Directory A, return to the directory before entering, and delete the A directory A. At this time, abnormal
     if (this.current.next && handle.name === this.current.next.value.name) {
       this.current = this.current.next;
     } else {
       this.current = new Node(handle, this.current, null);
+    }
+  }
+
+  unlink(handle: DH) {
+    const { next } = this.current;
+
+    if (next && next.value === handle) {
+      this.current.next = null;
+
+      this.event.emit(UPDATE_KEY, this.current.value);
     }
   }
 
