@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 
-import { Layout } from 'antd';
+import { Input, Layout } from 'antd';
 
 import classNames from 'classnames';
 
@@ -14,7 +14,7 @@ import {
   getChildren
 } from '@/filehandle/utils/fileManager';
 
-import { Icon } from '@/components';
+import { ContextMenu, Icon } from '@/components';
 
 import styles from './styles/MDSidebar.module.less';
 
@@ -24,18 +24,35 @@ interface ISidebarProps {
   onSelect(handle: FH): void;
 }
 
-interface ExtendFileInfo extends FileInfo {
+type ExtendFileInfo = FileInfo & {
   id: string;
+  parent?: ExtendFileInfo;
   children?: ExtendFileInfo[];
-}
+};
+
+const ADD_KEY = '.$<>/\\.#$%' + uuid();
 
 const { Sider } = Layout;
 
-function wrapperFileItem(file: FileInfo): ExtendFileInfo {
-  return { ...file, id: uuid() };
+function wrapperFileItem(
+  parent: ExtendFileInfo,
+  file: FileInfo
+): ExtendFileInfo {
+  return { ...file, id: uuid(), parent };
 }
 
-async function getDeepChildren(handle: DH): Promise<ExtendFileInfo[]> {
+async function getDeepChildren(
+  handle: DH,
+  parent?: ExtendFileInfo
+): Promise<ExtendFileInfo[]> {
+  parent = parent || {
+    id: uuid(),
+    name: handle.name,
+    type: FileType.DIRECTORY,
+    icon: '',
+    handle
+  };
+
   const children = await getChildren(handle);
 
   return Promise.all(
@@ -44,9 +61,12 @@ async function getDeepChildren(handle: DH): Promise<ExtendFileInfo[]> {
         (value) => value.type === FileType.DIRECTORY || value.ext === '.md'
       )
       .map(async (child) => {
-        const newChild = wrapperFileItem(child);
+        const newChild = wrapperFileItem(parent, child);
         if (child.type === FileType.DIRECTORY) {
-          newChild.children = await getDeepChildren(child.handle as DH);
+          newChild.children = await getDeepChildren(
+            child.handle as DH,
+            newChild
+          );
         }
 
         return newChild;
@@ -54,16 +74,39 @@ async function getDeepChildren(handle: DH): Promise<ExtendFileInfo[]> {
   );
 }
 
+function AddFileInput({ file }: { file: ExtendFileInfo }) {
+  const DEFAULT_NAME = 'default';
+  const handleAdd = () => {};
+
+  file;
+  DEFAULT_NAME;
+
+  return (
+    <Input
+      autoFocus
+      size="small"
+      onContextMenuCapture={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+      onKeyUp={handleAdd}
+      onBlur={handleAdd}
+    />
+  );
+}
+
 function Menu({
   activeId,
   changed,
   items,
-  onItemClick
+  onItemClick,
+  onItemContextMenu
 }: {
   activeId: string;
   changed: boolean;
   items: ExtendFileInfo[];
   onItemClick: (file: ExtendFileInfo) => void;
+  onItemContextMenu: (file: ExtendFileInfo) => void;
 }) {
   const [expands, setExpands] = useState<string[]>([]);
 
@@ -90,31 +133,42 @@ function Menu({
             [styles.expand]: expands.includes(item.id)
           })}
         >
-          <a href="/" onClick={(e) => e.preventDefault()} title={item.name}>
-            <div
-              className={classNames(styles.row, {
-                [styles.active]:
-                  activeId === item.id && !expands.includes(activeId),
-                [styles.directory]: item.children,
-                [styles.changed]: changed
-              })}
-              onClick={
-                item.children
-                  ? () => handleSetExpands(item.id)
-                  : () => handleSwitchFile(item)
-              }
+          {item.name === ADD_KEY ? (
+            <AddFileInput file={item} />
+          ) : (
+            <a
+              href="/"
+              onClick={(e) => e.preventDefault()}
+              title={item.name}
+              onContextMenu={() => {
+                onItemContextMenu(item);
+              }}
             >
-              {item.children ? (
-                <Icon
-                  className={classNames(styles.directoryIcon, {
-                    [styles.expand]: expands.includes(item.id)
-                  })}
-                  icon="material-symbols:keyboard-arrow-right"
-                />
-              ) : null}
-              <span>{item.name}</span>
-            </div>
-          </a>
+              <div
+                className={classNames(styles.row, {
+                  [styles.active]:
+                    activeId === item.id && !expands.includes(activeId),
+                  [styles.directory]: item.children,
+                  [styles.changed]: changed
+                })}
+                onClick={
+                  item.children
+                    ? () => handleSetExpands(item.id)
+                    : () => handleSwitchFile(item)
+                }
+              >
+                {item.children ? (
+                  <Icon
+                    className={classNames(styles.directoryIcon, {
+                      [styles.expand]: expands.includes(item.id)
+                    })}
+                    icon="material-symbols:keyboard-arrow-right"
+                  />
+                ) : null}
+                <span>{item.name}</span>
+              </div>
+            </a>
+          )}
 
           {item.children ? (
             <Menu
@@ -122,6 +176,7 @@ function Menu({
               activeId={activeId}
               changed={changed}
               onItemClick={onItemClick}
+              onItemContextMenu={onItemContextMenu}
             />
           ) : null}
         </li>
@@ -136,7 +191,10 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
 
+  const [selection, setSelection] = useState<ExtendFileInfo[]>([]);
+
   const queryingRef = useRef(false);
+  const siderRef = useRef<HTMLDivElement>(null);
 
   useMemo(() => {
     if (queryingRef.current) {
@@ -144,7 +202,6 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     }
 
     queryingRef.current = true;
-
     getDeepChildren(handle)
       .then((list) => {
         setList(list);
@@ -164,14 +221,102 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     }
   };
 
+  const handleHide = () => {
+    selection.length && setSelection([]);
+  };
+
+  const handleContextMenu = (file: ExtendFileInfo) => {
+    setSelection([file]);
+  };
+
+  const addExtendFileInfo = (type: FileType) => {
+    const curr = selection[0];
+
+    const child = { name: ADD_KEY, id: uuid(), icon: '' };
+
+    if (curr && curr.type === FileType.DIRECTORY) {
+      (curr.children || (curr.children = [])).unshift({
+        ...child,
+        handle: curr.handle,
+        type
+      });
+    } else if (curr && curr.parent) {
+      const parent = curr.parent;
+      (parent.children || (parent.children = [])).unshift({
+        ...child,
+        handle: parent.handle,
+        type
+      });
+    } else {
+      list.unshift({
+        ...child,
+        handle,
+        type
+      });
+    }
+
+    setList([...list]);
+  };
+
+  const handleAddFile = () => {
+    addExtendFileInfo(FileType.FILE);
+  };
+
+  const handleAddDirectory = () => {
+    addExtendFileInfo(FileType.DIRECTORY);
+  };
+
+  const handleDeleteFile = () => {};
+
   return (
-    <Sider className={styles.sidebar} width={250}>
-      <Menu
-        items={list}
-        changed={changed}
-        activeId={activeId}
-        onItemClick={handleSelect}
-      />
-    </Sider>
+    <>
+      <Sider ref={siderRef} className={styles.sidebar} width={250}>
+        <div className={styles.scrollbar}>
+          <Menu
+            items={list}
+            changed={changed}
+            activeId={activeId}
+            onItemClick={handleSelect}
+            onItemContextMenu={handleContextMenu}
+          />
+        </div>
+
+        <ContextMenu
+          getContainer={() => siderRef.current!}
+          getBindElement={() => siderRef.current!}
+          onHide={handleHide}
+          menu={[
+            {
+              name: '新建文件',
+              icon: <Icon icon="ph--file-fill" color="var(--color-primary)" />,
+              onClick: handleAddFile
+            },
+            {
+              name: '新建文件夹',
+              icon: (
+                <Icon
+                  icon="material-symbols-light--folder"
+                  color="var(--color-primary)"
+                />
+              ),
+              onClick: handleAddDirectory
+            },
+            {
+              name: '删除',
+              icon: (
+                <Icon
+                  icon="material-symbols--delete"
+                  color="var(--color-primary)"
+                />
+              ),
+              style: {
+                display: selection.length === 0 ? 'none' : void 0
+              },
+              onClick: handleDeleteFile
+            }
+          ]}
+        />
+      </Sider>
+    </>
   );
 };

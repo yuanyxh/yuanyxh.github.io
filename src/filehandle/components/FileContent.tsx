@@ -1,128 +1,19 @@
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 
-import type { InputProps } from 'antd';
-import type { InputRef } from 'antd';
 import { Form, Input, Modal, Spin, Typography } from 'antd';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import type { WebdavInfo } from '@/store';
 import { useUserStore } from '@/store';
 
-import {
-  alert,
-  confirm,
-  error,
-  sleep,
-  success,
-  validateFileName
-} from '@/utils';
+import { alert, confirm, error, sleep, success } from '@/utils';
 
-import { ContextMenu, Icon } from '@/components';
+import { AddFileModal, ContextMenu, Icon } from '@/components';
 
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
 import type { DH, FileInfo } from '../utils/fileManager';
 import { FileType } from '../utils/fileManager';
-
-function AddFileModal({
-  open,
-  type,
-  onOk,
-  onCancel
-}: {
-  open: boolean;
-  type: FileType;
-  onOk: (name: string, type: FileType) => any;
-  onCancel: () => any;
-}) {
-  const [inputStatus, setInputStatus] = useState<{
-    name: string;
-    status: InputProps['status'];
-    message: string;
-  }>({
-    name: '',
-    status: '',
-    message: ''
-  });
-
-  const { children } = useContext(FileSystemContext);
-
-  const inputRef = useRef<InputRef>(null);
-
-  useMemo(() => {
-    if (open) {
-      // Delay to make the input box get the focus
-      sleep(100, () => inputRef.current?.focus());
-    }
-  }, [open]);
-
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-
-    if (value !== '' && !validateFileName(value)) {
-      setInputStatus({
-        name: value,
-        status: 'error',
-        message: '无效的文件名'
-      });
-    } else if (children.some((c) => c.name === value)) {
-      setInputStatus({
-        name: value,
-        status: 'error',
-        message: '当前目录已包含同名的文件'
-      });
-    } else {
-      setInputStatus({ name: value, status: '', message: '' });
-    }
-  };
-
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key.toLocaleLowerCase() !== 'enter') {
-      return false;
-    }
-
-    handleOk();
-  };
-
-  const handleOk = () => {
-    if (inputStatus.name === '' || inputStatus.status === 'error') {
-      return false;
-    }
-
-    onOk(inputStatus.name, type);
-
-    setInputStatus({ name: '', status: '', message: '' });
-  };
-
-  return (
-    <Modal
-      title={type === FileType.FILE ? '新建文件' : '新建文件夹'}
-      style={{ top: '30vh' }}
-      open={open}
-      okText={'确认'}
-      cancelText={'取消'}
-      onOk={handleOk}
-      onCancel={() => {
-        setInputStatus({ name: '', status: '', message: '' });
-        onCancel();
-      }}
-    >
-      <Input
-        ref={inputRef}
-        status={inputStatus.status}
-        value={inputStatus.name}
-        onChange={handleInputChange}
-        onKeyUp={handleKeyUp}
-      />
-
-      {inputStatus.message ? (
-        <Typography.Paragraph type="danger">
-          {inputStatus.message}
-        </Typography.Paragraph>
-      ) : null}
-    </Modal>
-  );
-}
 
 function MountWebdavModal(props: { open: boolean; close(): void }) {
   const { open, close } = props;
@@ -289,7 +180,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
   const root = fileLinked?.root?.value;
 
-  const titleRef = useRef<FileType>(0);
+  const titleRef = useRef<FileType>(FileType.FILE);
   const sectionRef = useRef<HTMLElement>(null);
 
   const [isModalOpen, setModalOpen] = useState(false);
@@ -476,6 +367,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       <AddFileModal
         open={isModalOpen}
         type={titleRef.current}
+        names={children.map((c) => c.name)}
         onOk={handleOk}
         onCancel={handleCancel}
       />

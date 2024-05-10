@@ -86,7 +86,7 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
       bindElement.removeEventListener('contextmenu', onContextMenu);
       cancelGlobalListener();
     };
-  }, []);
+  }, [menu]);
 
   return (
     <section
