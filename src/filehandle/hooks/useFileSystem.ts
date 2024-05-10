@@ -4,7 +4,7 @@ import { cloneDeep } from 'lodash-es';
 
 import { useUserStore } from '@/store';
 
-import { error } from '@/utils';
+import { error, warning } from '@/utils';
 
 import BackgroundManager from '../BackgroundManager';
 import FileLinkedList from '../FileLinkedList';
@@ -14,6 +14,8 @@ import {
   createFile,
   FileType,
   getChildren,
+  importDirectory as importDH,
+  importFile as importFH,
   remove as removeFile
 } from '../utils/fileManager';
 
@@ -30,14 +32,23 @@ export interface FileHandle {
 }
 
 export interface FileSystem {
+  /** current folder */
   current: DH;
+  /** current folder index */
   children: FileInfo[];
+  /** history */
   fileLinked: FileLinkedList;
+  /** file processing program list */
   fileHandles: FileHandle[];
+  /** Background manager */
   backgroundManager: BackgroundManager;
+  /** During the operation, blocking user operation is generally used for remote files */
+  isBusy: boolean;
   create(name: string, type: FileType, data?: FileDataType): Promise<any>;
   remove(name: string): any;
   move(): void;
+  importFile(): Promise<any>;
+  importDirectory(): Promise<any>;
   register(handler: FileHandle): void;
   returnToRoot(): void;
   enterDirectory(file: FileInfo): any;
@@ -49,8 +60,10 @@ export function useFileSystem(): FileSystem {
 
   const root =
     useRef<DH>() as React.MutableRefObject<FileSystemDirectoryHandle>;
+
   const fileLinked =
     useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
+
   const fileHandlesRef = useRef<FileHandle[]>([]);
   const backgroundManager = useRef(new BackgroundManager());
 
@@ -58,40 +71,54 @@ export function useFileSystem(): FileSystem {
     DH,
     React.Dispatch<React.SetStateAction<DH>>
   ];
+
   const [children, setChildren] = useState<FileInfo[]>([]);
 
-  const update = () => {
-    if (!current) return;
+  const [isBusy, setBusy] = useState(false);
 
-    getChildren(current, root.current === current ? webdavs : void 0)
-      .then((_children) => {
-        setChildren([..._children]);
+  const update = async (handle?: DH, cb?: () => void) => {
+    const target = handle || current;
+
+    if (target) {
+      try {
+        setBusy(true);
+
+        const children = await getChildren(
+          target,
+          root.current === target ? webdavs : void 0
+        );
+
+        setCurrent(target);
+        setChildren(children);
+
+        cb && cb();
+      } catch (err) {
+        error((err as Error).message);
+      } finally {
+        setBusy(false);
+      }
+    }
+  };
+
+  useMemo(() => update(), [webdavs]);
+
+  useMemo(
+    () => fileLinked.current?.listener((directory) => update(directory)),
+    [fileLinked.current]
+  );
+
+  useEffect(() => {
+    window.navigator.storage
+      .getDirectory()
+      .then((_root) => {
+        root.current = _root;
+        fileLinked.current = new FileLinkedList(_root);
+
+        update(_root);
       })
       .catch((err) => {
         error((err as Error).message);
       });
-  };
-
-  useMemo(() => {
-    if (!current) return void 0;
-
-    update();
-  }, [current, webdavs]);
-
-  useMemo(() => {
-    if (!fileLinked.current) return;
-
-    return fileLinked.current.listener((directory) => {
-      setCurrent(directory);
-    });
-  }, [fileLinked.current]);
-
-  useEffect(() => {
-    window.navigator.storage.getDirectory().then((res) => {
-      setCurrent(res);
-      root.current = res;
-      fileLinked.current = new FileLinkedList(res);
-    });
   }, []);
 
   const fileSystem = useMemo(() => {
@@ -109,27 +136,53 @@ export function useFileSystem(): FileSystem {
         ];
       });
 
-      update();
+      setChildren([...children]);
     }
 
-    function move() {}
+    async function move() {}
 
-    function remove(name: string) {
-      removeFile(current, name)
-        .then(() => {
-          update();
-        })
-        .catch((err) => {
-          error((err as Error).message);
-        });
+    async function remove(name: string) {
+      try {
+        await removeFile(current, name);
+
+        setChildren(children.filter((c) => c.name !== name));
+      } catch (err) {
+        error((err as Error).message);
+      }
     }
 
     async function create(name: string, type: FileType, data?: FileDataType) {
       try {
-        if (type === FileType.FILE) {
-          await createFile(current, name, data);
-        } else {
-          await createDirectory(current, name);
+        await (type === FileType.FILE
+          ? createFile(current, name, data)
+          : createDirectory(current, name));
+
+        update();
+      } catch (err) {
+        error((err as Error).message);
+      }
+    }
+
+    async function importFile() {
+      try {
+        const value = await importFH(current);
+
+        if (!value) {
+          return warning('暂无法导入文件');
+        }
+
+        update();
+      } catch (err) {
+        error((err as Error).message);
+      }
+    }
+
+    async function importDirectory() {
+      try {
+        const value = await importDH(current);
+
+        if (!value) {
+          return warning('暂无法导入文件夹');
         }
 
         update();
@@ -140,19 +193,21 @@ export function useFileSystem(): FileSystem {
 
     function enterDirectory(file: FileInfo) {
       if (file.handle.kind === 'directory') {
-        setCurrent(file.handle);
-        fileLinked.current.inset(file.handle);
+        update(file.handle, () => fileLinked.current.inset(file.handle as DH));
       }
     }
 
     function returnToRoot() {
-      setCurrent(root.current);
-      fileLinked.current = new FileLinkedList(root.current);
+      update(
+        root.current,
+        () => (fileLinked.current = new FileLinkedList(root.current))
+      );
     }
 
     return {
       current,
       children,
+      isBusy,
       fileLinked: fileLinked.current,
       fileHandles: fileHandlesRef.current,
       backgroundManager: backgroundManager.current,
@@ -162,9 +217,17 @@ export function useFileSystem(): FileSystem {
       move,
       remove,
       create,
+      importFile,
+      importDirectory,
       forceUpdate: update
     };
-  }, [current, children, fileLinked.current, backgroundManager.current]);
+  }, [
+    current,
+    children,
+    fileLinked.current,
+    backgroundManager.current,
+    isBusy
+  ]);
 
   return fileSystem;
 }

@@ -38,7 +38,7 @@ const AboutSite = () => {
           <Link
             style={{ color: 'var(--color-primary)' }}
             rel="external nofollow noopener"
-            to="https://yang-xianzhu.github.io/"
+            to="https://blog-kappa-seven-43.vercel.app/"
           >
             博客站点
           </Link>

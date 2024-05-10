@@ -9,15 +9,20 @@ import type BackgroundManager from '../BackgroundManager';
 import type { FileHandle } from '../hooks/useFileSystem';
 import type { DH, FH } from '../utils/fileManager';
 
+let MDHandle: typeof import('./component/MDHandle').default;
 async function createMDHandleInstance(handle: DH | FH, bgm: BackgroundManager) {
-  const { default: MDHandle } = await import('./component/MDHandle');
+  if (!MDHandle) {
+    MDHandle = (await import('./component/MDHandle')).default;
+  }
 
   const el = createElementContainer();
   const root = createRoot(el);
+
   const destroy = () => {
     root.unmount();
     el.remove();
   };
+
   root.render(
     <StrictMode>
       <MDHandle handle={handle} backgroundManager={bgm} destroy={destroy} />

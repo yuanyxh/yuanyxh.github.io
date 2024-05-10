@@ -18,13 +18,14 @@ export interface FileInfo {
   type: FileType;
   icon: React.ReactNode;
   handle: DH | FH;
-  /** this is webdav file? */
+  /** this is remote file? */
   remote?: boolean;
   ext?: string;
 }
 
 export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
   const children: FileInfo[] = [];
+
   for await (const [key, handle] of directory.entries()) {
     const type = await getHandleType(handle);
 

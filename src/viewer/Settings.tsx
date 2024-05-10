@@ -12,7 +12,7 @@ import {
   success
 } from '@/utils';
 
-import { getStorageUsage } from '@/filehandle';
+import { getStorageUsage } from '@/filehandle/utils/index';
 
 import type { CanvasInstance } from '@/components';
 import { Canvas } from '@/components';
