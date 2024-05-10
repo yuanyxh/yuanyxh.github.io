@@ -34,9 +34,17 @@ class WebdavFileSystemWritableFileStream
   private webdav: WebDAVClient;
   private fullPath: string;
 
-  constructor(webdav: WebDAVClient, fullPath: string) {
+  private setFile: (buffer: ArrayBuffer) => void;
+
+  constructor(
+    webdav: WebDAVClient,
+    fullPath: string,
+    setFile: (buffer: ArrayBuffer) => void
+  ) {
     this.webdav = webdav;
     this.fullPath = fullPath;
+
+    this.setFile = setFile;
   }
 
   seek(): Promise<void> {
@@ -60,6 +68,8 @@ class WebdavFileSystemWritableFileStream
     }
 
     await this.webdav.putFileContents(this.fullPath, data as string);
+
+    this.setFile(data as ArrayBuffer);
   }
 
   async close(): Promise<void> {
@@ -75,6 +85,8 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
   private fullPath: string;
 
   private _name: string;
+
+  private file: File | null = null;
 
   constructor(webdav: WebDAVClient, fullPath: string, name: string) {
     this.webdav = webdav;
@@ -111,11 +123,17 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
   }
 
   async getFile() {
+    if (this.file) {
+      return this.file;
+    }
+
     const data = (await this.webdav.getFileContents(this.fullPath, {
       format: 'binary'
     })) as string;
 
-    return new File([data], this._name);
+    this.file = new File([data], this._name);
+
+    return this.file;
   }
 
   async createWritable(
@@ -125,7 +143,11 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
 
     const { webdav, fullPath } = this;
 
-    return new WebdavFileSystemWritableFileStream(webdav, fullPath);
+    return new WebdavFileSystemWritableFileStream(
+      webdav,
+      fullPath,
+      (buffer) => (this.file = new File([buffer], this._name))
+    );
   }
 }
 

@@ -67,9 +67,7 @@ function createMDEditor(
       ctx.set(paragraphAttr.key, () => ({ class: styles.typography }));
       ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
 
-      ctx.get(listenerCtx).markdownUpdated((_ctx, md) => {
-        onUpdate(md);
-      });
+      ctx.get(listenerCtx).markdownUpdated((_ctx, md) => onUpdate(md));
     })
     .config(reduce)
     .use(commonmark)
