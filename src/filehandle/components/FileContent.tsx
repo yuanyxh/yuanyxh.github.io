@@ -12,7 +12,7 @@ import { AddFileModal, ContextMenu, Icon } from '@/components';
 
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
-import type { DH, FileInfo } from '../utils/fileManager';
+import type { FileInfo } from '../utils/fileManager';
 import { FileType } from '../utils/fileManager';
 
 function MountWebdavModal(props: { open: boolean; close(): void }) {
@@ -196,8 +196,8 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       async onClick() {
         try {
           let value = current;
-          if (selection[0]) {
-            value = selection[0].handle as DH;
+          if (selection[0] && selection[0].handle.kind === 'directory') {
+            value = selection[0].handle;
           }
 
           await handle.contextMenu!.handler(value, backgroundManager);
@@ -260,8 +260,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
           _selection.map(
             (file) =>
-              file.type === FileType.DIRECTORY &&
-              fileLinked.unlink(file.handle as DH)
+              file.handle.kind === 'directory' && fileLinked.unlink(file.handle)
           );
         } catch (err) {
           error((err as Error).message);

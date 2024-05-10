@@ -3,7 +3,7 @@ import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import type { FH } from '@/filehandle/utils/fileManager';
 
 import styles from './styles/MDEditor.module.less';
-import { reduce } from './theme-reduce';
+import { reduce } from '../theme-reduce';
 
 import {
   /* commandsCtx */ defaultValueCtx,

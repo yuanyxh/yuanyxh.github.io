@@ -1,4 +1,4 @@
-import styles from './styles/MDEditor.module.less';
+import styles from './component/styles/MDEditor.module.less';
 
 import { Editor } from '@milkdown/core';
 import { editorViewOptionsCtx } from '@milkdown/core';

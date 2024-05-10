@@ -1,17 +1,21 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Input, Layout } from 'antd';
+import type { InputProps } from 'antd';
+import { Input, Layout, Spin } from 'antd';
 
 import classNames from 'classnames';
 
-import { error, uuid } from '@/utils';
+import { error, uuid, validateFileName } from '@/utils';
 
 import { isFileHandle } from '@/filehandle/utils/checkFileType';
 import type { DH, FH } from '@/filehandle/utils/fileManager';
 import {
+  createDirectory,
+  createFile,
   FileInfo,
   FileType,
-  getChildren
+  getChildren,
+  remove
 } from '@/filehandle/utils/fileManager';
 
 import { ContextMenu, Icon } from '@/components';
@@ -34,6 +38,35 @@ const ADD_KEY = '.$<>/\\.#$%' + uuid();
 
 const { Sider } = Layout;
 
+function replaceAndSort(
+  list: ExtendFileInfo[],
+  info: ExtendFileInfo,
+  id: string
+) {
+  const i = list.findIndex((l) => l.id === id);
+
+  if (i !== -1) {
+    list[i] = info;
+
+    return list
+      .filter((l) => l.type === FileType.DIRECTORY)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .concat(
+        list
+          .filter((l) => l.type === FileType.FILE)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+  }
+
+  return list.map((l) => {
+    if (l.children?.length) {
+      l.children = replaceAndSort(l.children, info, id);
+    }
+
+    return l;
+  });
+}
+
 function wrapperFileItem(
   parent: ExtendFileInfo,
   file: FileInfo
@@ -55,43 +88,134 @@ async function getDeepChildren(
 
   const children = await getChildren(handle);
 
-  return Promise.all(
+  const newChildren = await Promise.all(
     children
       .filter(
         (value) => value.type === FileType.DIRECTORY || value.ext === '.md'
       )
       .map(async (child) => {
         const newChild = wrapperFileItem(parent, child);
-        if (child.type === FileType.DIRECTORY) {
-          newChild.children = await getDeepChildren(
-            child.handle as DH,
-            newChild
-          );
+        if (child.handle.kind === 'directory') {
+          newChild.children = await getDeepChildren(child.handle, newChild);
         }
 
         return newChild;
       })
   );
+
+  parent.children = newChildren;
+
+  return newChildren;
 }
 
-function AddFileInput({ file }: { file: ExtendFileInfo }) {
+function AddFileInput({
+  file,
+  names,
+  replace,
+  removeInput
+}: {
+  file: ExtendFileInfo;
+  names: string[];
+  replace(info: ExtendFileInfo, id: string): any;
+  removeInput(id: string): any;
+}) {
   const DEFAULT_NAME = 'default';
-  const handleAdd = () => {};
 
-  file;
-  DEFAULT_NAME;
+  const isAddFile = file.type === FileType.FILE;
+
+  const [inputStatus, setInputStatus] = useState<{
+    name: string;
+    status: InputProps['status'];
+  }>({ name: '', status: '' });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.trim();
+
+    if (!validateFileName(value) || names.some((n) => n === value)) {
+      return setInputStatus({ name: value, status: 'error' });
+    }
+
+    setInputStatus({ name: value, status: '' });
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key.toLocaleLowerCase() !== 'enter') {
+      return void 0;
+    }
+
+    handleAdd();
+  };
+
+  const handleAdd = async () => {
+    const reg = new RegExp(`(?<=default)\\d*(?=${isAddFile ? '.md' : ''})`);
+
+    let name = inputStatus.name;
+    if (inputStatus.name === '' || inputStatus.status !== '') {
+      const max = names
+        .map((n) => n.match(reg))
+        .filter(Boolean)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .pop();
+
+      if (typeof max === 'number') name = DEFAULT_NAME + (max + 1);
+      else name = DEFAULT_NAME;
+    }
+
+    if (isAddFile) name += '.md';
+
+    if (file.handle.kind === 'directory') {
+      try {
+        setLoading(true);
+
+        const handle = await (isAddFile ? createFile : createDirectory)(
+          file.handle,
+          name
+        );
+
+        replace(
+          {
+            id: uuid(),
+            name,
+            type: file.type,
+            handle,
+            icon: '',
+            parent: file.parent
+          },
+          file.id
+        );
+      } catch (err) {
+        error((err as Error).message);
+        removeInput(file.id);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      removeInput(file.id);
+    }
+  };
 
   return (
-    <Input
-      autoFocus
-      size="small"
-      onContextMenuCapture={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      }}
-      onKeyUp={handleAdd}
-      onBlur={handleAdd}
-    />
+    <Spin spinning={loading}>
+      <Input
+        name="add-mdfile-input"
+        style={{ marginLeft: 8 }}
+        autoFocus
+        size="small"
+        value={inputStatus.name}
+        status={inputStatus.status}
+        suffix={isAddFile ? '.md' : void 0}
+        onChange={handleInputChange}
+        onContextMenuCapture={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        onKeyUp={handleKeyUp}
+        onBlur={handleAdd}
+      />
+    </Spin>
   );
 }
 
@@ -99,16 +223,30 @@ function Menu({
   activeId,
   changed,
   items,
+  replace,
+  removeInput,
   onItemClick,
   onItemContextMenu
 }: {
   activeId: string;
   changed: boolean;
   items: ExtendFileInfo[];
+  replace(info: ExtendFileInfo, id: string): any;
+  removeInput(id: string): any;
   onItemClick: (file: ExtendFileInfo) => void;
   onItemContextMenu: (file: ExtendFileInfo) => void;
 }) {
   const [expands, setExpands] = useState<string[]>([]);
+
+  useEffect(() => {
+    const finded = items.find((item) =>
+      item.children?.some((file) => file.name === ADD_KEY)
+    );
+
+    if (finded && !expands.some((expand) => expand === finded.id)) {
+      handleSetExpands(finded.id);
+    }
+  }, [items]);
 
   const handleSetExpands = (key: string) => {
     setExpands((prev) => {
@@ -134,13 +272,19 @@ function Menu({
           })}
         >
           {item.name === ADD_KEY ? (
-            <AddFileInput file={item} />
+            <AddFileInput
+              file={item}
+              names={items.map((c) => c.name)}
+              replace={replace}
+              removeInput={removeInput}
+            />
           ) : (
             <a
               href="/"
               onClick={(e) => e.preventDefault()}
               title={item.name}
-              onContextMenu={() => {
+              onContextMenu={(e) => {
+                e.stopPropagation();
                 onItemContextMenu(item);
               }}
             >
@@ -148,16 +292,16 @@ function Menu({
                 className={classNames(styles.row, {
                   [styles.active]:
                     activeId === item.id && !expands.includes(activeId),
-                  [styles.directory]: item.children,
+                  [styles.directory]: item.type === FileType.DIRECTORY,
                   [styles.changed]: changed
                 })}
                 onClick={
-                  item.children
+                  item.type === FileType.DIRECTORY
                     ? () => handleSetExpands(item.id)
                     : () => handleSwitchFile(item)
                 }
               >
-                {item.children ? (
+                {item.type === FileType.DIRECTORY ? (
                   <Icon
                     className={classNames(styles.directoryIcon, {
                       [styles.expand]: expands.includes(item.id)
@@ -165,6 +309,7 @@ function Menu({
                     icon="material-symbols:keyboard-arrow-right"
                   />
                 ) : null}
+
                 <span>{item.name}</span>
               </div>
             </a>
@@ -175,6 +320,8 @@ function Menu({
               items={item.children}
               activeId={activeId}
               changed={changed}
+              replace={replace}
+              removeInput={removeInput}
               onItemClick={onItemClick}
               onItemContextMenu={onItemContextMenu}
             />
@@ -184,6 +331,16 @@ function Menu({
     </ul>
   );
 }
+
+const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
+  if (child.type === FileType.DIRECTORY) {
+    const i = children.findIndex((c) => c.type !== FileType.DIRECTORY);
+
+    i === -1 ? children.push(child) : children.splice(i, 0, child);
+  } else {
+    children.push(child);
+  }
+};
 
 export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
   const { handle, changed, onSelect } = props;
@@ -214,6 +371,67 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
       });
   }, [handle]);
 
+  const addExtendFileInfo = (type: FileType) => {
+    const curr = selection[0];
+
+    const child = { name: ADD_KEY, id: uuid(), icon: '', type };
+
+    if (curr && curr.type === FileType.DIRECTORY) {
+      insetFile(curr.children || (curr.children = []), {
+        ...child,
+        handle: curr.handle,
+        parent: curr
+      });
+    } else if (curr && curr.parent) {
+      const parent = curr.parent;
+      insetFile(parent.children || (parent.children = []), {
+        ...child,
+        handle: parent.handle,
+        parent: parent
+      });
+    } else {
+      insetFile(list, {
+        ...child,
+        handle,
+        parent: list[0]?.parent || {
+          id: uuid(),
+          name: handle.name,
+          type: FileType.DIRECTORY,
+          icon: '',
+          handle
+        }
+      });
+    }
+
+    setList([...list]);
+  };
+
+  function filter(_list: ExtendFileInfo[], id: string) {
+    return _list.filter((item) => {
+      if (item.id !== id) {
+        if (item.children?.length) {
+          item.children = filter(item.children, id);
+        }
+        return true;
+      }
+
+      return false;
+    });
+  }
+
+  const replace = (info: ExtendFileInfo, id: string) => {
+    setList([...replaceAndSort(list, info, id)]);
+
+    if (info.handle.kind === 'file') {
+      onSelect(info.handle);
+      setActiveId(info.id);
+    }
+  };
+
+  const removeInput = (id: string) => {
+    setList(filter(list, id));
+  };
+
   const handleSelect = (file: ExtendFileInfo) => {
     if (isFileHandle(file.handle)) {
       onSelect(file.handle);
@@ -229,35 +447,6 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     setSelection([file]);
   };
 
-  const addExtendFileInfo = (type: FileType) => {
-    const curr = selection[0];
-
-    const child = { name: ADD_KEY, id: uuid(), icon: '' };
-
-    if (curr && curr.type === FileType.DIRECTORY) {
-      (curr.children || (curr.children = [])).unshift({
-        ...child,
-        handle: curr.handle,
-        type
-      });
-    } else if (curr && curr.parent) {
-      const parent = curr.parent;
-      (parent.children || (parent.children = [])).unshift({
-        ...child,
-        handle: parent.handle,
-        type
-      });
-    } else {
-      list.unshift({
-        ...child,
-        handle,
-        type
-      });
-    }
-
-    setList([...list]);
-  };
-
   const handleAddFile = () => {
     addExtendFileInfo(FileType.FILE);
   };
@@ -266,7 +455,21 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     addExtendFileInfo(FileType.DIRECTORY);
   };
 
-  const handleDeleteFile = () => {};
+  const handleDeleteFile = async () => {
+    const curr = selection[0];
+    if (curr) {
+      const dh = curr.parent?.handle || handle;
+
+      if (dh.kind === 'directory') {
+        try {
+          await remove(dh, curr.name);
+          setList(filter(list, curr.id));
+        } catch (err) {
+          error((err as Error).message);
+        }
+      }
+    }
+  };
 
   return (
     <>
@@ -276,6 +479,8 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
             items={list}
             changed={changed}
             activeId={activeId}
+            replace={replace}
+            removeInput={removeInput}
             onItemClick={handleSelect}
             onItemContextMenu={handleContextMenu}
           />
