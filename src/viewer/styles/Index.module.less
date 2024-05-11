@@ -1,14 +1,24 @@
 .main {
   display: block;
   height: 100%;
-  overflow-y: auto;
   padding-inline: 260px;
+  overflow-y: auto;
   background-color: #fbf8fd;
 }
 
 .exhibit {
-  display: flex;
   height: 100%;
+
+  .logo {
+    width: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+
+    img {
+      width: 200px;
+      height: 190px;
+    }
+  }
 }
 
 @media screen and (width <= 1366px) {
