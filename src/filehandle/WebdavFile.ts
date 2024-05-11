@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 
+import { isEqual } from 'lodash-es';
 import type { FileStat, WebDAVClient } from 'webdav';
 import { AuthType, createClient } from 'webdav';
 
@@ -13,16 +14,23 @@ import { FileType } from './utils/fileManager';
 function createWebdavFileSystemHandle(
   file: FileStat,
   webdav: WebDAVClient,
-  parentPath: string
+  parentPath: string,
+  webdavInfo: WebdavInfo
 ) {
   if (file.type == 'directory') {
     return new WebdavFileSystemDirectoryHandle(
       webdav,
       parentPath + '/',
-      file.basename
+      file.basename,
+      webdavInfo
     );
   } else {
-    return new WebdavFileSystemFileHandle(webdav, parentPath, file.basename);
+    return new WebdavFileSystemFileHandle(
+      webdav,
+      parentPath,
+      file.basename,
+      webdavInfo
+    );
   }
 }
 
@@ -77,37 +85,60 @@ class WebdavFileSystemWritableFileStream
   }
 }
 
-class WebdavFileSystemFileHandle implements FileSystemFileHandle {
-  readonly kind = 'file';
+class WebdavFileSystemHandle implements FileSystemHandle {
+  kind: FileSystemHandleKind;
+  name: string;
 
-  private webdav: WebDAVClient;
+  private _fullPath: string;
 
-  private fullPath: string;
+  private _webdav: WebDAVClient;
 
-  private _name: string;
+  private _webdavInfo: WebdavInfo;
 
-  private file: File | null = null;
+  constructor(
+    kind: FileSystemHandleKind,
+    name: string,
+    fullPath: string,
+    webdavClient: WebDAVClient,
+    webdavInfo: WebdavInfo
+  ) {
+    this.kind = kind;
+    this.name = name;
 
-  constructor(webdav: WebDAVClient, fullPath: string, name: string) {
-    this.webdav = webdav;
+    this._fullPath = fullPath;
+    this._webdav = webdavClient;
 
-    this._name = name;
-
-    this.fullPath = fullPath;
+    this._webdavInfo = webdavInfo;
   }
 
-  get name() {
-    return this._name;
+  get fullPath() {
+    return this._fullPath;
   }
 
-  createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle> {
-    throw new Error('Method not implemented.');
+  get webdav() {
+    return this._webdav;
   }
 
-  isSameEntry(other: FileSystemHandle): Promise<boolean>;
-  isSameEntry(arg: FileSystemHandle): boolean;
-  isSameEntry(): boolean | Promise<boolean> {
-    throw new Error('Method not implemented.');
+  get webdavInfo() {
+    return this._webdavInfo;
+  }
+
+  isSameEntry(other: WebdavFileSystemHandle): Promise<boolean>;
+  isSameEntry(arg: WebdavFileSystemHandle): boolean;
+  isSameEntry(handle: WebdavFileSystemHandle): boolean | Promise<boolean> {
+    try {
+      if (
+        handle instanceof WebdavFileSystemHandle &&
+        isEqual(this.webdavInfo, handle.webdavInfo) &&
+        this._fullPath === handle._fullPath
+      ) {
+        return Promise.resolve(true);
+      }
+    } catch (err) {
+      return Promise.resolve(false);
+    }
+
+    return Promise.resolve(false);
   }
 
   queryPermission(): Promise<PermissionStatus> {
@@ -121,6 +152,28 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
   remove(): Promise<undefined> {
     throw new Error('Method not implemented.');
   }
+}
+
+class WebdavFileSystemFileHandle
+  extends WebdavFileSystemHandle
+  implements FileSystemFileHandle
+{
+  readonly kind = 'file';
+
+  private file: File | null = null;
+
+  constructor(
+    webdav: WebDAVClient,
+    fullPath: string,
+    name: string,
+    webdavInfo: WebdavInfo
+  ) {
+    super('file', name, fullPath, webdav, webdavInfo);
+  }
+
+  createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle> {
+    throw new Error('Method not implemented.');
+  }
 
   async getFile() {
     if (this.file) {
@@ -131,7 +184,7 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
       format: 'binary'
     })) as ArrayBuffer;
 
-    this.file = new File([data], this._name);
+    this.file = new File([data], this.name);
 
     return this.file;
   }
@@ -146,29 +199,24 @@ class WebdavFileSystemFileHandle implements FileSystemFileHandle {
     return new WebdavFileSystemWritableFileStream(
       webdav,
       fullPath,
-      (buffer) => (this.file = new File([buffer], this._name))
+      (buffer) => (this.file = new File([buffer], this.name))
     );
   }
 }
 
-class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
+class WebdavFileSystemDirectoryHandle
+  extends WebdavFileSystemHandle
+  implements FileSystemDirectoryHandle
+{
   readonly kind = 'directory';
 
-  private webdav: WebDAVClient;
-
-  private fullPath: string;
-
-  private _name: string;
-
-  constructor(webdav: WebDAVClient, fullPath: string, name: string) {
-    this.webdav = webdav;
-
-    this._name = name;
-    this.fullPath = fullPath;
-  }
-
-  get name() {
-    return this._name;
+  constructor(
+    webdav: WebDAVClient,
+    fullPath: string,
+    name: string,
+    webdavInfo: WebdavInfo
+  ) {
+    super('directory', name, fullPath, webdav, webdavInfo);
   }
 
   resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
@@ -187,30 +235,12 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
     throw new Error('Method not implemented.');
   }
 
-  isSameEntry(other: FileSystemHandle): Promise<boolean>;
-  isSameEntry(arg: FileSystemHandle): boolean;
-  isSameEntry(): boolean | Promise<boolean> {
-    throw new Error('Method not implemented.');
-  }
-
-  queryPermission(): Promise<PermissionStatus> {
-    throw new Error('Method not implemented.');
-  }
-
-  requestPermission(): Promise<PermissionStatus> {
-    throw new Error('Method not implemented.');
-  }
-
-  remove(): Promise<undefined> {
-    throw new Error('Method not implemented.');
-  }
-
   entries(): AsyncIterableIterator<
     [string, WebdavFileSystemDirectoryHandle | WebdavFileSystemFileHandle]
   > {
     let i = 0;
 
-    const { webdav, fullPath } = this;
+    const { webdav, fullPath, webdavInfo } = this;
 
     const p = webdav.getDirectoryContents(fullPath, {
       includeSelf: false
@@ -232,7 +262,12 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
         return {
           value: [
             curr.basename,
-            createWebdavFileSystemHandle(curr, webdav, fullPath + curr.basename)
+            createWebdavFileSystemHandle(
+              curr,
+              webdav,
+              fullPath + curr.basename,
+              webdavInfo
+            )
           ],
           done: false
         };
@@ -267,7 +302,8 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
     return new WebdavFileSystemDirectoryHandle(
       this.webdav,
       subFullPath + '/',
-      name
+      name,
+      this.webdavInfo
     );
   }
 
@@ -293,7 +329,12 @@ class WebdavFileSystemDirectoryHandle implements FileSystemDirectoryHandle {
       }
     }
 
-    return new WebdavFileSystemFileHandle(this.webdav, subFullPath, name);
+    return new WebdavFileSystemFileHandle(
+      this.webdav,
+      subFullPath,
+      name,
+      this.webdavInfo
+    );
   }
 
   async removeEntry(name: string): Promise<undefined> {
@@ -321,19 +362,20 @@ class WebdavFile {
 
   remote = true;
 
-  constructor(webdav: WebdavInfo) {
-    this.name = webdav.name;
+  constructor(webdavInfo: WebdavInfo) {
+    this.name = webdavInfo.name;
 
-    this.webdav = createClient(webdav.url, {
+    this.webdav = createClient(webdavInfo.url, {
       authType: AuthType.Auto,
-      username: webdav.username,
-      password: webdav.password
+      username: webdavInfo.username,
+      password: webdavInfo.password
     });
 
     this.handle = new WebdavFileSystemDirectoryHandle(
       this.webdav,
       '/',
-      this.name
+      this.name,
+      webdavInfo
     );
   }
 }

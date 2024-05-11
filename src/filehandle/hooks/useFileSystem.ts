@@ -102,7 +102,7 @@ export function useFileSystem(): FileSystem {
 
   useMemo(() => update(), [webdavs]);
 
-  useMemo(
+  useEffect(
     () => fileLinked.current?.listener((directory) => update(directory)),
     [fileLinked.current, webdavs]
   );
@@ -145,7 +145,15 @@ export function useFileSystem(): FileSystem {
       try {
         await removeFile(current, name);
 
-        setChildren(children.filter((c) => c.name !== name));
+        setChildren(
+          children.filter((c) => {
+            if (c.name === name && c.handle.kind === 'directory') {
+              fileLinked.current.unlink(c.handle);
+            }
+
+            return c.name !== name;
+          })
+        );
       } catch (err) {
         error((err as Error).message);
       }

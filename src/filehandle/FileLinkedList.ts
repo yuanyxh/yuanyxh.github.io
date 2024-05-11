@@ -50,13 +50,22 @@ class FileLinkedList {
     }
   }
 
-  unlink(handle: DH) {
+  async unlink(handle: DH) {
     const { next } = this.current;
 
-    if (next && next.value === handle) {
-      this.current.next = null;
+    if (!next) return false;
 
-      this.event.emit(UPDATE_KEY, this.current.value);
+    try {
+      const isSame = await next.value.isSameEntry(handle);
+
+      if (isSame) {
+        this.current.next = null;
+        this.event.emit(UPDATE_KEY, this.current.value);
+      }
+
+      return isSame;
+    } catch (err) {
+      return false;
     }
   }
 

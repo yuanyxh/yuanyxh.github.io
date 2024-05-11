@@ -28,11 +28,11 @@ interface ISidebarProps {
   onSelect(handle: FH): void;
 }
 
-type ExtendFileInfo = FileInfo & {
+interface ExtendFileInfo extends FileInfo {
   id: string;
   parent?: ExtendFileInfo;
   children?: ExtendFileInfo[];
-};
+}
 
 const ADD_KEY = '.$<>/\\.#$%' + uuid();
 

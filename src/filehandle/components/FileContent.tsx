@@ -97,7 +97,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
           name="username"
           rules={[{ required: true, message: 'Please input your username!' }]}
         >
-          <Input />
+          <Input autoComplete="username" />
         </Form.Item>
 
         <Form.Item<WebdavInfo>
@@ -105,7 +105,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
           name="password"
           rules={[{ required: true, message: 'Please input your password!' }]}
         >
-          <Input.Password />
+          <Input.Password autoComplete="current-password" />
         </Form.Item>
       </Form>
     </Modal>
@@ -249,19 +249,25 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       async onOk() {
         try {
           let _webdavs = webdavs.slice(0);
+
           _selection.map((file) => {
             if (file.remote) {
-              _webdavs = _webdavs.filter((webdav) => webdav.name !== file.name);
+              _webdavs = _webdavs.filter((webdav) => {
+                if (
+                  webdav.name === file.name &&
+                  file.handle.kind === 'directory'
+                ) {
+                  fileLinked.unlink(file.handle);
+                }
+
+                return webdav.name !== file.name;
+              });
             }
           });
+
           setWebdavs(_webdavs);
 
           await Promise.all(names.map((name) => remove(name)));
-
-          _selection.map(
-            (file) =>
-              file.handle.kind === 'directory' && fileLinked.unlink(file.handle)
-          );
         } catch (err) {
           error((err as Error).message);
         }
