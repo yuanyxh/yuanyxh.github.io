@@ -24,7 +24,7 @@ import type { ConfigEnv, UserConfig } from 'vite';
 
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
-  const env = loadEnv(mode, root) as unknown as Env;
+  const env = loadEnv(mode, root) as unknown as ImportMetaEnv;
 
   const isBuild = command === 'build';
 

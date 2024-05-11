@@ -37,7 +37,7 @@ import { isSupportOPFS } from '@/filehandle/utils/checkSupport';
 
 import { Icon } from '@/components';
 
-import LogoImage from '@/assets/images/logo.webp';
+import LogoImage from '@/assets/images/main.webp';
 
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';

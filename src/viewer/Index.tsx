@@ -1,17 +1,16 @@
 import { Typography } from 'antd';
 
+import mainWebp from '@/assets/images/main.webp';
+import tiga from '@/assets/images/tiga.png';
+
 import styles from './styles/Index.module.less';
 
 const Exhibit = () => {
   return (
-    <section className={styles.exhibit}>
-      <div>
-        <div className={styles.logo}>
-          <img src="/logo.webp" alt="logo" />
-        </div>
-
+    <section className={styles.exhibit} style={{ backgroundImage: tiga }}>
+      <div className={styles.slogan}>
         <Typography.Title
-          style={{ fontWeight: 400 }}
+          style={{ marginTop: 20, fontWeight: 400 }}
           level={2}
           title={import.meta.env.VITE_APP_TITLE}
         >
@@ -34,6 +33,12 @@ const Exhibit = () => {
           站在巨人的肩膀上/If I have seen further than others, it is by standing
           upon the shoulders of giants.
         </Typography.Paragraph>
+      </div>
+
+      <div className={styles.media}>
+        <div className={styles.logo}>
+          <img src={mainWebp} alt="logo" />
+        </div>
       </div>
     </section>
   );

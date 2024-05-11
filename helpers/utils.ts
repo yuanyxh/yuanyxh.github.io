@@ -35,7 +35,7 @@ export interface RoutePlace {
 export const root = process.cwd();
 
 export const getEnv = () => {
-  return loadEnv('prod', root) as unknown as Env;
+  return loadEnv('prod', root) as unknown as ImportMetaEnv;
 };
 
 export const resolve = (...paths: string[]) => path.resolve(root, ...paths);

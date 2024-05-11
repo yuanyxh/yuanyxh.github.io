@@ -1,8 +1,8 @@
-interface Env {
+interface ImportMetaEnv {
   /** base path */
-  VITE_BASE_PATH: string;
+  readonly VITE_BASE_PATH: string;
   /** base title */
-  VITE_APP_TITLE: string;
+  readonly VITE_APP_TITLE: string;
   /** domain */
-  VITE_DOMAIN_PATH: string;
+  readonly VITE_DOMAIN_PATH: string;
 }
