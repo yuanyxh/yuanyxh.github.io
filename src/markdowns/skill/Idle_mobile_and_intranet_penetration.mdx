@@ -222,7 +222,7 @@ ln -sf $PREFIX/share/termux-services/svlogger $PREFIX/var/service/frp/log/run
 ln -sf $PREFIX/share/termux-services/svlogger $PREFIX/var/service/caddy/log/run
 ```
 
-然后在 `$PREFIX/var/service/<pkg>/run` 文件中写入启动服务的命令：
+然后在 `$PREFIX/var/service/<pkg>/run` 文件中写入启动服务的命令，注意赋予脚本执行的权限：
 
 ```sh
 # frp
@@ -237,8 +237,8 @@ path/to/caddy run --config path/to/Caddyfile
 最后启动对应的服务：
 
 ```sh
-sv up frp
-sv up caddy
+sv-enable frp
+sv-enable caddy
 ```
 
 ## rclone 挂载本地文件夹
