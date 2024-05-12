@@ -8,11 +8,10 @@ import classNames from 'classnames';
 import { error, uuid, validateFileName } from '@/utils';
 
 import { isFileHandle } from '@/filehandle/utils/checkFileType';
-import type { DH, FH } from '@/filehandle/utils/fileManager';
+import type { DH, FH, FileInfo } from '@/filehandle/utils/fileManager';
 import {
   createDirectory,
   createFile,
-  FileInfo,
   FileType,
   getChildren,
   remove

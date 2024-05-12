@@ -173,6 +173,7 @@ export function useFileSystem(): FileSystem {
 
     async function importFile() {
       try {
+        setBusy(true);
         const value = await importFH(current);
 
         if (!value) {
@@ -182,11 +183,14 @@ export function useFileSystem(): FileSystem {
         update();
       } catch (err) {
         error((err as Error).message);
+      } finally {
+        setBusy(false);
       }
     }
 
     async function importDirectory() {
       try {
+        setBusy(true);
         const value = await importDH(current);
 
         if (!value) {
@@ -196,6 +200,14 @@ export function useFileSystem(): FileSystem {
         update();
       } catch (err) {
         error((err as Error).message);
+
+        error('本次导入存在异常，请确认目录是否导入完整。');
+
+        // When the user executes multiple file operations, even if an abnormality occurs,
+        // the directory list should be updated to tell the user that some file operation fails
+        update();
+      } finally {
+        setBusy(false);
       }
     }
 

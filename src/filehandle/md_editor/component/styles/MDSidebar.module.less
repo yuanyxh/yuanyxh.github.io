@@ -65,6 +65,9 @@
   .list .item .row {
     border-radius: 2px;
     transition: background-color 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.active,
     &:not(.directory):hover {
