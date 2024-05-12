@@ -73,7 +73,7 @@ class ServiceWorkerManager {
     if ('serviceWorker' in window.navigator) {
       return new Promise<boolean>((resolve) => {
         window.navigator.serviceWorker
-          .register('./sw.js')
+          .register('/sw.js')
           .then((serviceWorker) => {
             resolve(true);
 

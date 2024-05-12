@@ -60,7 +60,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
   return (
     <Modal
       title="挂载 webdav 目录"
-      style={{ top: '30vh' }}
+      style={{ top: '15vh' }}
       open={open}
       okText={'确认'}
       cancelText={'取消'}
