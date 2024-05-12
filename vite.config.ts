@@ -167,7 +167,13 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       port: 3000,
       strictPort: true,
       cors: true,
-      proxy: {}
+      proxy: {
+        '/api': {
+          target: 'http://localhost:4000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/\/api/, 'issues')
+        }
+      }
       // https: {},
     },
     optimizeDeps: {
