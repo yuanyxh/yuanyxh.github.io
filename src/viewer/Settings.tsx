@@ -33,10 +33,18 @@ function ServiceWorkerCache() {
 
   const serviceWorkerRef = useRef(new ServiceWorkerManager());
 
-  const handleSwitchServiceWorkerCache = (
+  const handleSwitchServiceWorkerCache = async (
     enableServiceWorkerCache: boolean
   ) => {
     setSpinning(true);
+
+    const registration = await window.navigator.serviceWorker.ready;
+
+    if (registration.waiting || registration.installing) {
+      return error(
+        'service worker 正在安装中，此过程不可被打断，请稍后执行此操作。'
+      );
+    }
 
     if (enableServiceWorkerCache) {
       return serviceWorkerRef.current
