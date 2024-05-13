@@ -175,7 +175,8 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     create,
     remove,
     importFile,
-    importDirectory
+    importDirectory,
+    forceUpdate
   } = useContext(FileSystemContext);
 
   const root = fileLinked?.root?.value;
@@ -200,7 +201,10 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
             value = selection[0].handle;
           }
 
-          await handle.contextMenu!.handler(value, backgroundManager);
+          await handle.contextMenu!.handler(value, {
+            backgroundManager,
+            update: forceUpdate
+          });
         } catch (err) {
           error((err as Error).message);
         }
@@ -228,7 +232,10 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
       );
 
       if (handle) {
-        handle.open(await current.getFileHandle(file.name), backgroundManager);
+        handle.open(await current.getFileHandle(file.name), {
+          backgroundManager,
+          update: forceUpdate
+        });
       }
     } catch (err) {
       error((err as Error).message);

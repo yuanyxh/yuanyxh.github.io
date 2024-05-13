@@ -24,6 +24,7 @@ import styles from './styles/MDSidebar.module.less';
 interface ISidebarProps {
   handle: DH;
   changed: boolean;
+  update(): void;
   onSelect(handle: FH): void;
 }
 
@@ -342,7 +343,7 @@ const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
 };
 
 export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
-  const { handle, changed, onSelect } = props;
+  const { handle, changed, update, onSelect } = props;
 
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
@@ -418,18 +419,18 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     });
   }
 
-  const replace = (info: ExtendFileInfo, id: string) => {
+  function replace(info: ExtendFileInfo, id: string) {
     setList([...replaceAndSort(list, info, id)]);
 
     if (info.handle.kind === 'file') {
       onSelect(info.handle);
       setActiveId(info.id);
     }
-  };
 
-  const removeInput = (id: string) => {
-    setList(filter(list, id));
-  };
+    update();
+  }
+
+  const removeInput = (id: string) => setList(filter(list, id));
 
   const handleSelect = (file: ExtendFileInfo) => {
     if (isFileHandle(file.handle)) {
@@ -438,21 +439,13 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     }
   };
 
-  const handleHide = () => {
-    selection.length && setSelection([]);
-  };
+  const handleHide = () => selection.length && setSelection([]);
 
-  const handleContextMenu = (file: ExtendFileInfo) => {
-    setSelection([file]);
-  };
+  const handleContextMenu = (file: ExtendFileInfo) => setSelection([file]);
 
-  const handleAddFile = () => {
-    addExtendFileInfo(FileType.FILE);
-  };
+  const handleAddFile = () => addExtendFileInfo(FileType.FILE);
 
-  const handleAddDirectory = () => {
-    addExtendFileInfo(FileType.DIRECTORY);
-  };
+  const handleAddDirectory = () => addExtendFileInfo(FileType.DIRECTORY);
 
   const handleDeleteFile = async () => {
     const curr = selection[0];
@@ -463,6 +456,8 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
         try {
           await remove(dh, curr.name);
           setList(filter(list, curr.id));
+
+          update();
         } catch (err) {
           error((err as Error).message);
         }

@@ -16,10 +16,11 @@ import styles from './styles/MDContent.module.less';
 
 interface IMDContentProps {
   handle: DH | FH;
+  update(): void;
 }
 
 export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
-  const { handle } = props;
+  const { handle, update } = props;
 
   const [changed, setChanged] = useState(false);
   const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
@@ -78,7 +79,12 @@ export const MDContent: React.FC<Readonly<IMDContentProps>> = (props) => {
   return (
     <div className={styles.content}>
       {isDirectoryHandle(handle) ? (
-        <Sidebar handle={handle} changed={changed} onSelect={handleSelect} />
+        <Sidebar
+          handle={handle}
+          changed={changed}
+          update={update}
+          onSelect={handleSelect}
+        />
       ) : null}
 
       <div className={styles.mdEditor}>

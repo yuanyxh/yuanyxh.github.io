@@ -10,14 +10,15 @@ import { MDContent } from './MDContent';
 import styles from './styles/MDHandle.module.less';
 import type { DH, FH } from '../../utils/fileManager';
 
-interface IMDHandle {
+export interface IMDHandle {
   handle: DH | FH;
   backgroundManager: BackgroundManager;
   destroy(): void;
+  update(): void;
 }
 
 const MDHandle: React.FC<IMDHandle> = (props) => {
-  const { handle, backgroundManager, destroy } = props;
+  const { handle, backgroundManager, update, destroy } = props;
 
   const handleId = useId();
 
@@ -69,7 +70,7 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
       onClose={onClose}
     >
       <App>
-        <MDContent handle={handle} />
+        <MDContent handle={handle} update={update} />
       </App>
     </Dialog>
   );

@@ -8,6 +8,7 @@ import { error, warning } from '@/utils';
 
 import BackgroundManager from '../BackgroundManager';
 import FileLinkedList from '../FileLinkedList';
+import type { IMDHandle } from '../md_editor/component/MDHandle';
 import type { DH, FH, FileDataType, FileInfo } from '../utils/fileManager';
 import {
   createDirectory,
@@ -23,11 +24,11 @@ export interface FileHandle {
   id: string;
   ext: string;
   icon?: React.ReactNode;
-  open(handler: FH, bgm: BackgroundManager): any;
+  open(handler: FH, props: Omit<IMDHandle, 'destroy' | 'handle'>): any;
   contextMenu?: {
     name: string;
     icon?: React.ReactNode;
-    handler(handle: DH | FH, bgm: BackgroundManager): any;
+    handler(handle: DH | FH, props: Omit<IMDHandle, 'destroy' | 'handle'>): any;
   };
 }
 
