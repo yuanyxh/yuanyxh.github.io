@@ -7,6 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+helpers/data/service_account.json
+
 node_modules
 dist
 dist-ssr

@@ -11,6 +11,7 @@
     "vite.config.ts",
     "helpers/**/*.ts",
     "helpers/generateSw.js",
-    "types/env.d.ts"
+    "types/env.d.ts",
+    "types/gapi.d.ts"
   ]
 }

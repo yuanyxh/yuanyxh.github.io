@@ -1,3 +1,4 @@
+import { submit } from './submit';
 import {
   generateRouteJSON,
   getEnv,
@@ -138,6 +139,12 @@ async function vitePrerender() {
 
   const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
   const routes = detailsRoutes.map((route) => route.fullPath);
+
+  try {
+    submit(routes);
+  } catch (err) {
+    console.log('submit error', err);
+  }
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
   return selfVitePrerender({
