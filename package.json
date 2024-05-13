@@ -15,7 +15,8 @@
     "prettier": "prettier --write .",
     "preview": "vite preview",
     "prepare": "husky",
-    "clean": "node ./helpers/clean.js"
+    "clean": "node ./helpers/clean.js",
+    "submit": "node ./helpers/submit.js"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
