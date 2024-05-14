@@ -1,4 +1,3 @@
-export { default as AddFileModal } from './AddFileModal/AddFileModal';
 export { default as Canvas } from './Canvas/Canvas';
 export * from './Canvas/Canvas';
 export { default as ContextMenu } from './ContextMenu/ContextMenu';

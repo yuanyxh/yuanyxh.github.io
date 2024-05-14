@@ -8,8 +8,9 @@ import { useUserStore } from '@/store';
 
 import { alert, confirm, error, sleep, success } from '@/utils';
 
-import { AddFileModal, ContextMenu, Icon } from '@/components';
+import { ContextMenu, Icon } from '@/components';
 
+import AddFileModal from './AddFileModal';
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
 import type { FileInfo } from '../utils/fileManager';

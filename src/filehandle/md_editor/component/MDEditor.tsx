@@ -22,6 +22,7 @@ import { tooltipFactory } from '@milkdown/plugin-tooltip';
 import { upload } from '@milkdown/plugin-upload';
 import {
   blockquoteAttr,
+  bulletListAttr,
   commonmark,
   emphasisAttr,
   headingAttr,
@@ -31,6 +32,7 @@ import {
   insertImageCommand,
   insertImageInputRule,
   linkAttr,
+  orderedListAttr,
   paragraphAttr
 } from '@milkdown/preset-commonmark';
 import { gfm } from '@milkdown/preset-gfm';
@@ -47,6 +49,16 @@ export interface IMDEditorExpose {
   getMarkdown(): string;
 }
 
+const blockElementKeys = [
+  blockquoteAttr.key,
+  bulletListAttr.key,
+  orderedListAttr.key,
+  headingAttr.key,
+  hrAttr.key,
+  imageAttr.key,
+  paragraphAttr.key
+];
+
 function createMDEditor(
   el: HTMLElement,
   value = '',
@@ -58,16 +70,16 @@ function createMDEditor(
       ctx.set(defaultValueCtx, value);
 
       ctx.set(inlineCodeAttr.key, () => ({ class: styles.inlineCode }));
-      ctx.set(blockquoteAttr.key, () => ({ class: styles.typography }));
+      ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
+
       // ctx.set(codeBlockAttr.key, () => ({
       //   class: styles.typography
       // }));
-      ctx.set(emphasisAttr.key, () => ({ class: styles.typography }));
-      ctx.set(headingAttr.key, () => ({ class: styles.typography }));
-      ctx.set(hrAttr.key, () => ({ class: styles.typography }));
-      ctx.set(imageAttr.key, () => ({ class: styles.typography }));
-      ctx.set(paragraphAttr.key, () => ({ class: styles.typography }));
-      ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
+
+      ctx.set(emphasisAttr.key, () => ({ class: styles.typograph }));
+      blockElementKeys.forEach((key) =>
+        ctx.set(key, () => ({ class: styles.typography }))
+      );
 
       ctx.get(listenerCtx).markdownUpdated((_ctx, md) => onUpdate(md));
     })
