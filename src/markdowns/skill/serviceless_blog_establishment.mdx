@@ -16,13 +16,269 @@ description: 记录搭建一个 no server 博客的过程，学到了诸如自�
 
 no server 可以理解为无后端控制，只提供静态网站服务，这个概念是从 vuepress 那里学来的，因为缺乏后端相关的知识，所以网站一直部署在 [github pages][github-pages] 中，搭建这个博客也希望能继续使用 github pages 进行网站部署。
 
-vuepress 使用的路由模式是 history，history 模式下在其他页面刷新是会 404 的，因为没有对应的 html 文件，一般是后端配置所有的页面请求都响应为 index.html，但 github pages 只是一个静态托管平台，无法做这样的操作。vuepress 采取的方案是预渲染完整的 html，存在真实的 html 访问自然不会 404，且 seo 也会更优秀。
+vuepress 使用的路由模式是 [history]，history 模式下在其他页面刷新是会 404 的，因为没有对应的 html 文件，一般是后端配置所有的页面请求都响应为 index.html，但 github pages 只是一个静态托管平台，做不了这样的操作。vuepress 采取的方案是预渲染完整的 html，存在真实的 html 访问自然不会 404，且 [seo] 也会更优秀。
 
-vuepress 为每个预渲染的 html 注入主应用程序的 js 文件，在加载 html 后，将 html 和 vue 实例进行水合，成为一个 spa 程序，这样在享受到初始极速的加载体验后还能体验 spa 程序的特性。
+vuepress 为每个预渲染的 html 注入主应用程序的 js 文件，在加载 html 后，将 html 和 [vue] 实例进行水合，成为一个 [spa] 程序，这样在享受到初始极速的加载体验后还能使用完整的 spa 程序特性。
 
-通过上述两步操作，vuepress 实现了一个 no server 但体验不输 ssr 渲染的博客系统。
+通过上述两步操作，vuepress 实现了一个 no server 但体验不输 ssr 渲染的博客系统，而我们则参考这种思路完成自己的博客。
 
 ## 搭建项目架构
 
+一些千篇一律的配置这里不展开介绍，只介绍自己认为学到了东西的工程配置。先介绍下基础的架构：[vite] + [pnpm] + [typescript] + [react] + [mdx]。
+
+### browserslist
+
+[browserslist] 是让你能够配置项目运行的目标浏览器的工具，本身并不提供语法降级功能，那些是 [babel]、[postcss] 的工作，而 browserslist 则告诉这些工具你的项目需要在哪些浏览器上工作，适配了 browserslist 规范的前端工具会自动为你完成降级。
+
+我们可以通过在项目中新建 `.browserslistrc` 并写入规则来实现，比如这个博客项目中写入了以下内容：
+
+```rc
+# Browsers that we support
+
+Chrome >= 87
+Firefox >= 78
+Safari >= 14
+Edge >= 88
+Opera >= 80
+defaults and fully supports es6-module
+```
+
+前面 5 个规则指定了对应的浏览器要大于等于什么版本，而最后一条规则指定了要运行在支持 es6 模块的浏览器之上。
+
+### unocss
+
+[unocss] 是现在很火的原子化 css 构建工具，项目一开始使用了，简单讲一下配置。
+
+```ts
+// uno.config.ts
+import {
+  defineConfig,
+  presetIcons,
+  presetAttributify,
+  presetTypography,
+  presetUno,
+  presetWebFonts,
+  transformerDirectives,
+  transformerVariantGroup,
+  transformerAttributifyJsx
+} from 'unocss';
+
+export default defineConfig({
+  // 组合多个预设
+  shortcuts: [
+    // ...
+  ],
+  // 主题
+  theme: {
+    colors: {
+      // ...
+    }
+  },
+  presets: [
+    presetUno(),
+    // 支持以属性方式定义 uno 预设，<div text="xl"></div>
+    presetAttributify({
+      prefix: 'uno-', // 为了防止和 react 属性冲突，设置统一前缀 <div uno-text="xl"></div>
+      prefixedOnly: true // 始终以前缀开头
+    }),
+    // 图标解析，这里使用 @iconify-json/ph 图标集，pnpm add -D @iconify-json/ph
+    presetIcons({
+      prefix: 'icon-', 前缀，使用 <div uno-icon="iconName"></div>
+      extraProperties: {
+        display: 'inline-block',
+        'vertical-align': 'middle'
+      },
+      collections: {
+        // 导入图标集
+        ph: () => import('@iconify-json/ph/icons.json').then((i) => i.default)
+      }
+    }),
+    // 排版预设，文章类使用
+    presetTypography()
+  ],
+  transformers: [
+    transformerAttributifyJsx(),
+    transformerDirectives(),
+    transformerVariantGroup()
+  ]
+});
+```
+
+我们知道原子化 css 比较不好的点就是容易在模板中堆积大量的类名，unocss 提出了一种解决方式：以属性的方式编写原子类；比如 `<div className='mr-10px'></div>` 可以写成 `<div mr="10px"></div>`，为了防止和 react jsx 属性冲突一般还会设置前缀，同时需要覆写默认的 ts 类型：
+
+```ts
+import type { AttributifyNames } from 'unocss/preset-attributify';
+
+type Prefix = 'uno-'; // change it to your prefix
+
+declare module 'react' {
+  interface HTMLAttributes
+    extends Partial<Record<AttributifyNames<Prefix>, string>> {}
+}
+```
+
+另外需要注意，如果你的项目引入了 [ESLint] 且配置了 [elint-plugin-react]，那么 unocss 属性写法是会报 lint 错误的，因为检查到了非法的 dom 属性，要么关掉对应的规则，要么将所有 unocss 属性（2500 条左右）添加进忽略，比如下面这样：
+
+```js
+/** @type {import('eslint').ESLint.ConfigData} */
+module.exports = {
+  // other options in here...
+  rules: {
+    'react/no-unknown-property': [
+      'error',
+      {
+        ignore: [
+          'uno-container',
+          'uno-flex',
+          'uno-block',
+          // other property in here...
+        ]
+      }
+    ]
+  }
+}
+```
+
+这个项目最终是将 unocss 移除掉的，倒不是不好用，只是不适合；对于自己的项目比较看重代码可读性，原子化 css 需要在 jsx 编写大量的 css 类，还是会有点影响；而且对于主题切换不是很友好，感觉在 css 中定义变量的方式对于主题切换更方便一点。
+
+### mdx
+
+[mdx] 是号称让 [markdown] 步入组件时代的工具，允许我们在 markdown 中编写 jsx 代码并嵌入组件。
+
+我是希望能够继承 vuepress 模式的，即一个 markdown 代表一个路由页面；最开始的想法是通过 [markdown-it] 在编译时构建生成页面，但研究过程中发现了 mdx，便转为了这个库来实现。
+
+mdx 提供了 [rollup] 的插件包，在 vite 中插件配置如下：
+
+```ts
+import mdx from '@mdx-js/rollup';
+import remarkFrontMatter from 'remark-frontmatter';
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
+import remarkGfm from 'remark-gfm';
+import remarkBraks from 'remark-breaks';
+import remarkEmoji from 'remark-emoji';
+import { remarkMdxToc } from 'remark-mdx-toc';
+import rehypePrism from '@mapbox/rehype-prism';
+
+import type { ConfigEnv, UserConfig } from 'vite';
+
+export default ({ command, mode }: ConfigEnv): UserConfig => {
+
+  return defineConfig({
+    plugins: [
+      {
+        enforce: 'pre',
+        ...mdx({
+          remarkPlugins: [
+            [remarkFrontMatter, 'yaml'],
+            remarkBraks,
+            remarkEmoji,
+            remarkMdxFrontmatter,
+            remarkGfm,
+            // @ts-expect-error this is normal, it's just a mismatch in the type definitions
+            remarkMdxToc
+          ],
+          rehypePlugins: [
+            // @ts-expect-error this is normal, it's just a mismatch in the type definitions
+            [rehypePrism, { ignoreMissing: true, alias: { shell: 'sh' } }]
+          ],
+          providerImportSource: '@/viewer/Provider.tsx'
+        })
+      },
+      // other plugins in here...
+    ]
+  })
+}
+```
+
+主要依赖了一系列的插件进行 markdown 功能增强，可以去对应的插件官网查看。
+
+上述配置中我们通过 `providerImportSource` 替换默认的渲染元素，达到自定义的效果；`providerImportSource` 对应的路径应该是一个模块，且导出一个 `useMDXComponents` hooks：
+
+```tsx
+import type { MDXComponents } from 'mdx/types';
+
+export const useMDXComponents = (): MDXComponents => {
+  return {}
+}
+```
+
+假设我们在 markdown 中有一个一级标题，那对应的 html 元素就是 h1，可以通过编写如下代码来替换默认的 h1 元素：
+
+```tsx
+import type { MDXComponents } from 'mdx/types';
+
+export const useMDXComponents = (): MDXComponents => {
+  return {
+    h1(props) {
+      return <h2 {...props}></h2>;
+    }
+  }
+}
+```
+
+### 字体
+
+一开始使用 [阿里巴巴普惠体2.0][alibaba-puhei-2.0]，只使用 400 和 700 字重，防止字体文件过大，可以通过以下的样式来控制只在必要的适合加载对应的字体：
+
+```css
+@font-face {
+  font-family: 'AlibabaPuHuiTi-2';
+  font-weight: 400;
+  src:
+    url('/fonts/AlibabaPuHuiTi-2-45-Light/AlibabaPuHuiTi-2-45-Light.woff2')
+      format('woff2'),
+    url('/fonts/AlibabaPuHuiTi-2-45-Light/AlibabaPuHuiTi-2-45-Light.woff')
+      format('woff'),
+    url('/fonts/AlibabaPuHuiTi-2-45-Light/AlibabaPuHuiTi-2-45-Light.ttf')
+      format('ttf'),
+    url('/fonts/AlibabaPuHuiTi-2-45-Light/AlibabaPuHuiTi-2-45-Light.otf')
+      format('opentype'),
+    url('/fonts/AlibabaPuHuiTi-2-45-Light/AlibabaPuHuiTi-2-45-Light.eot')
+      format('eot');
+}
+
+@font-face {
+  font-family: 'AlibabaPuHuiTi-2';
+  font-weight: 700;
+  src:
+    url('/fonts/AlibabaPuHuiTi-2-75-SemiBold/AlibabaPuHuiTi-2-75-SemiBold.woff2')
+      format('woff2'),
+    url('/fonts/AlibabaPuHuiTi-2-75-SemiBold/AlibabaPuHuiTi-2-75-SemiBold.woff')
+      format('woff'),
+    url('/fonts/AlibabaPuHuiTi-2-75-SemiBold/AlibabaPuHuiTi-2-75-SemiBold.ttf')
+      format('ttf'),
+    url('/fonts/AlibabaPuHuiTi-2-75-SemiBold/AlibabaPuHuiTi-2-75-SemiBold.otf')
+      format('opentype'),
+    url('/fonts/AlibabaPuHuiTi-2-75-SemiBold/AlibabaPuHuiTi-2-75-SemiBold.eot')
+      format('eot');
+}
+```
+
+这样当页面上渲染了 400 字重的文字时，就会去加载 `font-weight: 400;` 的字体。
+
+最终是移除了中文的字体文件，毕竟中文实在是太多了，考虑到字重、斜体这些因素，一个完整的常见中文的字体可能有几百 MB 大小。
+
 [vuepress]: https://vuepress.vuejs.org/zh/
 [github-pages]: https://pages.github.com/
+[vue]: https://cn.vuejs.org/
+[spa]: https://developer.mozilla.org/en-US/docs/Glossary/SPA
+[seo]: https://developer.mozilla.org/en-US/docs/Glossary/SEO
+[history]: https://developer.mozilla.org/en-US/docs/Web/API/History
+[vite]: https://vitejs.dev/
+[pnpm]: https://pnpm.io/
+[react]: https://react.dev/
+[typescript]: https://www.typescriptlang.org/
+[mdx]: https://mdxjs.com/
+[browserslist]: https://github.com/browserslist/browserslist
+[babel]: https://babeljs.io/
+[postcss]: https://postcss.org/
+[unocss]: https://unocss.dev/
+[ESLint]: https://eslint.org/
+[elint-plugin-react]: https://www.npmjs.com/package/eslint-plugin-react
+[mdx]: https://mdxjs.com/
+[markdown-it]: https://github.com/markdown-it/markdown-it
+[vite-plugin]: https://vitejs.dev/guide/api-plugin.html
+[rollup]: https://www.rollupjs.com/
+[remark-frontmatter]: https://github.com/remarkjs/remark-frontmatter
+[markdown]: https://www.markdownguide.org/
+[alibaba-puhei-2.0]: https://www.alibabafonts.com/#/font
