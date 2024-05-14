@@ -5,6 +5,7 @@ module.exports = {
     es2015: true
   },
   extends: [
+    'plugin:mdx/recommended',
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',

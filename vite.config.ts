@@ -33,7 +33,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       viteRouteGenerator(),
-      vitePrerender(),
+      vitePrerender(mode),
       viteGenerateSitemap(),
 
       /**

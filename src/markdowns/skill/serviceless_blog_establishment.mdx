@@ -1,0 +1,28 @@
+---
+title: 从 0 到 1 搭建一个 no server 的博客能学到什么
+date: 2024-05-14 14:21:15
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/63a262ad55d7a360.webp
+description: 记录搭建一个 no server 博客的过程，学到了诸如自定义路由、pwa、service worker、语义标签、vs code 插件编写、预渲染、vite 插件编写、pnpm 补丁等知识。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+之前有一个基于 [vuepress] 的博客，优点是配置简单、快速上手搭建；缺点是学不到太多东西，而且感觉千篇一律；刚好前一段时间比较闲，就动手搭建了这个项目。
+
+## 什么是 no server 的博客
+
+no server 可以理解为无后端控制，只提供静态网站服务，这个概念是从 vuepress 那里学来的，因为缺乏后端相关的知识，所以网站一直部署在 [github pages][github-pages] 中，搭建这个博客也希望能继续使用 github pages 进行网站部署。
+
+vuepress 使用的路由模式是 history，history 模式下在其他页面刷新是会 404 的，因为没有对应的 html 文件，一般是后端配置所有的页面请求都响应为 index.html，但 github pages 只是一个静态托管平台，无法做这样的操作。vuepress 采取的方案是预渲染完整的 html，存在真实的 html 访问自然不会 404，且 seo 也会更优秀。
+
+vuepress 为每个预渲染的 html 注入主应用程序的 js 文件，在加载 html 后，将 html 和 vue 实例进行水合，成为一个 spa 程序，这样在享受到初始极速的加载体验后还能体验 spa 程序的特性。
+
+通过上述两步操作，vuepress 实现了一个 no server 但体验不输 ssr 渲染的博客系统。
+
+## 搭建项目架构
+
+[vuepress]: https://vuepress.vuejs.org/zh/
+[github-pages]: https://pages.github.com/

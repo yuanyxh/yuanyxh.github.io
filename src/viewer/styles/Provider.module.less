@@ -5,7 +5,7 @@ code {
 }
 
 .article {
-  --text-color: rgb(44 62 80);
+  --text-color: #595959;
   --border-color: #ddd;
   --link-color: var(--color-primary);
   --text-size-base: 15px;
@@ -18,6 +18,15 @@ code {
 
   header {
     margin-bottom: 30px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #252933;
   }
 
   h1 {
@@ -144,7 +153,7 @@ code {
   }
 
   p {
-    margin-bottom: 15px;
+    margin-bottom: 28px;
     font-weight: 500;
     line-height: 1.5em;
   }
@@ -312,6 +321,15 @@ code {
   --text-color: rgb(158 158 158);
   --border-color: #333;
 
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: hsla(0, 0%, 100%, 0.8);
+  }
+
   table {
     background-color: #1d1e1f;
 
@@ -325,12 +343,6 @@ code {
       color: var(--text-color);
       background-color: #1d1e1f;
     }
-  }
-}
-
-@media screen and (width >= 1920px) {
-  .article {
-    --text-size-base: 17px;
   }
 }
 
