@@ -1,89 +1,115 @@
-// import key from './data/service_account.json';
-// import { getEnv, resolve } from './utils';
+import { getEnv, resolve } from './utils';
 
-// import { existsSync, writeFileSync } from 'fs';
-// import { request } from 'gaxios';
-// import { google } from 'googleapis';
+import { existsSync, writeFileSync } from 'fs';
+import { request } from 'gaxios';
+import { google } from 'googleapis';
 
-// process.env.http_proxy = 'http://127.0.0.1:7890'; /* Set proxy */
-// process.env.HTTPS_PROXY = 'http://127.0.0.1:7890';
+interface SubmitError {
+  response?: {
+    data: any;
+  };
+}
 
-// const submitedPath = resolve('./helpers/data/submited.ts');
+process.env.http_proxy = 'http://127.0.0.1:7890'; /* Set proxy */
+process.env.HTTPS_PROXY = 'http://127.0.0.1:7890';
 
-// const { VITE_DOMAIN_PATH } = getEnv();
+const submitedPath = resolve('./helpers/data/submited.ts');
 
-// function getHref(path: string) {
-//   return new URL(path, VITE_DOMAIN_PATH).href;
-// }
+const { VITE_DOMAIN_PATH } = getEnv();
 
-// function writeSubmited(submitedList: string[]) {
-//   try {
-//     writeFileSync(
-//       submitedPath,
-//       `export default ${JSON.stringify(submitedList, null, 2)}`,
-//       'utf-8'
-//     );
-//   } catch (err) {
-//     console.log('write fail', err);
-//   }
-// }
+function getHref(path: string) {
+  return new URL(path, VITE_DOMAIN_PATH).href;
+}
 
-// export function submit(routes: string[]) {
-//   const jwtClient = new google.auth.JWT(
-//     key.client_email,
-//     void 0,
-//     key.private_key,
-//     ['https://www.googleapis.com/auth/indexing'],
-//     void 0
-//   );
+function writeSubmited(submitedList: string[]) {
+  try {
+    writeFileSync(
+      submitedPath,
+      `export default ${JSON.stringify(submitedList, null, 2)}`,
+      'utf-8'
+    );
+  } catch (err) {
+    console.log('write fail', err);
+  }
+}
 
-//   jwtClient.authorize(async function (err, tokens) {
-//     if (err) {
-//       console.log(err);
-//       return void 0;
-//     }
+export async function submit(routes: string[]) {
+  let submitedList: string[] = [];
+  let count = 0;
+  let key: typeof import('./data/service_account.json');
 
-//     let count = 0;
-//     const successList: string[] = [];
+  const updateList: string[] = [];
+  const deleteList: string[] = [];
 
-//     function getRequest(route: string, type: string) {
-//       const options = {
-//         url: 'https://indexing.googleapis.com/v3/urlNotifications:publish',
-//         method: 'POST',
-//         // Your options, which must include the Content-Type and auth headers
-//         headers: {
-//           'Content-Type': 'application/json'
-//         },
-//         json: {
-//           url: getHref(route),
-//           type
-//         }
-//       };
+  try {
+    key = (await import('./data/service_account.json')).default;
 
-//       return request(options);
-//     }
+    if (existsSync(submitedPath)) {
+      submitedList = (await import('./data/submited')).default;
+    }
 
-//     let submitedList: string[] = [];
-//     if (existsSync(submitedPath)) {
-//       submitedList = (await import('./data/submited')).default;
-//     }
+    routes.forEach((route) => {
+      if (!submitedList.includes(route)) {
+        updateList.push(route);
+      }
+    });
 
-//     routes.forEach((route) => {
-//       if (!submitedList.includes(route)) {
-//         count++;
-//         getRequest(route, 'URL_UPDATED');
-//       }
-//     });
+    submitedList.forEach((s) => {
+      if (!routes.includes(s)) {
+        deleteList.push(s);
+      }
+    });
 
-//     submitedList.forEach((s) => {
-//       if (!routes.includes(s)) {
-//         count++;
-//         getRequest(s, 'URL_DELETED');
-//       }
-//     });
-//   });
-// }
+    if (updateList.length + deleteList.length === 0) return void 0;
+  } catch (err) {
+    return console.log('start err', err);
+  }
 
-export function submit(routes: string[]) {
-  routes;
+  const jwtClient = new google.auth.JWT(
+    key.client_email,
+    void 0,
+    key.private_key,
+    ['https://www.googleapis.com/auth/indexing'],
+    void 0
+  );
+
+  jwtClient.authorize(async function (err, tokens) {
+    if (err) {
+      console.log(err);
+      return void 0;
+    }
+
+    async function getRequest(route: string, type: string) {
+      count++;
+
+      try {
+        const res = await request({
+          url: 'https://indexing.googleapis.com/v3/urlNotifications:publish',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `${tokens!.token_type} ${tokens!.access_token}`
+          },
+          data: JSON.stringify({
+            url: getHref(route),
+            type
+          })
+        });
+        console.log('submit res: ', res.data);
+
+        submitedList.push(route);
+      } catch (err) {
+        console.log('submit err: ', (err as SubmitError)?.response?.data);
+      } finally {
+        count--;
+
+        if (count <= 0) {
+          writeSubmited(submitedList);
+        }
+      }
+    }
+
+    updateList.map((u) => getRequest(u, 'URL_UPDATED'));
+    deleteList.map((d) => getRequest(d, 'URL_DELETED'));
+  });
 }
