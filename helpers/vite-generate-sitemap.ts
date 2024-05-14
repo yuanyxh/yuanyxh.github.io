@@ -44,9 +44,11 @@ function viteGenerateSitemap(): PluginOption {
       return {
         url: route.fullPath,
         changefreq: 'daily',
-        priority: route.fullPath === '/' ? 1.0 : 0.8
+        priority: 1.0
       };
     });
+
+    console.log('debug for git actions', links.length);
 
     const smStream = new SitemapStream({ hostname: getEnv().VITE_DOMAIN_PATH });
 
