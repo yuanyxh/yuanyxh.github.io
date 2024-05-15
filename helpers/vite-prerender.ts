@@ -35,8 +35,7 @@ const excludeOutPathRewrite = [
   '/examples',
   '/books',
   '/coder',
-  '/profile',
-  '/404'
+  '/profile'
 ];
 
 function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {

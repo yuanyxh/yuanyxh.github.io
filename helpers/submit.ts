@@ -60,6 +60,8 @@ export async function submit(routes: string[]) {
       }
     });
 
+    submitedList = submitedList.filter((s) => !deleteList.includes(s));
+
     if (updateList.length + deleteList.length === 0) return void 0;
   } catch (err) {
     return console.log('start err', err);

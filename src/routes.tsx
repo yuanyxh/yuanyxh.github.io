@@ -57,7 +57,7 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Examples')
       },
       {
-        path: '404',
+        path: '404.html',
         element: '不存在的页面'
       }
     ]
