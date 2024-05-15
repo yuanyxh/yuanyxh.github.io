@@ -104,7 +104,7 @@ devDependencies:
     version: 2.0.4(eslint@8.57.0)(vite@5.2.11)
   '@prerenderer/renderer-puppeteer':
     specifier: ^1.2.4
-    version: 1.2.4(puppeteer@22.8.1)
+    version: 1.2.4(puppeteer@22.8.2)
   '@types/lodash-es':
     specifier: ^4.17.12
     version: 4.17.12
@@ -2930,14 +2930,14 @@ packages:
       - utf-8-validate
     dev: true
 
-  /@prerenderer/renderer-puppeteer@1.2.4(puppeteer@22.8.1):
+  /@prerenderer/renderer-puppeteer@1.2.4(puppeteer@22.8.2):
     resolution: {integrity: sha512-S0LY0xYGnXLo/8DqkiT+pDLDd0X5msXSeaPzq5goqgmFfZOQEME3+A7j1T2iClrNzk4Rjgfu4KTA8o508GYXiQ==}
     engines: {node: '>=8.0.0'}
     peerDependencies:
       puppeteer: '>= 2'
     dependencies:
       promise-limit: 2.7.0
-      puppeteer: 22.8.1(typescript@5.4.5)
+      puppeteer: 22.8.2(typescript@5.4.5)
       schema-utils: 4.2.0
       ts-deepmerge: 6.2.1
     dev: true
@@ -4367,7 +4367,7 @@ packages:
     hasBin: true
     dependencies:
       caniuse-lite: 1.0.30001618
-      electron-to-chromium: 1.4.767
+      electron-to-chromium: 1.4.769
       node-releases: 2.0.14
       update-browserslist-db: 1.0.16(browserslist@4.23.0)
     dev: true
@@ -5565,8 +5565,8 @@ packages:
       jake: 10.9.1
     dev: true
 
-  /electron-to-chromium@1.4.767:
-    resolution: {integrity: sha512-nzzHfmQqBss7CE3apQHkHjXW77+8w3ubGCIoEijKCJebPufREaFETgGXWTkh32t259F3Kcq+R8MZdFdOJROgYw==}
+  /electron-to-chromium@1.4.769:
+    resolution: {integrity: sha512-bZu7p623NEA2rHTc9K1vykl57ektSPQYFFqQir8BOYf6EKOB+yIsbFB9Kpm7Cgt6tsLr9sRkqfqSZUw7LP1XxQ==}
     dev: true
 
   /elkjs@0.9.3:
@@ -10283,8 +10283,8 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  /puppeteer-core@22.8.1:
-    resolution: {integrity: sha512-m1F6ZSTw1xrJ6xD4B+HonkSNVQmMrRMaqca/ivRcZYJ6jqzOnfEh3QgO9HpNPj6heiAZ2+4IPAU3jdZaTIDnSA==}
+  /puppeteer-core@22.8.2:
+    resolution: {integrity: sha512-Gg9jUdJeF+UDbYPhwD602ky1LeS+AXDksl6sludrti1b7Sv/U4ZGY1LFyejarkIBCSHiPWL9SngXKCNcdZWBgQ==}
     engines: {node: '>=18'}
     dependencies:
       '@puppeteer/browsers': 2.2.3
@@ -10318,8 +10318,8 @@ packages:
       - utf-8-validate
     dev: true
 
-  /puppeteer@22.8.1(typescript@5.4.5):
-    resolution: {integrity: sha512-CFgPSKV+iydjO/8/hJVj251Hqp2PLcIa70j6H7sYqkwM8YJ+D3CA74Ufuj+yKtvDIntQPB/nLw4EHrHPcHOPjw==}
+  /puppeteer@22.8.2(typescript@5.4.5):
+    resolution: {integrity: sha512-yNZmKZHhCtBAjwuzonMyzgXLYxnvR+tbpatuyMffK+zmag84xyqE2EvPEWV1FvDXwW3m+/PT4Zp4KLerWWydQQ==}
     engines: {node: '>=18'}
     hasBin: true
     requiresBuild: true
@@ -10327,7 +10327,7 @@ packages:
       '@puppeteer/browsers': 2.2.3
       cosmiconfig: 9.0.0(typescript@5.4.5)
       devtools-protocol: 0.0.1273771
-      puppeteer-core: 22.8.1
+      puppeteer-core: 22.8.2
     transitivePeerDependencies:
       - bufferutil
       - supports-color

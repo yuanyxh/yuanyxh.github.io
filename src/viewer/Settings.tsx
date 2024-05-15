@@ -36,15 +36,18 @@ function ServiceWorkerCache() {
   const handleSwitchServiceWorkerCache = async (
     enableServiceWorkerCache: boolean
   ) => {
+    /*
+      TIPS: When we turn off the Service Worker, Ready will never be resolved because the page is not related to the service worker
+    */
+    // const registration = await window.navigator.serviceWorker.ready;
+
+    // if (registration.waiting || registration.installing) {
+    //   return error(
+    //     'service worker 正在安装中，此过程不可被打断，请稍后执行此操作。'
+    //   );
+    // }
+
     setSpinning(true);
-
-    const registration = await window.navigator.serviceWorker.ready;
-
-    if (registration.waiting || registration.installing) {
-      return error(
-        'service worker 正在安装中，此过程不可被打断，请稍后执行此操作。'
-      );
-    }
 
     if (enableServiceWorkerCache) {
       return serviceWorkerRef.current
