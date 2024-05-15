@@ -58,7 +58,8 @@ generateSW({
         cacheName: 'imageCache',
         expiration: {
           /** maximum cache 3 months */
-          maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+          // maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+          maxAgeSeconds: 7 * 24 * 60 * 60
         },
         cacheableResponse: {
           statuses: [0, 200]

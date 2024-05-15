@@ -48,8 +48,6 @@ function viteGenerateSitemap(): PluginOption {
       };
     });
 
-    console.log('debug for git actions', links.length);
-
     const smStream = new SitemapStream({ hostname: getEnv().VITE_DOMAIN_PATH });
 
     return streamToPromise(Readable.from(links).pipe(smStream)).then((data) =>

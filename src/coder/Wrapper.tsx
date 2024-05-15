@@ -6,7 +6,7 @@ import { cloneDeep } from 'lodash-es';
 import classNames from 'classnames';
 
 import type { ResolveRouteObject } from '@/router';
-import { Outlet, useHistory, useLocation, useRoute } from '@/router';
+import { Outlet, useHistory, useLocation, useRoutes } from '@/router';
 
 import styles from '@/coder/styles/Wrapper.module.less';
 
@@ -159,7 +159,7 @@ type FieldType = {
 };
 
 export default function Wrapper() {
-  const route = useRoute();
+  const route = useRoutes();
   const location = useLocation();
 
   const [open, setOpen] = useState(false);

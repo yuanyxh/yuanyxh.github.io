@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 
-import { useRoute } from '@/router';
+import { useRoutes } from '@/router';
 import { INDEX_PATH } from '@/router';
 
 export function useArticles() {
-  const routes = useRoute();
+  const routes = useRoutes();
 
   const articles = useMemo(() => {
     // TODO: hardcode? maby use context to provide articles, and router get context provide page route.

@@ -1,14 +1,14 @@
 import { submit } from './submit';
+import type { ResolveRouteObject } from './utils';
 import {
   generateRouteJSON,
   getEnv,
   replacePlaceRoute,
   resolve,
   resolveFullRoutes,
-  ResolveRouteObject,
   routesPath
 } from './utils';
-import { ArticleMeta } from './vite-route-generator';
+import type { ArticleMeta } from './vite-route-generator';
 
 import dayjs from 'dayjs';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -35,7 +35,8 @@ const excludeOutPathRewrite = [
   '/examples',
   '/books',
   '/coder',
-  '/profile'
+  '/profile',
+  '/404'
 ];
 
 function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {

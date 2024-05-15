@@ -5,7 +5,7 @@ export { default as RouterProvider } from './components/RouterProvider';
 export { AbstractHistory } from './history';
 export { useHistory } from './hooks/useHistory';
 export { useLocation } from './hooks/useLocation';
-export { useRoute } from './hooks/useRoute';
+export { useRoutes } from './hooks/useRoutes';
 export { useScrollStore } from './hooks/useScrollStore';
 export type {
   ComponentModule,
