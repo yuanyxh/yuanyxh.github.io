@@ -123,7 +123,7 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
 }
 
 async function vitePrerender(mode: string) {
-  if (mode !== 'build') return void 0;
+  if (mode !== 'prod') return void 0;
 
   if (!match) {
     throw Error('no match routes.');
