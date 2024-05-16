@@ -3,26 +3,21 @@ import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import type { FH } from '@/filehandle/utils/fileManager';
 
 import styles from './styles/MDEditor.module.less';
+import '@/assets/styles/prism-one-dark.css';
 import { reduce } from '../theme-reduce';
 
-import {
-  /* commandsCtx */ defaultValueCtx,
-  Editor,
-  rootCtx
-} from '@milkdown/core';
+import { defaultValueCtx, Editor, rootCtx } from '@milkdown/core';
 import { clipboard } from '@milkdown/plugin-clipboard';
-import { cursor } from '@milkdown/plugin-cursor';
 import { diagram } from '@milkdown/plugin-diagram';
-import { emoji } from '@milkdown/plugin-emoji';
 import { history } from '@milkdown/plugin-history';
 import { indent } from '@milkdown/plugin-indent';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
-import { slashFactory } from '@milkdown/plugin-slash';
-import { tooltipFactory } from '@milkdown/plugin-tooltip';
+import { prism, prismConfig } from '@milkdown/plugin-prism';
 import { upload } from '@milkdown/plugin-upload';
 import {
   blockquoteAttr,
   bulletListAttr,
+  codeBlockAttr,
   commonmark,
   emphasisAttr,
   headingAttr,
@@ -36,7 +31,7 @@ import {
   paragraphAttr
 } from '@milkdown/preset-commonmark';
 import { gfm } from '@milkdown/preset-gfm';
-import { /* callCommand, */ getMarkdown /* insert */ } from '@milkdown/utils';
+import { getMarkdown } from '@milkdown/utils';
 
 interface IMDEditorProps {
   currentHandle: FH | null;
@@ -59,6 +54,10 @@ const blockElementKeys = [
   paragraphAttr.key
 ];
 
+const blockClass = { class: styles.typography };
+
+const getMDString = getMarkdown();
+
 function createMDEditor(
   el: HTMLElement,
   value = '',
@@ -69,39 +68,35 @@ function createMDEditor(
       ctx.set(rootCtx, el);
       ctx.set(defaultValueCtx, value);
 
+      ctx.set(prismConfig.key, {
+        configureRefractor: (r) => {
+          r.alias('shell', 'sh');
+        }
+      });
+
+      blockElementKeys.forEach((key) => ctx.set(key, () => blockClass));
+
       ctx.set(inlineCodeAttr.key, () => ({ class: styles.inlineCode }));
       ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
-
-      // ctx.set(codeBlockAttr.key, () => ({
-      //   class: styles.typography
-      // }));
-
-      ctx.set(emphasisAttr.key, () => ({ class: styles.typograph }));
-      blockElementKeys.forEach((key) =>
-        ctx.set(key, () => ({ class: styles.typography }))
-      );
+      ctx.set(codeBlockAttr.key, () => ({ pre: blockClass, code: {} }));
+      ctx.set(emphasisAttr.key, () => blockClass);
 
       ctx.get(listenerCtx).markdownUpdated((_ctx, md) => onUpdate(md));
     })
     .config(reduce)
     .use(commonmark)
+    .use(prism)
     .use(insertImageInputRule)
     .use(insertImageCommand)
     .use(gfm)
     .use(history)
-    .use(cursor)
     .use(diagram)
     .use(clipboard)
-    .use(emoji)
     .use(indent)
     .use(upload)
     .use(listener)
-    .use(tooltipFactory('md-editor'))
-    .use(slashFactory('md-editor'))
     .create();
 }
-
-const getMDString = getMarkdown();
 
 const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
   function MDEditor(props, ref) {
