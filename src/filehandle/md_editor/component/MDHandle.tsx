@@ -1,7 +1,5 @@
 import { useEffect, useId, /* useId, */ useRef, useState } from 'react';
 
-import { App } from 'antd';
-
 import type BackgroundManager from '@/filehandle/BackgroundManager';
 
 import { Dialog, Icon } from '@/components';
@@ -69,9 +67,7 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
       onMinimize={handleMinimize}
       onClose={onClose}
     >
-      <App>
-        <MDContent handle={handle} update={update} />
-      </App>
+      <MDContent handle={handle} update={update} />
     </Dialog>
   );
 };

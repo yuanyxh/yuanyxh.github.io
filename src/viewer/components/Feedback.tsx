@@ -30,7 +30,7 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
         try {
           setUploading(true);
 
-          await fetch('http://8.222.131.201/issues', {
+          await fetch('https://api.yuanyxh.com/issues', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -53,6 +53,11 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
       });
   };
 
+  const handleCancel = () => {
+    onChange(false);
+    form.resetFields();
+  };
+
   return (
     <>
       <Modal
@@ -60,7 +65,7 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
         title="反馈建议"
         open={visible}
         footer={null}
-        onCancel={() => onChange(false)}
+        onCancel={handleCancel}
       >
         <Form
           style={{ maxWidth: 600, marginTop: 30 }}
