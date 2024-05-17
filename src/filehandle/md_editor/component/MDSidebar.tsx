@@ -26,6 +26,7 @@ interface ISidebarProps {
   changed: boolean;
   update(): void;
   onSelect(handle: FH): void;
+  onRemove(handle: DH | FH): void;
 }
 
 interface ExtendFileInfo extends FileInfo {
@@ -343,7 +344,7 @@ const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
 };
 
 export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
-  const { handle, changed, update, onSelect } = props;
+  const { handle, changed, update, onSelect, onRemove } = props;
 
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
@@ -457,6 +458,7 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
           await remove(dh, curr.name);
           setList(filter(list, curr.id));
 
+          onRemove(curr.handle);
           update();
         } catch (err) {
           error((err as Error).message);

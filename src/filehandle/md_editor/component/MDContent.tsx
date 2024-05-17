@@ -114,6 +114,13 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
       setChanged(changed);
     };
 
+    const handleRemove = (handle: DH | FH) => {
+      if (currentHandle === handle) {
+        setChanged(false);
+        setCurrentHandle(null);
+      }
+    };
+
     const handleSave = async (md: string) => {
       if (currentHandle) {
         try {
@@ -134,6 +141,7 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
             changed={changed}
             update={update}
             onSelect={handleSelect}
+            onRemove={handleRemove}
           />
         ) : null}
 
