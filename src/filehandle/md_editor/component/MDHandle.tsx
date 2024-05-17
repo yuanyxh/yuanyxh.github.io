@@ -2,7 +2,7 @@ import { useEffect, useId, /* useId, */ useRef, useState } from 'react';
 
 import { App } from 'antd';
 
-import type BackgroundManager from '@/filehandle/BackgroundManager';
+import type { BackgroundManager } from '@/filehandle/BackgroundManager';
 
 import { Dialog, Icon } from '@/components';
 

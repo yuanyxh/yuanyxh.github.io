@@ -2,6 +2,10 @@ import { cloneDeep } from 'lodash-es';
 
 import { EventEmitter } from '@/utils';
 
+import router from '@/routes';
+
+import filePanel from '.';
+
 export interface BackgroundProgram {
   readonly id: string;
   icon: React.ReactNode;
@@ -10,10 +14,24 @@ export interface BackgroundProgram {
 
 const UPDATE_EVENT = 'background_update';
 
-class BackgroundManager {
+export class BackgroundManager {
   private _list: BackgroundProgram[] = [];
 
   private event = new EventEmitter();
+
+  private toggleShowMenu: ((show: boolean) => any) | undefined;
+
+  constructor() {
+    // TIPS: We want the file system not to be displayed when entering the /coder page
+    router.subscribe(({ path }) => {
+      if (path.startsWith('/coder')) {
+        this.toggleShowMenu?.(false);
+        filePanel.hide();
+      } else if (this._list.length !== 0) {
+        this.toggleShowMenu?.(true);
+      }
+    });
+  }
 
   get list() {
     return cloneDeep(this._list);
@@ -31,12 +49,22 @@ class BackgroundManager {
     this._list.push(cloneDeep(program));
 
     this.event.emit(UPDATE_EVENT, this.list);
+
+    this.toggleShowMenu?.(true);
   }
 
   removeBackground(id: string) {
     this._list = this._list.filter((value) => value.id !== id);
 
     this.event.emit(UPDATE_EVENT, this.list);
+
+    if (this._list.length === 0) {
+      this.toggleShowMenu?.(false);
+    }
+  }
+
+  subscribeVisible(cb: (show: boolean) => any) {
+    this.toggleShowMenu = cb;
   }
 
   onUpdate(fn: (bpList: BackgroundProgram[]) => any) {
@@ -44,4 +72,4 @@ class BackgroundManager {
   }
 }
 
-export default BackgroundManager;
+export default new BackgroundManager();

@@ -6,7 +6,8 @@ import { useUserStore } from '@/store';
 
 import { error, warning } from '@/utils';
 
-import BackgroundManager from '../BackgroundManager';
+import type { BackgroundManager } from '../BackgroundManager';
+import backgroundManager from '../BackgroundManager';
 import FileLinkedList from '../FileLinkedList';
 import type { IMDHandle } from '../md_editor/component/MDHandle';
 import type { DH, FH, FileDataType, FileInfo } from '../utils/fileManager';
@@ -66,7 +67,7 @@ export function useFileSystem(): FileSystem {
     useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
 
   const fileHandlesRef = useRef<FileHandle[]>([]);
-  const backgroundManager = useRef(new BackgroundManager());
+  const backgroundManagerRef = useRef(backgroundManager);
 
   const [current, setCurrent] = useState<DH>() as [
     DH,
@@ -231,7 +232,7 @@ export function useFileSystem(): FileSystem {
       isBusy,
       fileLinked: fileLinked.current,
       fileHandles: fileHandlesRef.current,
-      backgroundManager: backgroundManager.current,
+      backgroundManager: backgroundManagerRef.current,
       register,
       returnToRoot,
       enterDirectory,
@@ -247,7 +248,7 @@ export function useFileSystem(): FileSystem {
     children,
     webdavs,
     fileLinked.current,
-    backgroundManager.current,
+    backgroundManagerRef.current,
     isBusy
   ]);
 
