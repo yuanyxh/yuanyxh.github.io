@@ -1,9 +1,12 @@
-import { useEffect, useId, /* useId, */ useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
-import type BackgroundManager from '@/filehandle/BackgroundManager';
+import { error } from '@/utils';
+
+import type { BackgroundManager } from '@/filehandle/BackgroundManager';
 
 import { Dialog, Icon } from '@/components';
 
+import type { IMDContentExpose } from './MDContent';
 import { MDContent } from './MDContent';
 import styles from './styles/MDHandle.module.less';
 import type { DH, FH } from '../../utils/fileManager';
@@ -17,6 +20,8 @@ export interface IMDHandle {
 
 const MDHandle: React.FC<IMDHandle> = (props) => {
   const { handle, backgroundManager, update, destroy } = props;
+
+  const mdContentRef = useRef<IMDContentExpose>(null);
 
   const handleId = useId();
 
@@ -32,11 +37,17 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
     }
   }, []);
 
-  const onClose = () => {
-    backgroundManager.removeBackground(handleId);
+  const onClose = async () => {
+    try {
+      await mdContentRef.current?.confirm();
 
-    setOpen(false);
-    destroyRef.current = true;
+      backgroundManager.removeBackground(handleId);
+
+      setOpen(false);
+      destroyRef.current = true;
+    } catch (err) {
+      error('暂无法保存。');
+    }
   };
 
   const handleMinimize = () => {
@@ -67,7 +78,7 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
       onMinimize={handleMinimize}
       onClose={onClose}
     >
-      <MDContent handle={handle} update={update} />
+      <MDContent ref={mdContentRef} handle={handle} update={update} />
     </Dialog>
   );
 };

@@ -58,7 +58,7 @@ function setTransformOrigin(ele: HTMLElement) {
 
 const animateStrategy = {
   beforeEnter(ele: HTMLDivElement) {
-    ele.parentElement!.style.display = 'flex';
+    ele.parentElement!.style.display = 'initial';
     ele.style.display = 'block';
 
     setTransformOrigin(ele);
