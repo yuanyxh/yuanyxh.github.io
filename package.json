@@ -72,7 +72,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.0",
     "fast-glob": "^3.3.2",
     "front-matter": "^4.0.2",
-    "gaxios": "^6.5.0",
+    "gaxios": "^6.6.0",
     "googleapis": "^137.1.0",
     "husky": "^9.0.11",
     "less": "^4.2.0",
