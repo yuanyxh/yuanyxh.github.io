@@ -10,9 +10,13 @@ import React, {
 } from 'react';
 import { forwardRef } from 'react';
 
-import { Loading } from '@/components';
+import { Button, Typography } from 'antd';
+
+import { Icon, Loading } from '@/components';
 
 import ErrorBoundary from './ErrorBoundary';
+import styles from './styles/Outlet.module.less';
+import { useHistory } from '../hooks/useHistory';
 import { NOT_FOUND_PATH, ResolveRouteObject } from '../router';
 import { RouterContext } from '../shared/context';
 
@@ -27,7 +31,59 @@ function Error() {
 }
 
 function NotFound() {
-  return <h1>not found</h1>;
+  const history = useHistory();
+
+  const handleBack = () => {
+    history.replace('/');
+  };
+
+  return (
+    <div className={styles.notFound}>
+      <div>
+        <Icon icon="page-not-found" size={'25vw'} />
+
+        <Typography.Paragraph type="secondary">
+          Free Page Not Found Illustration By&nbsp;
+          <Typography.Link
+            type="danger"
+            rel="external nofollow noopener"
+            href="https://iconscout.com/contributors/iconscout"
+          >
+            IconScout Store
+          </Typography.Link>
+        </Typography.Paragraph>
+      </div>
+
+      <div>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ marginBottom: 5, fontSize: 15 }}
+        >
+          您访问了一个不存在的页面，
+        </Typography.Paragraph>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ marginBottom: 5, fontSize: 15 }}
+        >
+          如果这是一个错误请前往{' '}
+          <Typography.Link
+            type="danger"
+            target="_blank"
+            href="https://github.com/yuanyxh/yuanyxh.github.io"
+          >
+            Github
+          </Typography.Link>
+          &nbsp;反馈。
+        </Typography.Paragraph>
+
+        <Typography.Paragraph style={{ marginTop: 20 }}>
+          <Button type="primary" onClick={handleBack}>
+            返回首页
+          </Button>
+        </Typography.Paragraph>
+      </div>
+    </div>
+  );
 }
 
 const Outlet = memo(

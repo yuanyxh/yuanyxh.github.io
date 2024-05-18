@@ -2,7 +2,7 @@ import { assign } from 'lodash-es';
 
 interface IIconProps extends React.HTMLAttributes<HTMLOrSVGElement> {
   icon: string;
-  size?: number;
+  size?: number | string;
   svgStyle?: React.CSSProperties;
 }
 
@@ -18,7 +18,7 @@ const Icon: React.FC<Readonly<IIconProps>> = (props) => {
     },
     style,
     {
-      fontSize: `${size}px`,
+      fontSize: typeof size === 'number' ? `${size}px` : size,
       color
     }
   );
