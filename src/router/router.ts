@@ -312,8 +312,9 @@ class Router {
           this.event.emit('matchRoute', getMatch);
         }
       }).finally(() => {
-        if (!isObsolete)
+        if (!isObsolete) {
           this.event.emit(EventKeys.AFTER_ENTER, fromState, toState, method);
+        }
       });
 
       if (changeHistory) {

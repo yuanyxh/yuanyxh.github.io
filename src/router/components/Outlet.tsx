@@ -10,13 +10,11 @@ import React, {
 } from 'react';
 import { forwardRef } from 'react';
 
-import { Button, Typography } from 'antd';
+import { Loading } from '@/components';
 
-import { Icon, Loading } from '@/components';
-
-import ErrorBoundary from './ErrorBoundary';
-import styles from './styles/Outlet.module.less';
-import { useHistory } from '../hooks/useHistory';
+import ErrorCom from './Error';
+import ErrorBoundary, { ErrorBoundaryContext } from './ErrorBoundary';
+import NotFound from './NotFound';
 import { NOT_FOUND_PATH, ResolveRouteObject } from '../router';
 import { RouterContext } from '../shared/context';
 
@@ -26,65 +24,42 @@ export interface IOutletRef {
   onMounted(cb: () => any): void;
 }
 
-function Error() {
-  return <h1>some error</h1>;
-}
+interface IErrorBoundaryConsumeProps extends ChildrenComponent {}
 
-function NotFound() {
-  const history = useHistory();
+const ErrorBoundaryConsume: React.FC<Readonly<IErrorBoundaryConsumeProps>> =
+  memo(function ErrorBoundaryConsume(props) {
+    const { children } = props;
 
-  const handleBack = () => {
-    history.replace('/');
-  };
+    const errorboundaryContext = useContext(ErrorBoundaryContext);
+    const routerContext = useContext(RouterContext);
 
-  return (
-    <div className={styles.notFound}>
-      <div>
-        <Icon icon="page-not-found" size={'25vw'} />
+    const resetErrorRef = useRef(false);
 
-        <Typography.Paragraph type="secondary">
-          Free Page Not Found Illustration By&nbsp;
-          <Typography.Link
-            type="danger"
-            rel="external nofollow noopener"
-            href="https://iconscout.com/contributors/iconscout"
-          >
-            IconScout Store
-          </Typography.Link>
-        </Typography.Paragraph>
-      </div>
+    useEffect(() => {
+      return routerContext?.afterEnter(() => {
+        if (errorboundaryContext.hasError && !resetErrorRef.current) {
+          resetErrorRef.current = true;
+        }
+      });
+    }, []);
 
-      <div>
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
-          您访问了一个不存在的页面，
-        </Typography.Paragraph>
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
-          如果这是一个错误请前往{' '}
-          <Typography.Link
-            type="danger"
-            target="_blank"
-            href="https://github.com/yuanyxh/yuanyxh.github.io"
-          >
-            Github
-          </Typography.Link>
-          &nbsp;反馈。
-        </Typography.Paragraph>
+    useEffect(() => {
+      if (resetErrorRef.current) {
+        errorboundaryContext.reset?.();
+        resetErrorRef.current = false;
+      }
+    }, [children]);
 
-        <Typography.Paragraph style={{ marginTop: 20 }}>
-          <Button type="primary" onClick={handleBack}>
-            返回首页
-          </Button>
-        </Typography.Paragraph>
-      </div>
-    </div>
-  );
-}
+    return (
+      <>
+        {errorboundaryContext.hasError ? (
+          <ErrorCom errorInfo={errorboundaryContext} />
+        ) : (
+          children
+        )}
+      </>
+    );
+  });
 
 const Outlet = memo(
   forwardRef<IOutletRef, Readonly<IOutletProps>>(function Outlet(_props, ref) {
@@ -146,7 +121,7 @@ const Outlet = memo(
 
     if (route?.module === void 0) return null;
 
-    let Element: () => JSX.Element | React.ReactNode = () => null;
+    let Element: React.FC = () => null;
 
     if (route.path === NOT_FOUND_PATH) {
       return <NotFound />;
@@ -164,7 +139,7 @@ const Outlet = memo(
         break;
       case 'rejected':
         initialedRef.current = false;
-        Element = Error;
+        Element = ErrorCom;
         break;
       default:
         break;
@@ -172,7 +147,9 @@ const Outlet = memo(
 
     return (
       <ErrorBoundary>
-        <Element />
+        <ErrorBoundaryConsume>
+          <Element />
+        </ErrorBoundaryConsume>
       </ErrorBoundary>
     );
   })

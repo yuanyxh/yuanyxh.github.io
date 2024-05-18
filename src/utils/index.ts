@@ -1,3 +1,4 @@
+export * from './error.ts';
 export { default as EventEmitter } from './event';
 export * from './fullscreen';
 export { default as globalEvent } from './globalEventEmitter';
@@ -47,4 +48,8 @@ export const createElementContainer = () => {
   window.document.body.appendChild(container);
 
   return container;
+};
+
+export const copy = (str: string) => {
+  return window.navigator.clipboard.writeText(str);
 };

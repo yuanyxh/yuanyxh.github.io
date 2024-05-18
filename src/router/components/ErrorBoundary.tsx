@@ -1,11 +1,19 @@
-import { Component } from 'react';
+import { Component, createContext } from 'react';
 
 interface ErrorBoundaryProps extends React.DOMAttributes<HTMLDivElement> {}
 
-interface ErrorState {
+export interface ErrorState {
   hasError: boolean;
   error?: Error;
 }
+
+interface ErrorBoundaryContextValue extends ErrorState {
+  reset?(): void;
+}
+
+export const ErrorBoundaryContext = createContext<ErrorBoundaryContextValue>({
+  hasError: false
+});
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorState> {
   state: ErrorState;
@@ -18,34 +26,28 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorState> {
     };
   }
 
-  static getDerivedStateFromError(error: Error) {
-    console.log(error);
+  reset = () => {
+    this.setState({ hasError: false });
+  };
 
+  static getDerivedStateFromError(error: Error) {
     // Update state so the next render will show the fallback UI.
     return { hasError: true, error: error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(/* error: Error, errorInfo: React.ErrorInfo */) {
     // You can also log the error to an error reporting service
-    console.error(error, errorInfo);
+    // console.error(error, errorInfo);
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <>
-          <h1>
-            {this.state.error?.name}:&nbsp; {this.state.error?.message}
-          </h1>
-
-          {this.state.error?.stack
-            ?.split(/[\r\n]/)
-            .map((value, i) => <p key={i}>{value}</p>)}
-        </>
-      );
-    }
-
-    return this.props.children;
+    return (
+      <ErrorBoundaryContext.Provider
+        value={{ ...this.state, reset: this.reset }}
+      >
+        {this.props.children}
+      </ErrorBoundaryContext.Provider>
+    );
   }
 }
 

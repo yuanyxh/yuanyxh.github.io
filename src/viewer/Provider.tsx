@@ -5,6 +5,8 @@ import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 import { Link, useLocation } from '@/router';
 
+import { copy } from '@/utils';
+
 import { Icon } from '@/components';
 
 import styles from './styles/Provider.module.less';
@@ -71,7 +73,7 @@ const SubTitle = (
     e.preventDefault();
 
     // TODO: global event show the mesage to user
-    window.navigator.clipboard.writeText(
+    copy(
       new URL(
         `${window.location.origin}${window.location.pathname}/#${children}`
       ).href
