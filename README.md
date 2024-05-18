@@ -32,7 +32,7 @@
 - 微信：hxy3130gbs
 - Email：yang_xuheng@163.com
 
-[博客站点]: https://yang-xianzhu.github.io/
+[博客站点]: https://blog-kappa-seven-43.vercel.app/
 [Hexo]: https://hexo.io/zh-cn/
 [Vuepress]: https://vuepress.vuejs.org/zh/
 [项目]: https://github.com/yuanyxh/illustrate

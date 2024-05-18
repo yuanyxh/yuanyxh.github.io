@@ -21,6 +21,14 @@ export function useHistory() {
       );
     }
 
+    function back() {
+      routerContext?.navigate(-1);
+    }
+
+    function forward() {
+      routerContext?.navigate(1);
+    }
+
     function go(to: number) {
       routerContext?.navigate(to);
     }
@@ -28,7 +36,9 @@ export function useHistory() {
     return {
       push,
       replace,
-      go
+      go,
+      back,
+      forward
     };
   }, [routerContext]);
 

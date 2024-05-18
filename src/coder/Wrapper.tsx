@@ -159,14 +159,15 @@ type FieldType = {
 };
 
 export default function Wrapper() {
-  const route = useRoutes();
+  const routes = useRoutes();
   const location = useLocation();
+  const history = useHistory();
 
   const [open, setOpen] = useState(false);
   const [layoutId, setLayoutId] = useState(0);
 
   const menu = useMemo(() => {
-    const codes = route?.[1].children || [];
+    const codes = routes?.[1].children || [];
 
     const curr = location.path.replace('/coder/', '').split('/').shift()!;
 
@@ -177,6 +178,10 @@ export default function Wrapper() {
 
   const handleChangeLayout = (e: number) => {
     setLayoutId(e);
+  };
+
+  const handleBack = () => {
+    history.back();
   };
 
   return (
@@ -221,6 +226,11 @@ export default function Wrapper() {
           aria-label="settings"
           icon={<Icon icon="material-symbols:settings" />}
           onClick={() => setOpen(true)}
+        />
+        <FloatButton
+          aria-label="back"
+          icon={<Icon icon="typcn--arrow-back" />}
+          onClick={handleBack}
         />
       </FloatButton.Group>
     </Layout>
