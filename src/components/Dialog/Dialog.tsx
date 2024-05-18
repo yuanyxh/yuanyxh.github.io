@@ -26,8 +26,9 @@ export type DialogProps = Omit<
 >;
 
 export interface IDialogProps extends DialogProps {
-  draggable?: boolean;
   open: boolean;
+  draggable?: boolean;
+  toolbar?: React.ReactNode;
   onMinimize?(): any;
   onClose?(): any;
 }
@@ -93,6 +94,7 @@ const Dialog = forwardRef<IDialogExpose, Readonly<IDialogProps>>(
   function Dialog(props, ref) {
     const {
       open,
+      toolbar = null,
       draggable = true,
       className = '',
       children,
@@ -218,7 +220,9 @@ const Dialog = forwardRef<IDialogExpose, Readonly<IDialogProps>>(
               className={styles.bar}
               style={{ cursor: draggable ? void 0 : 'default' }}
               onMouseDownCapture={handleStart}
-            ></div>
+            >
+              {toolbar}
+            </div>
 
             <div className={styles.operator}>
               <Icon

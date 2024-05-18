@@ -3,7 +3,8 @@ import { merge } from 'lodash-es';
 export const KEYS = {
   /** Website configuration key */
   APP_KEY: 'app',
-  USER_KEY: 'user'
+  USER_KEY: 'user',
+  FILE_SYSTEM_MD: 'filesystem/md'
 } as const;
 
 type TKEYS = (typeof KEYS)[keyof typeof KEYS];

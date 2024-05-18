@@ -1,9 +1,9 @@
-interface ILoadignProps {}
+interface ILoadingProps {}
 
-const Loadign: React.FC<Readonly<ILoadignProps>> = (props) => {
+const Loading: React.FC<Readonly<ILoadingProps>> = (props) => {
   console.log(props);
 
-  return <div>Loadign</div>;
+  return <div>Loading</div>;
 };
 
-export default Loadign;
+export default Loading;

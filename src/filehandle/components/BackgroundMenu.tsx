@@ -4,8 +4,10 @@ import { createPortal } from 'react-dom';
 import classNames from 'classnames';
 
 import styles from './styles/BackgroundMenu.module.less';
-import type { BackgroundProgram } from '../BackgroundManager';
-import type { BackgroundManager } from '../BackgroundManager';
+import type {
+  BackgroundManager,
+  BackgroundProgram
+} from '../BackgroundManager';
 
 interface IBackgroundMenuProps {
   backgroundManager: BackgroundManager;

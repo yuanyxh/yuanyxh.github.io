@@ -6,7 +6,7 @@ const map: {
 
 const sizeMap: { [key: string]: { width: number; height: number } } = {};
 
-export default function useResizeObserver(selector: string) {
+export function useResizeObserver(selector: string) {
   const [size, setSize] = useState(
     sizeMap[selector] || {
       width: 0,

@@ -6,7 +6,7 @@ import profileSiderbarData from './data/profileSidebar.json';
 
 const { Content, Sider } = Layout;
 
-const Settings = () => {
+const ProfileLayout = () => {
   const history = useHistory();
   const location = useLocation();
 
@@ -50,4 +50,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default ProfileLayout;

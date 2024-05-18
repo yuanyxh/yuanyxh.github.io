@@ -14,7 +14,8 @@ const initialValues = {
   type: 'suggestion',
   description: ''
 };
-const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
+
+export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
   const [uploading, setUploading] = useState(false);
 
   const [form] = Form.useForm<typeof initialValues>();
@@ -120,5 +121,3 @@ const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
     </>
   );
 };
-
-export default Feedback;

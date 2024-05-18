@@ -27,7 +27,7 @@ import { Icon } from '@/components';
 
 import LogoImage from '@/assets/images/main.webp';
 
-import Feedback from './components/Feedback';
+import { Feedback } from './components/Feedback';
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';

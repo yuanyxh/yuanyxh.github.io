@@ -19,7 +19,7 @@ import rehypePrism from '@mapbox/rehype-prism';
 import viteRouteGenerator from './helpers/vite-route-generator';
 import vitePrerender from './helpers/vite-prerender';
 import viteGenerateSitemap from './helpers/vite-generate-sitemap';
-// import basicSsl from '@vitejs/plugin-basic-ssl';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 import type { ConfigEnv, UserConfig } from 'vite';
 
@@ -90,8 +90,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         iconDirs: [resolve('./src/assets/svgs')],
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
-      })
-      // basicSsl()
+      }),
+      basicSsl()
     ],
     resolve: {
       alias: [

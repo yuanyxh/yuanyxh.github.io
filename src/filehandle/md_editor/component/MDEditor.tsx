@@ -4,7 +4,10 @@ import type { FH } from '@/filehandle/utils/fileManager';
 
 import styles from './styles/MDEditor.module.less';
 import '@/assets/styles/prism-one-dark.css';
+import type { UploadInfo } from '../store/useMDStore';
+import { useMDStore } from '../store/useMDStore';
 import { reduce } from '../theme-reduce';
+import { toFormData } from '../utils';
 
 import { defaultValueCtx, Editor, rootCtx } from '@milkdown/core';
 import { clipboard } from '@milkdown/plugin-clipboard';
@@ -13,7 +16,8 @@ import { history } from '@milkdown/plugin-history';
 import { indent } from '@milkdown/plugin-indent';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { prism, prismConfig } from '@milkdown/plugin-prism';
-import { upload } from '@milkdown/plugin-upload';
+import type { Uploader } from '@milkdown/plugin-upload';
+import { upload, uploadConfig } from '@milkdown/plugin-upload';
 import {
   blockquoteAttr,
   bulletListAttr,
@@ -58,6 +62,58 @@ const blockClass = { class: styles.typography };
 
 const getMDString = getMarkdown();
 
+let uploadInfo: UploadInfo | null = null;
+const selfUpload = async (file: File) => {
+  if (!uploadInfo || uploadInfo.url.trim() === '') {
+    return window.URL.createObjectURL(file);
+  }
+
+  const body = uploadInfo.body.trim() ? JSON.parse(uploadInfo.body) : {};
+  const data = toFormData({ ...body, [uploadInfo.field]: file });
+
+  const navigation = uploadInfo.navigation;
+
+  return fetch(uploadInfo.url, {
+    method: 'POST',
+    body: data
+  })
+    .then((res) => res.json())
+    .then((value) =>
+      navigation.split('.').reduce((prev, curr) => prev[curr], value)
+    );
+};
+
+const uploader: Uploader = async (files, schema) => {
+  const images: File[] = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files.item(i);
+    if (!file) {
+      continue;
+    }
+
+    // You can handle whatever the file type you want, we handle image here.
+    if (!file.type.includes('image')) {
+      continue;
+    }
+
+    images.push(file);
+  }
+
+  const nodes = await Promise.all(
+    images.map(async (image) => {
+      const src = await selfUpload(image);
+      const alt = image.name;
+      return schema.nodes.image.createAndFill({
+        src,
+        alt
+      })!;
+    })
+  );
+
+  return nodes;
+};
+
 function createMDEditor(
   el: HTMLElement,
   value = '',
@@ -67,6 +123,11 @@ function createMDEditor(
     .config((ctx) => {
       ctx.set(rootCtx, el);
       ctx.set(defaultValueCtx, value);
+
+      ctx.update(uploadConfig.key, (prev) => ({
+        ...prev,
+        uploader
+      }));
 
       ctx.set(prismConfig.key, {
         configureRefractor: (r) => {
@@ -102,10 +163,11 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
   function MDEditor(props, ref) {
     const { currentHandle, changed, onChanged, onSave } = props;
 
+    uploadInfo = useMDStore().uploadInfo;
+
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<Editor>();
     const mdStringRef = useRef('');
-
     const creatingRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
