@@ -170,6 +170,16 @@ code {
     list-style: decimal;
   }
 
+  p + ul,
+  p + ol,
+  p + dl {
+    margin-top: -15px;
+  }
+
+  p + p {
+    margin-top: -10px;
+  }
+
   img {
     max-width: 100%;
     text-align: center;
@@ -258,7 +268,7 @@ code {
     border-left: 0.2rem solid var(--border-color);
 
     > p {
-      margin-bottom: 8px;
+      margin-bottom: 0;
       line-height: 1.7em;
     }
   }

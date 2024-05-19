@@ -1,0 +1,278 @@
+---
+title: 资源加载失败重载与前端升级检测方案
+date: 2024-05-19 17:09:00
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/6516a9300533ca12.png
+description: 探讨前端资源加载失败时能够采取的策略，如何侦听资源加载失败，并在必要时重载页面；也提出了一种前端版本升级检测的思路。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+之前看到了两篇文章，一篇讲连接到网络时重载页面的，一篇讲前端检测升级的，诞生了一些自己的思路和想法，写下了这篇文章。
+
+## 资源加载失败重载方案
+
+不知道你们是否体验过 Chrome 加载一个网页失败后（网络断开时），自动重载网页的行为（加载成功前以指数级回退的时间间隔尝试重新加载页面），虽然大部分时候可能比较鸡肋，但雀氏比什么都不作为有更好的用户体验，所以我也在自己的站点中加入了这个功能，这里讨论下中间的过程。
+
+### 资源加载失败的侦测
+
+使用 `window.onerror` 可以侦听到 js 的运行时错误和资源加载失败错误：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  
+  <script>
+    window.addEventListener('error', () => {
+      console.log('error');
+    }, true);
+  </script>
+
+  <img src="not-found.png" />
+  <script src="not-found.js" ></script>
+
+</body>
+</html>
+```
+
+控制台输出：
+
+<Image url={'http://qkc148.bvimg.com/18470/b84487b8ba4593c7.png'} width={1366} height={310} />
+
+**注意：** 必须以捕获模式侦听，否则不起作用，另外无法捕获动态导入导致的错误：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  
+  <script>
+    window.addEventListener('error', () => {
+      console.log('error');
+    }, true);
+
+    import('not-found');
+  </script>
+
+</body>
+</html>
+```
+
+控制台输出：
+
+<Image url={'http://qkc148.bvimg.com/18470/0f3009f6da94fd06.png'} width={1366} height={310} />
+
+可以看到并没有捕获到动态导入的错误，也就无法捕获到主流前端框架路由懒加载时出现的错误，针对动态导入，我们可以使用 [PerformanceObserver]。
+
+[PerformanceObserver] 是浏览器提供的一个性能观察工具，在影响浏览器性能的时间节点中会触发指定的事件，他的简单使用如下：
+
+```js
+const observer = new PerformanceObserver(function (list, obj) {
+  const entries = list.getEntries();
+  for (const i = 0; i < entries.length; i++) {
+    console.log(entries[i]);
+  }
+});
+
+observer.observe({ entryTypes: ["resource"] });
+```
+
+`{ entryTypes: ["resource"] }` 表明我们要观察的性能条目类型集是资源，他的效果如下：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      const observer = new PerformanceObserver(function (list, obj) {
+        const entries = list.getEntries();
+
+        for (let i = 0; i < entries.length; i++) {
+          console.log(entries[i]);
+        }
+      });
+
+      observer.observe({ entryTypes: ["resource"] });
+
+      import("./fsdfsdf");
+      
+    </script>
+  </body>
+</html>
+```
+
+<Image url={'http://qkc148.bvimg.com/18470/57f3e9e63cc296c2.png'} width={1366} height={458} />
+
+可以通过 `responseStatus` 状态码判断是否加载成功：
+
+<Image url={'http://qkc148.bvimg.com/18470/9a7c6b2b05418668.png'} width={1366} height={458} />
+
+当然它也可以侦测到资源加载失败，兼容性也还不错，不需要侦测运行时错误的话可以完全替代 `window.onerror`。
+
+关于错误侦测最后扩展两个事件：
+
+[rejectionhandled][rejectionhandled-event]：捕获 `rejected` 且添加了错误处理程序的 `Promise`，有个坑点是只能捕获 `rejected` 后再添加错误处理程序的 `Promise`，作用不大，比如：
+
+```js
+window.addEventListener('rejectionhandled', () => {
+  console.log('rejectionhandled');
+});
+
+// 这个无效，无法触发 rejectionhandled
+Promise.reject('unknown').catch(() => {});
+
+// 这个有效，触发 rejectionhandled
+const p = Promise.reject('unknown');
+setTimeout(() => {
+  p.catch(() => {});
+}, 0);
+```
+
+[unhandledrejection][unhandledrejection-event]：和 `rejectionhandled` 相反，未被处理的 `Promise` 错误都会触发此事件，比如：
+
+```js
+window.addEventListener('unhandledrejection', () => {
+  console.log('unhandledrejection');
+});
+
+// 这个有效，触发 unhandledrejection
+Promise.reject('unknown');
+
+// 这个无效，错误被处理了
+Promise.reject('unknown').catch(() => {});
+```
+
+### 错误重载
+
+```js
+function errorHandle() {
+  // 离线模式下才进入下一步
+  if (!window.navigator.onLine) {
+    const _listener = () => {
+      window.removeEventListener('online', _listener)
+
+      // 提示用户并延时三秒重载页面
+      warning('即将在三秒后重载页面。');
+      sleep(3000, () => window.location.reload());
+    };
+
+    // 侦听网络连接
+    window.addEventListener('online', _listener);
+  }
+}
+
+const observer = new PerformanceObserver(function (list, obj) {
+  const entries = list.getEntries();
+
+  // 判断是否有加载失败的资源，状态码可自定义
+  const hasError = entries.some((entrie) => [0, 404].includes(entrie.responseStatus))
+
+  hasError && errorHandle();
+});
+
+observer.observe({ entryTypes: ["resource"] });
+```
+
+很简单的策略，只在资源失败且网络离线的情况下添加网络在线侦听事件，并在网络可用时重载页面，这里有个问题是 `online` 事件触发时网络不一定是可用的，可以替换自己的逻辑来侦听网络连接，比如 `navigator.connection`。
+
+## 前端升级检测思路
+
+这个思路是基于 service worker，因为之前搞自己的博客对 service worker 有一定的研究，所以提到前端升级检测时就想到了它。
+
+具体的思路是这样的：service worker 被激活后能够拦截作用域内的网络请求，在每次请求时调用 `ServiceWorkerRegistration.update()` 方法，此方法会促使浏览器立即获取注册的 service worker 脚本并检测是否有升级，如果有升级则开始安装新的 service worker，当 service worker 被安装后还需激活，此时可以提示用户并强制新的 service worker 接管页面。
+
+service worker 检测升级的方式是对前后两个 service worker 脚本进行对比，所以每次打包部署时需要修改 service worker 加班，一般定义一个版本值。
+
+一个简单实现如下：
+
+```js
+// 主线程
+if ('serviceWorker' in window.navigator) {
+  // 注册 service worker
+  window.navigator.serviceWorker
+    .register('/sw.js')
+    .then((serviceWorker) => {
+      if (serviceWorker.waiting) {
+        // 新的 service worker 已安装，等待激活，可提示用户
+        return;
+      }
+
+      // 侦听可更新事件
+      serviceWorker.addEventListener('updatefound', () => {
+        // 安装中的 service worker
+        const installingWorker = serviceWorker.installing;
+
+        // 侦听状态改变事件
+        installingWorker?.addEventListener('statechange', () => {
+          if (
+            installingWorker?.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            // 新的 service worker 已安装，等待激活，可提示用户
+          }
+        });
+      });
+    });
+}
+
+// 侦听更新请求，调用 update 方法检测更新
+navigator.serviceWorker.addEventListener("message", async function(event) {
+  if (event.data === 'update') {
+    const registration = await navigator.serviceWorker.ready;
+
+    registration.update();
+  }
+});
+
+// --------------- 分割线 ----------------
+
+// sw.js
+async function sendUpdate() {
+  const clients = await self.clients.matchAll()
+
+  // 向所有客户端发送更新请求
+  clients.forEach(function(client) {
+    client.postMessage('update');
+  });
+}
+
+// 侦听网络请求，加入防抖策略防止频繁更新。
+let timer = null;
+self.addEventListener('fetch', () => {
+  if (timer) window.clearTimeout(timer);
+
+  timer = setTimeout(() => {
+    sendUpdate();
+
+    timer = null;
+  }, 5000);
+})
+```
+
+这种方式需要注意使用 cdn 缓存时不缓存 service worker 脚本，另外网络请求不频繁的站点不适合这种方式，比如使用 service worker 预缓存所有站点资源的博客。
+
+--- end
+
+[rejectionhandled-event]: https://developer.mozilla.org/zh-CN/docs/Web/API/Window/rejectionhandled_event
+[unhandledrejection-event]: https://developer.mozilla.org/en-US/docs/Web/API/Window/unhandledrejection_event
+[PerformanceObserver]: https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
