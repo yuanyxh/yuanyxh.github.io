@@ -163,12 +163,11 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
   function MDEditor(props, ref) {
     const { currentHandle, changed, onChanged, onSave } = props;
 
-    uploadInfo = useMDStore().uploadInfo;
-
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<Editor>();
     const mdStringRef = useRef('');
-    const creatingRef = useRef(false);
+
+    uploadInfo = useMDStore().uploadInfo;
 
     useImperativeHandle(ref, () => ({
       getMarkdown() {
@@ -177,32 +176,20 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
     }));
 
     useMemo(() => {
-      if (creatingRef.current) {
-        return void 0;
-      }
+      currentHandle
+        ?.getFile()
+        .then((file) => file.text())
+        .then((markdown) => {
+          createMDEditor(editorContainerRef.current!, markdown, onUpdate).then(
+            (value) => {
+              editorRef.current && editorRef.current.destroy(true);
 
-      if (editorRef.current) {
-        editorRef.current.destroy(true);
-      }
-
-      if (currentHandle) {
-        creatingRef.current = true;
-
-        currentHandle
-          .getFile()
-          .then((file) => file.text())
-          .then((markdown) => {
-            createMDEditor(editorContainerRef.current!, markdown, onUpdate)
-              .then((value) => {
-                editorRef.current = value;
-                mdStringRef.current = markdown;
-                onChanged(false);
-              })
-              .finally(() => {
-                creatingRef.current = false;
-              });
-          });
-      }
+              editorRef.current = value;
+              mdStringRef.current = markdown;
+              onChanged(false);
+            }
+          );
+        });
 
       return () => {
         editorRef.current?.destroy(true);

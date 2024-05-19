@@ -55,6 +55,8 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
       () => ({
         confirm() {
           return new Promise<boolean>((resolve, reject) => {
+            if (!changed) return resolve(true);
+
             confirm({
               title: '温馨提示',
               content: '是否保存更改？如果不保存，您的更改会丢失。',
@@ -80,7 +82,7 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
           });
         }
       }),
-      [currentHandle]
+      [currentHandle, changed]
     );
 
     const handleSelect = async (handle: FH) => {
