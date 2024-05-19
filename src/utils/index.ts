@@ -5,6 +5,7 @@ export { default as globalEvent } from './globalEventEmitter';
 export * from './globalEventEmitter';
 export * from './localStorageTools';
 export * from './notification';
+export { default as assetsLoadHandle } from './online.ts';
 export * from './permissions';
 export { default as ServiceWorkerManager } from './serviceWorker';
 export * from './serviceWorker';

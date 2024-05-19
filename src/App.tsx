@@ -16,7 +16,7 @@ import type { AppState } from '@/store';
 import { useAppStore } from '@/store';
 
 import {
-  addGlobalListener,
+  assetsLoadHandle,
   getStorage,
   globalEvent,
   hasLocalStorage,
@@ -92,49 +92,52 @@ const App: React.FC<IAppProps> = (props) => {
       }
     }
 
-    function update() {
-      function handleReEnter() {
-        serviceWorkerRef.current?.skipWaiting();
-        notificationApi.destroy();
-      }
+    {
+      const update = () => {
+        function handleReEnter() {
+          serviceWorkerRef.current?.skipWaiting();
+          notificationApi.destroy();
+        }
 
-      const btn = (
-        <Button type="primary" onClick={handleReEnter}>
-          确认
-        </Button>
-      );
+        const btn = (
+          <Button type="primary" onClick={handleReEnter}>
+            确认
+          </Button>
+        );
 
-      notificationApi.info({
-        message: '有新内容',
-        description: '网站有更新，请点击确认以获取最新内容。',
-        placement: 'bottomRight',
-        style: { padding: '14px 16px', width: 300 },
-        btn,
-        duration: null
-      });
-
-      if (!frontDesk && enableNotification) {
-        notify({
-          icon: '/favicon.ico',
-          title: '有新内容',
-          data: '网站内容有更新，您可以前往查看更新。'
+        notificationApi.info({
+          message: '有新内容',
+          description: '网站有更新，请点击确认以获取最新内容。',
+          placement: 'bottomRight',
+          style: { padding: '14px 16px', width: 300 },
+          btn,
+          duration: null
         });
+
+        if (!frontDesk && enableNotification) {
+          notify({
+            icon: '/favicon.ico',
+            title: '有新内容',
+            data: '网站内容有更新，您可以前往查看更新。'
+          });
+        }
+      };
+      serviceWorkerRef.current = new ServiceWorkerManager({ update });
+      if (import.meta.env.PROD && enableServiceWorkerCache) {
+        serviceWorkerRef.current.registerServiceWorker();
+      } else {
+        serviceWorkerRef.current.unregisterServiceWorker();
       }
     }
-    serviceWorkerRef.current = new ServiceWorkerManager({ update });
-    if (import.meta.env.PROD && enableServiceWorkerCache) {
-      serviceWorkerRef.current.registerServiceWorker();
-    } else {
-      serviceWorkerRef.current.unregisterServiceWorker();
-    }
 
-    const removePageShowListener = addGlobalListener('pageshow', () => {
-      setFrontDesk(true);
-    });
-    const removePageHideListener = addGlobalListener('pagehide', () => {
-      setFrontDesk(false);
-    });
     darkModeQuery.addEventListener('change', listenerColorSchemeChange);
+    const listenerVisibilityChange = () => {
+      setFrontDesk(!window.document.hidden);
+    };
+    window.document.addEventListener(
+      'visibilitychange',
+      listenerVisibilityChange
+    );
 
     const cancelGlobalUserTipsEventListener = globalEvent.on(
       'user_tips',
@@ -149,12 +152,19 @@ const App: React.FC<IAppProps> = (props) => {
       }
     );
 
+    const cancelListenerReLoad = assetsLoadHandle.reLoadByOnline(
+      () => !enableServiceWorkerCache
+    );
+
     return () => {
-      removePageShowListener();
-      removePageHideListener();
+      cancelListenerReLoad();
       cancelGlobalUserTipsEventListener();
       cancelGlobalUserAlertEventListener();
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
+      window.document.removeEventListener(
+        'visibilitychange',
+        listenerVisibilityChange
+      );
     };
   }, []);
 
