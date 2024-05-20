@@ -1,35 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { InputProps } from 'antd';
-import { Input, Layout, Spin } from 'antd';
+import { Layout } from 'antd';
 
 import classNames from 'classnames';
 
-import { error, uuid, validateFileName } from '@/utils';
-
-import { isFileHandle } from '@/filehandle/utils/checkFileType';
-import type { DH, FH, FileInfo } from '@/filehandle/utils/fileManager';
-import {
-  createDirectory,
-  createFile,
-  FileType,
-  getChildren,
-  remove
-} from '@/filehandle/utils/fileManager';
+import { error, uuid } from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
-import styles from './styles/MDSidebar.module.less';
+import AddFileInput from './AddFileInput';
+import styles from './styles/FileSideMenu.module.less';
+import { isFileHandle } from '../utils/checkFileType';
+import type { DH, FH, FileInfo } from '../utils/fileManager';
+import { FileType, getChildren, remove } from '../utils/fileManager';
 
-interface ISidebarProps {
-  handle: DH;
-  changed: boolean;
-  update(): void;
-  onSelect(handle: FH): void;
-  onRemove(handle: DH | FH): void;
-}
-
-interface ExtendFileInfo extends FileInfo {
+export interface ExtendFileInfo extends FileInfo {
   id: string;
   parent?: ExtendFileInfo;
   children?: ExtendFileInfo[];
@@ -66,7 +51,21 @@ function wrapperFileItem(parent: ExtendFileInfo, file: FileInfo): ExtendFileInfo
   return { ...file, id: uuid(), parent };
 }
 
-async function getDeepChildren(handle: DH, parent?: ExtendFileInfo): Promise<ExtendFileInfo[]> {
+function isSelect(file: FileInfo, exts?: string[]) {
+  if (!exts || exts.length === 0) {
+    return true;
+  }
+
+  if (!file.ext) return false;
+
+  return exts.includes(file.ext);
+}
+
+async function getDeepChildren(
+  handle: DH,
+  parent?: ExtendFileInfo,
+  exts?: string[]
+): Promise<ExtendFileInfo[]> {
   parent = parent || {
     id: uuid(),
     name: handle.name,
@@ -79,11 +78,11 @@ async function getDeepChildren(handle: DH, parent?: ExtendFileInfo): Promise<Ext
 
   const newChildren = await Promise.all(
     children
-      .filter((value) => value.type === FileType.DIRECTORY || value.ext === '.md')
+      .filter((value) => value.type === FileType.DIRECTORY || isSelect(value, exts))
       .map(async (child) => {
         const newChild = wrapperFileItem(parent, child);
         if (child.handle.kind === 'directory') {
-          newChild.children = await getDeepChildren(child.handle, newChild);
+          newChild.children = await getDeepChildren(child.handle, newChild, exts);
         }
 
         return newChild;
@@ -95,113 +94,15 @@ async function getDeepChildren(handle: DH, parent?: ExtendFileInfo): Promise<Ext
   return newChildren;
 }
 
-function AddFileInput({
-  file,
-  names,
-  replace,
-  removeInput
-}: {
-  file: ExtendFileInfo;
-  names: string[];
-  replace(info: ExtendFileInfo, id: string): any;
-  removeInput(id: string): any;
-}) {
-  const DEFAULT_NAME = 'default';
+const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
+  if (child.type === FileType.DIRECTORY) {
+    const i = children.findIndex((c) => c.type !== FileType.DIRECTORY);
 
-  const isAddFile = file.type === FileType.FILE;
-
-  const [inputStatus, setInputStatus] = useState<{
-    name: string;
-    status: InputProps['status'];
-  }>({ name: '', status: '' });
-
-  const [loading, setLoading] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
-
-    if (!validateFileName(value) || names.some((n) => n === value)) {
-      return setInputStatus({ name: value, status: 'error' });
-    }
-
-    setInputStatus({ name: value, status: '' });
-  };
-
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key.toLocaleLowerCase() !== 'enter') {
-      return void 0;
-    }
-
-    handleAdd();
-  };
-
-  const handleAdd = async () => {
-    const reg = new RegExp(`(?<=default)\\d*(?=${isAddFile ? '.md' : ''})`);
-
-    let name = inputStatus.name;
-    if (inputStatus.name === '' || inputStatus.status !== '') {
-      const max = names
-        .map((n) => n.match(reg))
-        .filter(Boolean)
-        .map(Number)
-        .sort((a, b) => a - b)
-        .pop();
-
-      if (typeof max === 'number') name = DEFAULT_NAME + (max + 1);
-      else name = DEFAULT_NAME;
-    }
-
-    if (isAddFile) name += '.md';
-
-    if (file.handle.kind === 'directory') {
-      try {
-        setLoading(true);
-
-        const handle = await (isAddFile ? createFile : createDirectory)(file.handle, name);
-
-        replace(
-          {
-            id: uuid(),
-            name,
-            type: file.type,
-            handle,
-            icon: '',
-            parent: file.parent
-          },
-          file.id
-        );
-      } catch (err) {
-        error((err as Error).message);
-        removeInput(file.id);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      removeInput(file.id);
-    }
-  };
-
-  return (
-    <Spin spinning={loading}>
-      <Input
-        name="add-mdfile-input"
-        style={{ marginLeft: 8 }}
-        autoFocus
-        size="small"
-        value={inputStatus.name}
-        status={inputStatus.status}
-        suffix={isAddFile ? '.md' : void 0}
-        onChange={handleInputChange}
-        onContextMenuCapture={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        onKeyUp={handleKeyUp}
-        onBlur={handleAdd}
-      />
-    </Spin>
-  );
-}
+    i === -1 ? children.push(child) : children.splice(i, 0, child);
+  } else {
+    children.push(child);
+  }
+};
 
 function Menu({
   activeId,
@@ -263,6 +164,7 @@ function Menu({
           ) : (
             <a
               href="/"
+              data-id={item}
               onClick={(e) => e.preventDefault()}
               title={item.name}
               onContextMenu={(e) => {
@@ -313,18 +215,17 @@ function Menu({
   );
 }
 
-const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
-  if (child.type === FileType.DIRECTORY) {
-    const i = children.findIndex((c) => c.type !== FileType.DIRECTORY);
+interface IFileSideMenuProps {
+  handle: DH;
+  changed: boolean;
+  exts?: string[];
+  update(): void;
+  onSelect(handle: FH): void;
+  onRemove(handle: DH | FH): void;
+}
 
-    i === -1 ? children.push(child) : children.splice(i, 0, child);
-  } else {
-    children.push(child);
-  }
-};
-
-export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
-  const { handle, changed, update, onSelect, onRemove } = props;
+const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
+  const { handle, changed, exts, update, onSelect, onRemove } = props;
 
   const [list, setList] = useState<ExtendFileInfo[]>([]);
   const [activeId, setActiveId] = useState('');
@@ -340,7 +241,7 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     }
 
     queryingRef.current = true;
-    getDeepChildren(handle)
+    getDeepChildren(handle, void 0, exts)
       .then((list) => {
         setList(list);
       })
@@ -491,3 +392,5 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
     </>
   );
 };
+
+export default FileSideMenu;

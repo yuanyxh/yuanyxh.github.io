@@ -2,13 +2,13 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 
 import { addGlobalListener, confirm, error } from '@/utils';
 
+import FileSideMenu from '@/filehandle/components/FileSideMenu';
 import { isDirectoryHandle, isFileHandle } from '@/filehandle/utils/checkFileType';
 import type { DH, FH } from '@/filehandle/utils/fileManager';
 import { writeFile } from '@/filehandle/utils/fileManager';
 
 import type { IMDEditorExpose } from './MDEditor';
 import MDEditor from './MDEditor';
-import { Sidebar } from './MDSidebar';
 import styles from './styles/MDContent.module.less';
 
 interface IMDContentProps {
@@ -129,9 +129,10 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
     return (
       <div className={styles.content}>
         {isDirectoryHandle(handle) ? (
-          <Sidebar
+          <FileSideMenu
             handle={handle}
             changed={changed}
+            exts={['.md']}
             update={update}
             onSelect={handleSelect}
             onRemove={handleRemove}

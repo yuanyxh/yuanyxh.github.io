@@ -19,17 +19,17 @@ import { FileType } from '../utils/fileManager';
 function MountWebdavModal(props: { open: boolean; close(): void }) {
   const { open, close } = props;
 
-  const [form] = Form.useForm();
-
   const { children } = useContext(FileSystemContext);
 
   const { addWebdav } = useUserStore();
+
+  const [form] = Form.useForm<WebdavInfo>();
 
   const handleOk = () => {
     form
       .validateFields()
       .then(() => {
-        const webdav: WebdavInfo = form.getFieldsValue();
+        const webdav = form.getFieldsValue();
 
         if (children.some((w) => w.name === webdav.name.trim())) {
           alert({
