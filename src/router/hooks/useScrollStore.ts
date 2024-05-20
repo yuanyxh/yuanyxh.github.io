@@ -22,23 +22,21 @@ export function useScrollStore(selector: string) {
   useLayoutEffect(() => {
     elementRef.current = window.document.querySelector(selector) || void 0;
 
-    const cancelBeforeEnter = routerContext?.beforeEnter(
-      (from, to, { type, changeHistory }) => {
-        formLocation.current = from.path;
-        toLocation.current = to.path;
+    const cancelBeforeEnter = routerContext?.beforeEnter((from, to, { type, changeHistory }) => {
+      formLocation.current = from.path;
+      toLocation.current = to.path;
 
-        // we save the scroll position of the current page when pushing
-        if (changeHistory && type === 'push') {
-          window.history.replaceState(
-            assign({}, routerContext.getState()?.state, {
-              y: elementRef.current?.scrollTop || 0,
-              timestamp: Date.now()
-            }),
-            ''
-          );
-        }
+      // we save the scroll position of the current page when pushing
+      if (changeHistory && type === 'push') {
+        window.history.replaceState(
+          assign({}, routerContext.getState()?.state, {
+            y: elementRef.current?.scrollTop || 0,
+            timestamp: Date.now()
+          }),
+          ''
+        );
       }
-    );
+    });
 
     const cancelPopState = addGlobalListener('popstate', () => {
       // we save the scroll position of the previous page when popping
@@ -72,9 +70,7 @@ export function useScrollStore(selector: string) {
     const savedScrollPosition = map[toLocation.current || ''];
 
     if (state && savedScrollPosition) {
-      return state.timestamp > savedScrollPosition.timestamp
-        ? state
-        : savedScrollPosition;
+      return state.timestamp > savedScrollPosition.timestamp ? state : savedScrollPosition;
     }
 
     // we take the scroll position from history.state, if it doesn't exist, from the map, otherwise the scroll position is 0

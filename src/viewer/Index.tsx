@@ -30,8 +30,8 @@ const Exhibit = () => {
           title="站在巨人的肩膀上/If I have seen further than others, it is by standing
         upon the shoulders of giants."
         >
-          站在巨人的肩膀上/If I have seen further than others, it is by standing
-          upon the shoulders of giants.
+          站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders
+          of giants.
         </Typography.Paragraph>
       </div>
 

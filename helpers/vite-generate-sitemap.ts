@@ -25,9 +25,7 @@ function viteGenerateSitemap(): PluginOption {
     }
 
     const routeJSON = await generateRouteJSON();
-    const getRoutes = new Function(
-      `return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`
-    );
+    const getRoutes = new Function(`return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`);
 
     const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
 

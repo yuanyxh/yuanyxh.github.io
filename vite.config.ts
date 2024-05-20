@@ -157,9 +157,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       outDir: resolve('./build'),
       sourcemap: isBuild === false,
       rollupOptions: {
-        plugins: isBuild
-          ? [visualizer({ filename: '.analyze.html', open: false })]
-          : [],
+        plugins: isBuild ? [visualizer({ filename: '.analyze.html', open: false })] : [],
         output: {}
       },
       cssCodeSplit: true

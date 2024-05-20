@@ -91,12 +91,7 @@ export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
             label="描述"
             rules={[{ required: true, message: '请输入清晰的描述信息' }]}
           >
-            <Input.TextArea
-              style={{ resize: 'none' }}
-              rows={5}
-              maxLength={1000}
-              showCount
-            />
+            <Input.TextArea style={{ resize: 'none' }} rows={5} maxLength={1000} showCount />
           </Form.Item>
 
           <Form.Item name="concact" label="联系方式">

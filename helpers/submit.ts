@@ -23,11 +23,7 @@ function getHref(path: string) {
 
 function writeSubmited(submitedList: string[]) {
   try {
-    writeFileSync(
-      submitedPath,
-      `export default ${JSON.stringify(submitedList, null, 2)}`,
-      'utf-8'
-    );
+    writeFileSync(submitedPath, `export default ${JSON.stringify(submitedList, null, 2)}`, 'utf-8');
   } catch (err) {
     console.log('write fail', err);
   }

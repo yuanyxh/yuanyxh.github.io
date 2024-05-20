@@ -17,15 +17,11 @@ export interface AppState {
 export interface AppActions {
   setLanguage(language: string): void;
   setColorScheme(colorScheme: AppState['settings']['colorScheme']): void;
-  setColorSchemeNonPersistent(
-    colorScheme: AppState['settings']['colorScheme']
-  ): void;
+  setColorSchemeNonPersistent(colorScheme: AppState['settings']['colorScheme']): void;
   setEnableServiceWorkerCache(
     enableServiceWorkerCache: AppState['settings']['enableServiceWorkerCache']
   ): void;
-  setEnableNotification(
-    enableNotification: AppState['settings']['enableNotification']
-  ): void;
+  setEnableNotification(enableNotification: AppState['settings']['enableNotification']): void;
   setFrontDesk(frontDesk: AppState['status']['frontDesk']): void;
 }
 

@@ -18,25 +18,13 @@ function createWebdavFileSystemHandle(
   webdavInfo: WebdavInfo
 ) {
   if (file.type == 'directory') {
-    return new WebdavFileSystemDirectoryHandle(
-      webdav,
-      parentPath + '/',
-      file.basename,
-      webdavInfo
-    );
+    return new WebdavFileSystemDirectoryHandle(webdav, parentPath + '/', file.basename, webdavInfo);
   } else {
-    return new WebdavFileSystemFileHandle(
-      webdav,
-      parentPath,
-      file.basename,
-      webdavInfo
-    );
+    return new WebdavFileSystemFileHandle(webdav, parentPath, file.basename, webdavInfo);
   }
 }
 
-class WebdavFileSystemWritableFileStream
-  implements FileSystemWritableFileStream
-{
+class WebdavFileSystemWritableFileStream implements FileSystemWritableFileStream {
   locked: boolean = false;
 
   private webdav: WebDAVClient;
@@ -44,11 +32,7 @@ class WebdavFileSystemWritableFileStream
 
   private setFile: (buffer: ArrayBuffer) => void;
 
-  constructor(
-    webdav: WebDAVClient,
-    fullPath: string,
-    setFile: (buffer: ArrayBuffer) => void
-  ) {
+  constructor(webdav: WebDAVClient, fullPath: string, setFile: (buffer: ArrayBuffer) => void) {
     this.webdav = webdav;
     this.fullPath = fullPath;
 
@@ -154,20 +138,12 @@ class WebdavFileSystemHandle implements FileSystemHandle {
   }
 }
 
-class WebdavFileSystemFileHandle
-  extends WebdavFileSystemHandle
-  implements FileSystemFileHandle
-{
+class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileSystemFileHandle {
   readonly kind = 'file';
 
   private file: File | null = null;
 
-  constructor(
-    webdav: WebDAVClient,
-    fullPath: string,
-    name: string,
-    webdavInfo: WebdavInfo
-  ) {
+  constructor(webdav: WebDAVClient, fullPath: string, name: string, webdavInfo: WebdavInfo) {
     super('file', name, fullPath, webdav, webdavInfo);
   }
 
@@ -210,12 +186,7 @@ class WebdavFileSystemDirectoryHandle
 {
   readonly kind = 'directory';
 
-  constructor(
-    webdav: WebDAVClient,
-    fullPath: string,
-    name: string,
-    webdavInfo: WebdavInfo
-  ) {
+  constructor(webdav: WebDAVClient, fullPath: string, name: string, webdavInfo: WebdavInfo) {
     super('directory', name, fullPath, webdav, webdavInfo);
   }
 
@@ -229,9 +200,7 @@ class WebdavFileSystemDirectoryHandle
     throw new Error('Method not implemented.');
   }
 
-  values(): AsyncIterableIterator<
-    FileSystemFileHandle | FileSystemDirectoryHandle
-  > {
+  values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle> {
     throw new Error('Method not implemented.');
   }
 
@@ -262,12 +231,7 @@ class WebdavFileSystemDirectoryHandle
         return {
           value: [
             curr.basename,
-            createWebdavFileSystemHandle(
-              curr,
-              webdav,
-              fullPath + curr.basename,
-              webdavInfo
-            )
+            createWebdavFileSystemHandle(curr, webdav, fullPath + curr.basename, webdavInfo)
           ],
           done: false
         };
@@ -329,12 +293,7 @@ class WebdavFileSystemDirectoryHandle
       }
     }
 
-    return new WebdavFileSystemFileHandle(
-      this.webdav,
-      subFullPath,
-      name,
-      this.webdavInfo
-    );
+    return new WebdavFileSystemFileHandle(this.webdav, subFullPath, name, this.webdavInfo);
   }
 
   async removeEntry(name: string): Promise<undefined> {
@@ -371,12 +330,7 @@ class WebdavFile {
       password: webdavInfo.password
     });
 
-    this.handle = new WebdavFileSystemDirectoryHandle(
-      this.webdav,
-      '/',
-      this.name,
-      webdavInfo
-    );
+    this.handle = new WebdavFileSystemDirectoryHandle(this.webdav, '/', this.name, webdavInfo);
   }
 }
 

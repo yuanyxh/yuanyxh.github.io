@@ -39,11 +39,7 @@ const ADD_KEY = '.$<>/\\.#$%' + uuid();
 
 const { Sider } = Layout;
 
-function replaceAndSort(
-  list: ExtendFileInfo[],
-  info: ExtendFileInfo,
-  id: string
-) {
+function replaceAndSort(list: ExtendFileInfo[], info: ExtendFileInfo, id: string) {
   const i = list.findIndex((l) => l.id === id);
 
   if (i !== -1) {
@@ -53,9 +49,7 @@ function replaceAndSort(
       .filter((l) => l.type === FileType.DIRECTORY)
       .sort((a, b) => a.name.localeCompare(b.name))
       .concat(
-        list
-          .filter((l) => l.type === FileType.FILE)
-          .sort((a, b) => a.name.localeCompare(b.name))
+        list.filter((l) => l.type === FileType.FILE).sort((a, b) => a.name.localeCompare(b.name))
       );
   }
 
@@ -68,17 +62,11 @@ function replaceAndSort(
   });
 }
 
-function wrapperFileItem(
-  parent: ExtendFileInfo,
-  file: FileInfo
-): ExtendFileInfo {
+function wrapperFileItem(parent: ExtendFileInfo, file: FileInfo): ExtendFileInfo {
   return { ...file, id: uuid(), parent };
 }
 
-async function getDeepChildren(
-  handle: DH,
-  parent?: ExtendFileInfo
-): Promise<ExtendFileInfo[]> {
+async function getDeepChildren(handle: DH, parent?: ExtendFileInfo): Promise<ExtendFileInfo[]> {
   parent = parent || {
     id: uuid(),
     name: handle.name,
@@ -91,9 +79,7 @@ async function getDeepChildren(
 
   const newChildren = await Promise.all(
     children
-      .filter(
-        (value) => value.type === FileType.DIRECTORY || value.ext === '.md'
-      )
+      .filter((value) => value.type === FileType.DIRECTORY || value.ext === '.md')
       .map(async (child) => {
         const newChild = wrapperFileItem(parent, child);
         if (child.handle.kind === 'directory') {
@@ -171,10 +157,7 @@ function AddFileInput({
       try {
         setLoading(true);
 
-        const handle = await (isAddFile ? createFile : createDirectory)(
-          file.handle,
-          name
-        );
+        const handle = await (isAddFile ? createFile : createDirectory)(file.handle, name);
 
         replace(
           {
@@ -240,9 +223,7 @@ function Menu({
   const [expands, setExpands] = useState<string[]>([]);
 
   useEffect(() => {
-    const finded = items.find((item) =>
-      item.children?.some((file) => file.name === ADD_KEY)
-    );
+    const finded = items.find((item) => item.children?.some((file) => file.name === ADD_KEY));
 
     if (finded && !expands.some((expand) => expand === finded.id)) {
       handleSetExpands(finded.id);
@@ -291,8 +272,7 @@ function Menu({
             >
               <div
                 className={classNames(styles.row, {
-                  [styles.active]:
-                    activeId === item.id && !expands.includes(activeId),
+                  [styles.active]: activeId === item.id && !expands.includes(activeId),
                   [styles.directory]: item.type === FileType.DIRECTORY,
                   [styles.changed]: changed
                 })}
@@ -494,22 +474,12 @@ export const Sidebar: React.FC<Readonly<ISidebarProps>> = (props) => {
             },
             {
               name: '新建文件夹',
-              icon: (
-                <Icon
-                  icon="material-symbols-light--folder"
-                  color="var(--color-primary)"
-                />
-              ),
+              icon: <Icon icon="material-symbols-light--folder" color="var(--color-primary)" />,
               onClick: handleAddDirectory
             },
             {
               name: '删除',
-              icon: (
-                <Icon
-                  icon="material-symbols--delete"
-                  color="var(--color-primary)"
-                />
-              ),
+              icon: <Icon icon="material-symbols--delete" color="var(--color-primary)" />,
               style: {
                 display: selection.length === 0 ? 'none' : void 0
               },

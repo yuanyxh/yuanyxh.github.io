@@ -1,9 +1,4 @@
-import {
-  generateRouteJSON,
-  replacePlaceRoute,
-  resolve,
-  routesPath
-} from './utils';
+import { generateRouteJSON, replacePlaceRoute, resolve, routesPath } from './utils';
 
 import type { PluginOption } from 'vite';
 import { createFilter } from 'vite';

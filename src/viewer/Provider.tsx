@@ -27,10 +27,7 @@ interface Attributes {
 
 interface ImageProps
   extends Omit<
-    React.DetailedHTMLProps<
-      React.ImgHTMLAttributes<HTMLImageElement>,
-      HTMLImageElement
-    >,
+    React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>,
     'src' | 'width' | 'height'
   > {
   url: string;
@@ -60,24 +57,17 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 const SubTitle = (
-  props: React.DetailedHTMLProps<
-    React.HTMLAttributes<HTMLHeadingElement>,
-    HTMLHeadingElement
-  > & { tag: 'h2' | 'h3' | 'h4' | 'h5' | 'h6' }
+  props: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement> & {
+    tag: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  }
 ) => {
   const { tag, children, ...rest } = props;
 
-  const handleCopyAnchor = (
-    e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
-  ) => {
+  const handleCopyAnchor = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault();
 
     // TODO: global event show the mesage to user
-    copy(
-      new URL(
-        `${window.location.origin}${window.location.pathname}/#${children}`
-      ).href
-    );
+    copy(new URL(`${window.location.origin}${window.location.pathname}/#${children}`).href);
   };
 
   return createElement(

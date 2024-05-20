@@ -34,25 +34,17 @@ declare interface FileSystemHandle {
   readonly kind: 'file' | 'directory';
   readonly name: string;
   isSameEntry(arg: FileSystemHandle): boolean;
-  queryPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus>;
-  requestPermission(
-    arg: FileSystemHandlePermissionDescriptor
-  ): Promise<PermissionStatus>;
+  queryPermission(arg: FileSystemHandlePermissionDescriptor): Promise<PermissionStatus>;
+  requestPermission(arg: FileSystemHandlePermissionDescriptor): Promise<PermissionStatus>;
   /** @deprecated non-standard */
   remove(options?: FileSystemHandleRecursiveOptions): Promise<undefined>;
 }
 
 declare interface FileSystemDirectoryHandle extends FileSystemHandle {
   readonly kind: 'directory';
-  entries(): AsyncIterableIterator<
-    [string, FileSystemDirectoryHandle | FileSystemFileHandle]
-  >;
+  entries(): AsyncIterableIterator<[string, FileSystemDirectoryHandle | FileSystemFileHandle]>;
   keys(): AsyncIterableIterator<string>;
-  values(): AsyncIterableIterator<
-    FileSystemDirectoryHandle | FileSystemFileHandle
-  >;
+  values(): AsyncIterableIterator<FileSystemDirectoryHandle | FileSystemFileHandle>;
   getDirectoryHandle(
     name: string,
     options?: FileSystemHandleCreateOptions
@@ -61,10 +53,7 @@ declare interface FileSystemDirectoryHandle extends FileSystemHandle {
     name: string,
     options?: FileSystemHandleCreateOptions
   ): Promise<FileSystemFileHandle>;
-  removeEntry(
-    name: string,
-    options?: FileSystemHandleRecursiveOptions
-  ): Promise<undefined>;
+  removeEntry(name: string, options?: FileSystemHandleRecursiveOptions): Promise<undefined>;
   resolve(possibleDescendant: FileSystemHandle): Promise<string[] | null>;
 }
 
@@ -110,13 +99,7 @@ declare interface SaveFilePickerOptions {
 }
 
 declare interface Window {
-  showDirectoryPicker: (
-    options?: DirectoryPickerOptions
-  ) => Promise<FileSystemDirectoryHandle>;
-  showOpenFilePicker(
-    options?: FilePickerOptions
-  ): Promise<FileSystemFileHandle[]>;
-  showSaveFilePicker(
-    options?: SaveFilePickerOptions
-  ): Promise<FileSystemFileHandle>;
+  showDirectoryPicker: (options?: DirectoryPickerOptions) => Promise<FileSystemDirectoryHandle>;
+  showOpenFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
+  showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
 }

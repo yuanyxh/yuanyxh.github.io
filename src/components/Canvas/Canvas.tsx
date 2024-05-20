@@ -1,23 +1,10 @@
-import {
-  forwardRef,
-  memo,
-  useEffect,
-  useImperativeHandle,
-  useRef
-} from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle, useRef } from 'react';
 
 interface ICanvasProps extends React.CanvasHTMLAttributes<HTMLCanvasElement> {}
 
-type ExposeKeys =
-  | 'beginPath'
-  | 'moveTo'
-  | 'arc'
-  | 'fillText'
-  | 'stroke'
-  | 'lineTo';
+type ExposeKeys = 'beginPath' | 'moveTo' | 'arc' | 'fillText' | 'stroke' | 'lineTo';
 
-export interface CanvasInstance
-  extends Pick<CanvasRenderingContext2D, ExposeKeys> {
+export interface CanvasInstance extends Pick<CanvasRenderingContext2D, ExposeKeys> {
   fill(fillRule?: CanvasFillRule): void;
   lineWidth(lineWidth?: number): number;
   fillStyle(

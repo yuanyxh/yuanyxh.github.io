@@ -4,13 +4,11 @@ import { addGlobalListener, sleep } from '@/utils';
 
 import styles from './ContextMenu.module.less';
 
-export interface SubMenu
-  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
+export interface SubMenu extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   name: string;
 }
 
-export interface Menu
-  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
+export interface Menu extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   name: string;
   // subMenu?: SubMenu[];
   icon?: React.ReactNode;

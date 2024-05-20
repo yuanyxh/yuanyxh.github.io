@@ -11,11 +11,7 @@ const ArticleItem = ({ article }: { article: ResolveRouteObject }) => {
     <Link rel="bookmark" to={article.fullPath}>
       <div className={styles.articleItem}>
         <div className={styles.preview}>
-          <img
-            loading="lazy"
-            src={article.meta?.imageUrl}
-            alt={article.meta?.title}
-          />
+          <img loading="lazy" src={article.meta?.imageUrl} alt={article.meta?.title} />
 
           <div className={styles.descriptionWrapper}>
             <Typography.Paragraph

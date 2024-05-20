@@ -33,9 +33,7 @@ function ServiceWorkerCache() {
 
   const serviceWorkerRef = useRef(new ServiceWorkerManager());
 
-  const handleSwitchServiceWorkerCache = async (
-    enableServiceWorkerCache: boolean
-  ) => {
+  const handleSwitchServiceWorkerCache = async (enableServiceWorkerCache: boolean) => {
     /*
       TIPS: When we turn off the Service Worker, Ready will never be resolved because the page is not related to the service worker
     */
@@ -91,8 +89,7 @@ function ServiceWorkerCache() {
           <h5 className={styles.subTitle}>离线缓存</h5>
 
           <Paragraph type="danger">
-            注意，当您禁用离线缓存时，我们会将所有已下载的离线资源删除，并卸载
-            service
+            注意，当您禁用离线缓存时，我们会将所有已下载的离线资源删除，并卸载 service
             worker，这意味着后续所有资源都会经过网络，并且无法离线访问本站点。
           </Paragraph>
         </Col>
@@ -165,10 +162,7 @@ function WebNotification() {
         </Col>
 
         <Col span={3} style={{ textAlign: 'center' }}>
-          <Switch
-            value={enableNotification}
-            onChange={handleSwitchWebNotification}
-          />
+          <Switch value={enableNotification} onChange={handleSwitchWebNotification} />
         </Col>
       </Row>
     </Spin>
@@ -263,8 +257,7 @@ function StorageDetail() {
         });
 
         const usageAngle = Math.PI * 2 * (res.usage / res.quota);
-        const unUsageAngle =
-          Math.PI * 2 * ((res.quota - res.usage) / res.quota);
+        const unUsageAngle = Math.PI * 2 * ((res.quota - res.usage) / res.quota);
 
         const drawEl = drawRef.current!;
 
@@ -283,13 +276,7 @@ function StorageDetail() {
 
         drawEl.beginPath();
         drawEl.moveTo(centerX, centerY);
-        drawEl.arc(
-          centerX,
-          centerY,
-          centerX - 2,
-          usageAngle,
-          usageAngle + unUsageAngle
-        );
+        drawEl.arc(centerX, centerY, centerX - 2, usageAngle, usageAngle + unUsageAngle);
         drawEl.fillStyle('white');
         drawEl.fill();
       })
@@ -306,14 +293,9 @@ function StorageDetail() {
         <div style={{ display: 'flex', gap: '0 30px', marginBlock: 10 }}>
           <Canvas ref={drawRef} width={120} height={120} />
 
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '10px 0' }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px 0' }}>
             <div className={styles.line}>
-              <span
-                className={styles.symbol}
-                style={{ backgroundColor: 'white' }}
-              ></span>
+              <span className={styles.symbol} style={{ backgroundColor: 'white' }}></span>
 
               <Text type="secondary">总可用存储</Text>
 
@@ -321,10 +303,7 @@ function StorageDetail() {
             </div>
 
             <div className={styles.line}>
-              <span
-                className={styles.symbol}
-                style={{ backgroundColor: '#ff9759' }}
-              ></span>
+              <span className={styles.symbol} style={{ backgroundColor: '#ff9759' }}></span>
 
               <Text type="secondary">已用存储</Text>
 
@@ -332,10 +311,7 @@ function StorageDetail() {
             </div>
 
             <div className={styles.line}>
-              <span
-                className={styles.symbol}
-                style={{ backgroundColor: '#601986' }}
-              ></span>
+              <span className={styles.symbol} style={{ backgroundColor: '#601986' }}></span>
 
               <Text type="secondary">剩余可用</Text>
               <Text>{storage.unUsage.toFixed(3)} MB</Text>

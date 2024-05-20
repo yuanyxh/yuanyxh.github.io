@@ -10,8 +10,7 @@ export function reduce(ctx: Editor['ctx']): void {
     return {
       ...prev,
       attributes: (state) => {
-        const attrs =
-          typeof prevClass === 'function' ? prevClass(state) : prevClass;
+        const attrs = typeof prevClass === 'function' ? prevClass(state) : prevClass;
 
         return {
           ...attrs,

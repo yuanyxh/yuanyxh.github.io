@@ -31,17 +31,11 @@ const NotFound: React.FC = () => {
       </div>
 
       <div>
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 5, fontSize: 15 }}>
           您访问了一个不存在的页面，
         </Typography.Paragraph>
 
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 5, fontSize: 15 }}>
           如果这是一个错误请前往{' '}
           <Typography.Link
             type="danger"

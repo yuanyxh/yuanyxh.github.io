@@ -4,9 +4,7 @@ export class UnknownError extends Error {
   status = 420;
 
   constructor() {
-    super(
-      'Unknown errors, please open the debug console to collect more information.'
-    );
+    super('Unknown errors, please open the debug console to collect more information.');
   }
 }
 

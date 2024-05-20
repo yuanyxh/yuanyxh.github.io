@@ -88,25 +88,16 @@ class ServiceWorkerManager {
               const installingWorker = serviceWorker.installing;
 
               function stateChange() {
-                if (
-                  installingWorker?.state === 'installed' &&
-                  navigator.serviceWorker.controller
-                ) {
+                if (installingWorker?.state === 'installed' && navigator.serviceWorker.controller) {
                   _self.event.emit(EVENT_KEY);
 
-                  installingWorker.removeEventListener(
-                    'statechange',
-                    stateChange
-                  );
+                  installingWorker.removeEventListener('statechange', stateChange);
                 }
               }
 
               installingWorker?.addEventListener('statechange', stateChange);
 
-              serviceWorker.removeEventListener(
-                'updatefound',
-                serviceWorkerUpdate
-              );
+              serviceWorker.removeEventListener('updatefound', serviceWorkerUpdate);
             }
 
             serviceWorker.addEventListener('updatefound', serviceWorkerUpdate);

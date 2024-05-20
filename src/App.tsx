@@ -1,13 +1,6 @@
 import { createContext, useEffect, useRef } from 'react';
 
-import {
-  Button,
-  ConfigProvider,
-  message,
-  Modal,
-  notification,
-  theme
-} from 'antd';
+import { Button, ConfigProvider, message, Modal, notification, theme } from 'antd';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import type { NotificationInstance } from 'antd/es/notification/interface';
@@ -82,9 +75,7 @@ const App: React.FC<IAppProps> = (props) => {
 
     if (hasLocalStorage('app')) {
       setLanguage(getStorage<AppState>('app')?.settings?.language || 'zh-CN');
-      setColorScheme(
-        getStorage<AppState>('app')?.settings?.colorScheme || 'light'
-      );
+      setColorScheme(getStorage<AppState>('app')?.settings?.colorScheme || 'light');
     } else {
       setLanguage(language);
       if (darkModeQuery.matches) {
@@ -134,10 +125,7 @@ const App: React.FC<IAppProps> = (props) => {
     const listenerVisibilityChange = () => {
       setFrontDesk(!window.document.hidden);
     };
-    window.document.addEventListener(
-      'visibilitychange',
-      listenerVisibilityChange
-    );
+    window.document.addEventListener('visibilitychange', listenerVisibilityChange);
 
     const cancelGlobalUserTipsEventListener = globalEvent.on(
       'user_tips',
@@ -152,19 +140,14 @@ const App: React.FC<IAppProps> = (props) => {
       }
     );
 
-    const cancelListenerReLoad = assetsLoadHandle.reLoadByOnline(
-      () => !enableServiceWorkerCache
-    );
+    const cancelListenerReLoad = assetsLoadHandle.reLoadByOnline(() => !enableServiceWorkerCache);
 
     return () => {
       cancelListenerReLoad();
       cancelGlobalUserTipsEventListener();
       cancelGlobalUserAlertEventListener();
       darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
-      window.document.removeEventListener(
-        'visibilitychange',
-        listenerVisibilityChange
-      );
+      window.document.removeEventListener('visibilitychange', listenerVisibilityChange);
     };
   }, []);
 
@@ -179,15 +162,10 @@ const App: React.FC<IAppProps> = (props) => {
           token: {
             colorPrimary: '#ff6000'
           },
-          algorithm:
-            colorScheme === 'dark'
-              ? theme.darkAlgorithm
-              : theme.defaultAlgorithm
+          algorithm: colorScheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm
         }}
       >
-        <AppContext.Provider value={appProvider.current}>
-          {props.children}
-        </AppContext.Provider>
+        <AppContext.Provider value={appProvider.current}>{props.children}</AppContext.Provider>
       </ConfigProvider>
     </>
   );

@@ -79,10 +79,7 @@ declare class Queue {
   private _syncInProgress;
   private _requestsAddedDuringSync;
 
-  constructor(
-    name: string,
-    { forceSyncFallback, onSync, maxRetentionTime }?: QueueOptions
-  );
+  constructor(name: string, { forceSyncFallback, onSync, maxRetentionTime }?: QueueOptions);
 
   get name(): string;
 
@@ -131,9 +128,7 @@ export interface CacheDidUpdateCallbackParam {
 
 export interface BroadcastCacheUpdateOptions {
   headersToCheck?: string[];
-  generatePayload?: (
-    options: CacheDidUpdateCallbackParam
-  ) => Record<string, any>;
+  generatePayload?: (options: CacheDidUpdateCallbackParam) => Record<string, any>;
   notifyAllClients?: boolean;
 }
 
@@ -178,9 +173,7 @@ export interface CachedResponseWillBeUsedCallbackParam {
   state?: PluginState;
 }
 export interface CachedResponseWillBeUsedCallback {
-  (
-    param: CachedResponseWillBeUsedCallbackParam
-  ): Promise<Response | void | null | undefined>;
+  (param: CachedResponseWillBeUsedCallbackParam): Promise<Response | void | null | undefined>;
 }
 
 export interface CacheKeyWillBeUsedCallbackParam {
@@ -201,9 +194,7 @@ export interface CacheWillUpdateCallbackParam {
   state?: PluginState;
 }
 export interface CacheWillUpdateCallback {
-  (
-    param: CacheWillUpdateCallbackParam
-  ): Promise<Response | void | null | undefined>;
+  (param: CacheWillUpdateCallbackParam): Promise<Response | void | null | undefined>;
 }
 export interface CachedResponseWillBeUsedCallbackParam {
   cacheName: string;
@@ -214,9 +205,7 @@ export interface CachedResponseWillBeUsedCallbackParam {
   state?: PluginState;
 }
 export interface CachedResponseWillBeUsedCallback {
-  (
-    param: CachedResponseWillBeUsedCallbackParam
-  ): Promise<Response | void | null | undefined>;
+  (param: CachedResponseWillBeUsedCallbackParam): Promise<Response | void | null | undefined>;
 }
 export interface FetchDidFailCallbackParam {
   error: Error;
@@ -521,9 +510,7 @@ const defaultConfig = {
   name: 'vite:workbox'
 };
 
-export default function vitePluginWorkbox({
-  mode
-}: ConfigParams): PluginOption {
+export default function vitePluginWorkbox({ mode }: ConfigParams): PluginOption {
   if (mode === 'development') {
     return defaultConfig;
   }

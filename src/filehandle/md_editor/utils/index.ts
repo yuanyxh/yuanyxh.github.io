@@ -1,7 +1,4 @@
-export const toFormData = (
-  params: Record<string, string | Blob>,
-  data?: FormData
-) => {
+export const toFormData = (params: Record<string, string | Blob>, data?: FormData) => {
   data = data || new FormData();
 
   const strategy: Record<string, () => string | Blob> = {

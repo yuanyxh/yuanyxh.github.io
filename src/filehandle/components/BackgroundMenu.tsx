@@ -4,10 +4,7 @@ import { createPortal } from 'react-dom';
 import classNames from 'classnames';
 
 import styles from './styles/BackgroundMenu.module.less';
-import type {
-  BackgroundManager,
-  BackgroundProgram
-} from '../BackgroundManager';
+import type { BackgroundManager, BackgroundProgram } from '../BackgroundManager';
 
 interface IBackgroundMenuProps {
   backgroundManager: BackgroundManager;
@@ -23,9 +20,7 @@ const BackgroundMenu: React.FC<Readonly<IBackgroundMenuProps>> = (props) => {
   useEffect(() => {
     backgroundManager.subscribeVisible(setIsVisible);
 
-    const cacheListenerUpdate = backgroundManager.onUpdate((list) =>
-      setProgramList(list)
-    );
+    const cacheListenerUpdate = backgroundManager.onUpdate((list) => setProgramList(list));
 
     return () => {
       cacheListenerUpdate();
@@ -41,11 +36,7 @@ const BackgroundMenu: React.FC<Readonly<IBackgroundMenuProps>> = (props) => {
       hidden={!isVisible}
     >
       {programList.map((program) => (
-        <span
-          key={program.id}
-          className={styles.program}
-          onClick={program.open}
-        >
+        <span key={program.id} className={styles.program} onClick={program.open}>
           {program.icon}
         </span>
       ))}

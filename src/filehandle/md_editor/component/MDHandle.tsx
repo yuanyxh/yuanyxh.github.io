@@ -101,19 +101,14 @@ const Toolbar = () => {
           <Form.Item<UploadInfo>
             label="响应路径"
             name="navigation"
-            rules={[
-              { required: true, message: 'Please input response navigation!' }
-            ]}
+            rules={[{ required: true, message: 'Please input response navigation!' }]}
           >
             <Input placeholder="请输入图片地址在响应中的路径，以 . 分割" />
           </Form.Item>
 
           {/* TODO: JSON editor tool */}
           <Form.Item<UploadInfo> label="额外请求体" name="body">
-            <Input.TextArea
-              rows={5}
-              placeholder="额外请求参数，请输入 JSON 格式"
-            />
+            <Input.TextArea rows={5} placeholder="额外请求参数，请输入 JSON 格式" />
           </Form.Item>
         </Form>
       </Modal>

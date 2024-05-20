@@ -29,14 +29,7 @@ const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
 const match = text.match(reg);
 
-const excludeOutPathRewrite = [
-  '/',
-  '/articles',
-  '/examples',
-  '/books',
-  '/coder',
-  '/profile'
-];
+const excludeOutPathRewrite = ['/', '/articles', '/examples', '/books', '/coder', '/profile'];
 
 function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   const env = getEnv();
@@ -135,9 +128,7 @@ async function vitePrerender(mode: string) {
   }
 
   const routeJSON = await generateRouteJSON();
-  const getRoutes = new Function(
-    `return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`
-  );
+  const getRoutes = new Function(`return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`);
 
   const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
   const routes = detailsRoutes.map((route) => route.fullPath);
@@ -174,18 +165,10 @@ async function vitePrerender(mode: string) {
         renderedRoute.outputPath = 'build' + renderedRoute.originalRoute;
       }
 
-      renderedRoute.html = renderedRoute.html.replace(
-        '<html lang="en"',
-        '<html lang="zh-CN"'
-      );
-      renderedRoute.html = renderedRoute.html.replace(
-        /alignItems/g,
-        'align-items'
-      );
+      renderedRoute.html = renderedRoute.html.replace('<html lang="en"', '<html lang="zh-CN"');
+      renderedRoute.html = renderedRoute.html.replace(/alignItems/g, 'align-items');
 
-      const route = detailsRoutes.find(
-        (route) => route.fullPath === renderedRoute.originalRoute
-      );
+      const route = detailsRoutes.find((route) => route.fullPath === renderedRoute.originalRoute);
       if (route) {
         renderedRoute.html = renderedRoute.html.replace(
           '<!-- meta_place -->',

@@ -9,9 +9,7 @@ interface IFilePanelContainerProps extends Omit<IDialogProps, 'open'> {
   hide(cb?: AsyncFunction): void;
 }
 
-const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (
-  props
-) => {
+const FilePanelContainer: React.FC<Readonly<IFilePanelContainerProps>> = (props) => {
   const { show, hide, ...rest } = props;
 
   const renderResolveRef = useRef<(value: boolean) => void>();

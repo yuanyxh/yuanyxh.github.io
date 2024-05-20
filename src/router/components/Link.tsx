@@ -6,8 +6,7 @@ import { useHistory } from '..';
 
 type To = string;
 
-interface ILinkProps
-  extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
+interface ILinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
   to: To;
   replace?: boolean;
   activeClass?: string;
@@ -25,15 +24,7 @@ const comparedRoute = (path: string, to: string) => {
 };
 
 const Link: React.FC<Readonly<ILinkProps>> = (props) => {
-  const {
-    to,
-    target,
-    replace = false,
-    activeClass = '',
-    className = '',
-    onClick,
-    ...rest
-  } = props;
+  const { to, target, replace = false, activeClass = '', className = '', onClick, ...rest } = props;
 
   const history = useHistory();
   const location = useLocation();
@@ -41,9 +32,7 @@ const Link: React.FC<Readonly<ILinkProps>> = (props) => {
   const checkLink = (value: string) => to.startsWith(value);
 
   const _target =
-    target || (!to.startsWith('#') && excludeLinks.some(checkLink))
-      ? '_blank'
-      : void 0;
+    target || (!to.startsWith('#') && excludeLinks.some(checkLink)) ? '_blank' : void 0;
 
   const handleClick = useCallback<MouseEventHandler<HTMLAnchorElement>>(
     (e) => {
@@ -69,13 +58,7 @@ const Link: React.FC<Readonly<ILinkProps>> = (props) => {
   }
 
   return (
-    <a
-      href={to}
-      target={_target}
-      className={mergeClassName}
-      onClick={handleClick}
-      {...rest}
-    ></a>
+    <a href={to} target={_target} className={mergeClassName} onClick={handleClick} {...rest}></a>
   );
 };
 

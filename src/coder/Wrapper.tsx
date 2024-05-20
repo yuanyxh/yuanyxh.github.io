@@ -30,9 +30,7 @@ function mergeMenu(menu: IMenu[]) {
     for (let i = 0; i < some.length; i++) {
       curr.children = [...(curr.children || []), ...(some[i].children || [])];
 
-      curr.children = curr.children.length
-        ? mergeMenu(curr.children)
-        : undefined;
+      curr.children = curr.children.length ? mergeMenu(curr.children) : undefined;
     }
 
     result.push(curr);
@@ -109,16 +107,11 @@ function Menu({ items }: { items: IMenu[] }) {
             [styles.expand]: expands.includes(item.fullPath + item.path)
           })}
         >
-          <a
-            href={item.fullPath}
-            onClick={(e) => e.preventDefault()}
-            title={item.path}
-          >
+          <a href={item.fullPath} onClick={(e) => e.preventDefault()} title={item.path}>
             <div
               className={classNames(styles.row, {
                 [styles.active]:
-                  location.path === item.fullPath &&
-                  !expands.includes(item.fullPath + item.path),
+                  location.path === item.fullPath && !expands.includes(item.fullPath + item.path),
                 [styles.directory]: item.children
               })}
               onClick={
@@ -171,9 +164,7 @@ export default function Wrapper() {
 
     const curr = location.path.replace('/coder/', '').split('/').shift()!;
 
-    return transformMenu(
-      cloneDeep(codes.find((code) => code.path === curr)!.children!)
-    );
+    return transformMenu(cloneDeep(codes.find((code) => code.path === curr)!.children!));
   }, []);
 
   const handleChangeLayout = (e: number) => {

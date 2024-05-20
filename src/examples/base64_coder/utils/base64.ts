@@ -1,8 +1,7 @@
 import { isInteger } from 'lodash-es';
 
 /** base64 字符映射 */
-const CHARACTER_SET =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const CHARACTER_SET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 /**
  * @description 文本转字节
@@ -47,16 +46,9 @@ const encode = (str: string) => {
     // 3 个 8 位 二进制组合为一个 24 位二进制
     const total = (a << 16) + (b << 8) + c;
 
-    output += CHARACTER_SET.charAt(
-      /* 右移 18 位，截取 6 位 */ (total >>> 18) & 63
-    );
-    output += CHARACTER_SET.charAt(
-      /* 右移 12 位，截取 6 位 */ (total >>> 12) & 63
-    );
-    output +=
-      b !== 0
-        ? CHARACTER_SET.charAt(/* 右移 6 位，截取 6 位 */ (total >>> 6) & 63)
-        : '=';
+    output += CHARACTER_SET.charAt(/* 右移 18 位，截取 6 位 */ (total >>> 18) & 63);
+    output += CHARACTER_SET.charAt(/* 右移 12 位，截取 6 位 */ (total >>> 12) & 63);
+    output += b !== 0 ? CHARACTER_SET.charAt(/* 右移 6 位，截取 6 位 */ (total >>> 6) & 63) : '=';
     output += c !== 0 ? CHARACTER_SET.charAt(/* 截取 6 位 */ total & 63) : '=';
   }
 
@@ -94,9 +86,7 @@ const decode = (str: string) => {
     isInteger(d) && original.push(total & 255);
   }
 
-  return window.decodeURIComponent(
-    new TextDecoder().decode(new Uint8Array(original))
-  );
+  return window.decodeURIComponent(new TextDecoder().decode(new Uint8Array(original)));
 };
 
 export default { encode, decode };

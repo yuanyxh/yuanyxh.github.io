@@ -78,9 +78,7 @@ const selfUpload = async (file: File) => {
     body: data
   })
     .then((res) => res.json())
-    .then((value) =>
-      navigation.split('.').reduce((prev, curr) => prev[curr], value)
-    );
+    .then((value) => navigation.split('.').reduce((prev, curr) => prev[curr], value));
 };
 
 const uploader: Uploader = async (files, schema) => {
@@ -114,11 +112,7 @@ const uploader: Uploader = async (files, schema) => {
   return nodes;
 };
 
-function createMDEditor(
-  el: HTMLElement,
-  value = '',
-  onUpdate: (md: string) => void
-) {
+function createMDEditor(el: HTMLElement, value = '', onUpdate: (md: string) => void) {
   return Editor.make()
     .config((ctx) => {
       ctx.set(rootCtx, el);
@@ -159,65 +153,61 @@ function createMDEditor(
     .create();
 }
 
-const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(
-  function MDEditor(props, ref) {
-    const { currentHandle, changed, onChanged, onSave } = props;
+const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(props, ref) {
+  const { currentHandle, changed, onChanged, onSave } = props;
 
-    const editorContainerRef = useRef<HTMLDivElement>(null);
-    const editorRef = useRef<Editor>();
-    const mdStringRef = useRef('');
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor>();
+  const mdStringRef = useRef('');
 
-    uploadInfo = useMDStore().uploadInfo;
+  uploadInfo = useMDStore().uploadInfo;
 
-    useImperativeHandle(ref, () => ({
-      getMarkdown() {
-        return editorRef.current ? getMDString(editorRef.current.ctx) : '';
-      }
-    }));
-
-    useMemo(() => {
-      currentHandle
-        ?.getFile()
-        .then((file) => file.text())
-        .then((markdown) => {
-          createMDEditor(editorContainerRef.current!, markdown, onUpdate).then(
-            (value) => {
-              editorRef.current && editorRef.current.destroy(true);
-
-              editorRef.current = value;
-              mdStringRef.current = markdown;
-              onChanged(false);
-            }
-          );
-        });
-
-      return () => {
-        editorRef.current?.destroy(true);
-      };
-    }, [currentHandle]);
-
-    function onUpdate(md: string) {
-      onChanged(true);
-      mdStringRef.current = md;
+  useImperativeHandle(ref, () => ({
+    getMarkdown() {
+      return editorRef.current ? getMDString(editorRef.current.ctx) : '';
     }
+  }));
 
-    const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
-        e.preventDefault();
+  useMemo(() => {
+    currentHandle
+      ?.getFile()
+      .then((file) => file.text())
+      .then((markdown) => {
+        createMDEditor(editorContainerRef.current!, markdown, onUpdate).then((value) => {
+          editorRef.current && editorRef.current.destroy(true);
 
-        changed && onSave(mdStringRef.current);
-      }
+          editorRef.current = value;
+          mdStringRef.current = markdown;
+          onChanged(false);
+        });
+      });
+
+    return () => {
+      editorRef.current?.destroy(true);
     };
+  }, [currentHandle]);
 
-    return (
-      <div
-        ref={editorContainerRef}
-        id="md-editor"
-        className={styles.editorContainer}
-        onKeyDown={handleSave}
-      ></div>
-    );
+  function onUpdate(md: string) {
+    onChanged(true);
+    mdStringRef.current = md;
   }
-);
+
+  const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
+      e.preventDefault();
+
+      changed && onSave(mdStringRef.current);
+    }
+  };
+
+  return (
+    <div
+      ref={editorContainerRef}
+      id="md-editor"
+      className={styles.editorContainer}
+      onKeyDown={handleSave}
+    ></div>
+  );
+});
 
 export default MDEditor;

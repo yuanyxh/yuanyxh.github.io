@@ -26,8 +26,8 @@ export interface IOutletRef {
 
 interface IErrorBoundaryConsumeProps extends ChildrenComponent {}
 
-const ErrorBoundaryConsume: React.FC<Readonly<IErrorBoundaryConsumeProps>> =
-  memo(function ErrorBoundaryConsume(props) {
+const ErrorBoundaryConsume: React.FC<Readonly<IErrorBoundaryConsumeProps>> = memo(
+  function ErrorBoundaryConsume(props) {
     const { children } = props;
 
     const errorboundaryContext = useContext(ErrorBoundaryContext);
@@ -52,14 +52,11 @@ const ErrorBoundaryConsume: React.FC<Readonly<IErrorBoundaryConsumeProps>> =
 
     return (
       <>
-        {errorboundaryContext.hasError ? (
-          <ErrorCom errorInfo={errorboundaryContext} />
-        ) : (
-          children
-        )}
+        {errorboundaryContext.hasError ? <ErrorCom errorInfo={errorboundaryContext} /> : children}
       </>
     );
-  });
+  }
+);
 
 const Outlet = memo(
   forwardRef<IOutletRef, Readonly<IOutletProps>>(function Outlet(_props, ref) {

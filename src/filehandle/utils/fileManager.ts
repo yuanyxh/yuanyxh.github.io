@@ -49,9 +49,7 @@ export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
 }
 
 export async function getHandle(directory: DH, name: string) {
-  return directory
-    .getFileHandle(name)
-    .catch(() => directory.getDirectoryHandle(name));
+  return directory.getFileHandle(name).catch(() => directory.getDirectoryHandle(name));
 }
 
 export async function getHandleType(handle: DH | FH) {
@@ -72,18 +70,13 @@ export async function importFile(directory: DH, options?: FilePickerOptions) {
   const files = await window.showOpenFilePicker(options);
 
   await Promise.all(
-    files.map(async (file) =>
-      createFile(directory, file.name, await file.getFile())
-    )
+    files.map(async (file) => createFile(directory, file.name, await file.getFile()))
   );
 
   return true;
 }
 
-export async function importDirectory(
-  directory: DH,
-  options?: DirectoryPickerOptions
-) {
+export async function importDirectory(directory: DH, options?: DirectoryPickerOptions) {
   if (!window.showDirectoryPicker) return false;
 
   const folder = await window.showDirectoryPicker(options);
@@ -99,11 +92,7 @@ export async function writeFile(file: FH, data: FileDataType) {
   await writable.close();
 }
 
-export async function createFile(
-  directory: DH,
-  name: string,
-  data?: FileDataType
-) {
+export async function createFile(directory: DH, name: string, data?: FileDataType) {
   const handle = await directory.getFileHandle(name, { create: true });
 
   if (!data) return handle;
@@ -121,12 +110,7 @@ export async function remove(directory: DH, name: string) {
   return directory.removeEntry(name, { recursive: true });
 }
 
-export async function moveFile(
-  origin: DH,
-  target: DH,
-  name: string,
-  copy = true
-) {
+export async function moveFile(origin: DH, target: DH, name: string, copy = true) {
   const file = await (await origin.getFileHandle(name)).getFile();
 
   const handle = await createFile(target, name, file);
@@ -135,12 +119,7 @@ export async function moveFile(
   return handle;
 }
 
-export async function moveDirectory(
-  origin: DH,
-  target: DH,
-  name: string,
-  copy = true
-) {
+export async function moveDirectory(origin: DH, target: DH, name: string, copy = true) {
   const _origin = await origin.getDirectoryHandle(name);
   const _target = await createDirectory(target, name);
 
@@ -155,11 +134,7 @@ export async function moveDirectory(
   return _target;
 }
 
-export async function move(
-  origin: DH,
-  target: DH,
-  options?: { names?: string[]; copy?: boolean }
-) {
+export async function move(origin: DH, target: DH, options?: { names?: string[]; copy?: boolean }) {
   let { names } = options || {};
   const { copy = true } = options || {};
 

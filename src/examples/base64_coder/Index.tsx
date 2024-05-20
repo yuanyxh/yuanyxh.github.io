@@ -54,12 +54,7 @@ export default function Base64_Coder() {
 
   return (
     <div className={styles.base64_coder}>
-      <TextArea
-        placeholder="输入源字符串"
-        rows={7}
-        value={origin}
-        onChange={handleInputOrigin}
-      />
+      <TextArea placeholder="输入源字符串" rows={7} value={origin} onChange={handleInputOrigin} />
 
       <Icon icon="material-symbols:sync" size={30} />
 

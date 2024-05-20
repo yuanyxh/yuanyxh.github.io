@@ -116,11 +116,7 @@ const SideNavbar = (props: { visible: boolean; onClick: () => void }) => {
           <ul>
             {navbarData.map((item) => (
               <li key={item.path} onClick={props.onClick}>
-                <Link
-                  to={item.path}
-                  activeClass={styles.active}
-                  title={item.label}
-                >
+                <Link to={item.path} activeClass={styles.active} title={item.label}>
                   {item.label}
                 </Link>
               </li>
@@ -304,12 +300,7 @@ const FileSystemTrigger = () => {
   return support ? (
     <FloatButton
       aria-label="filesystem"
-      icon={
-        <Icon
-          icon="octicon--file-directory-open-fill-16"
-          color="var(--color-primary)"
-        />
-      }
+      icon={<Icon icon="octicon--file-directory-open-fill-16" color="var(--color-primary)" />}
       onClick={handleOpenFilePanel}
     />
   ) : null;
@@ -341,11 +332,7 @@ const Content = () => {
       <FloatButton.Group>
         <FileSystemTrigger />
 
-        <FloatButton
-          aria-label="feedback"
-          icon={<CommentOutlined />}
-          onClick={handleFeedback}
-        />
+        <FloatButton aria-label="feedback" icon={<CommentOutlined />} onClick={handleFeedback} />
 
         {/* FIXME: antd internal error, using outdated findDOMNode api causes react to throw warning in strict mode */}
         <FloatButton.BackTop

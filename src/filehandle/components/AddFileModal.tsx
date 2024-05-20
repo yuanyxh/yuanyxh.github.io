@@ -99,9 +99,7 @@ function AddFileModal({
       />
 
       {inputStatus.message ? (
-        <Typography.Paragraph type="danger">
-          {inputStatus.message}
-        </Typography.Paragraph>
+        <Typography.Paragraph type="danger">{inputStatus.message}</Typography.Paragraph>
       ) : null}
     </Modal>
   );

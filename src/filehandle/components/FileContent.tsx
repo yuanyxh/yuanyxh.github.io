@@ -86,9 +86,7 @@ function MountWebdavModal(props: { open: boolean; close(): void }) {
         <Form.Item<WebdavInfo>
           label="目录名称"
           name="name"
-          rules={[
-            { required: true, message: 'Please input your webdav locale name!' }
-          ]}
+          rules={[{ required: true, message: 'Please input your webdav locale name!' }]}
         >
           <Input />
         </Form.Item>
@@ -124,12 +122,7 @@ const FileItem: React.FC<Readonly<IFileItemProps>> = (props) => {
 
   const getIcon = (file: FileInfo) => {
     if (file.type === FileType.DIRECTORY) {
-      return (
-        <Icon
-          icon="material-symbols-light--folder"
-          color="var(--color-primary)"
-        />
-      );
+      return <Icon icon="material-symbols-light--folder" color="var(--color-primary)" />;
     }
 
     const handle = fileHandles.find((handle) =>
@@ -246,9 +239,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
   const handleDeleteFile = () => {
     const _selection = selection.slice(0);
 
-    const names = _selection
-      .filter((file) => !file.remote)
-      .map((file) => file.name);
+    const names = _selection.filter((file) => !file.remote).map((file) => file.name);
 
     confirm({
       title: '温馨提示',
@@ -261,10 +252,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
           _selection.map((file) => {
             if (file.remote) {
               _webdavs = _webdavs.filter((webdav) => {
-                if (
-                  webdav.name === file.name &&
-                  file.handle.kind === 'directory'
-                ) {
+                if (webdav.name === file.name && file.handle.kind === 'directory') {
                   fileLinked.unlink(file.handle);
                 }
 
@@ -309,9 +297,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
                 setSelection([child]);
               }}
               onDoubleClick={
-                child.type === FileType.DIRECTORY
-                  ? () => enterDirectory(child)
-                  : () => open(child)
+                child.type === FileType.DIRECTORY ? () => enterDirectory(child) : () => open(child)
               }
             />
           ))}
@@ -338,36 +324,22 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
             },
             {
               name: '新建文件夹',
-              icon: (
-                <Icon
-                  icon="material-symbols-light--folder"
-                  color="var(--color-primary)"
-                />
-              ),
+              icon: <Icon icon="material-symbols-light--folder" color="var(--color-primary)" />,
               onClick: handleAddDirectory
             },
             {
               name: '导入文件',
-              icon: (
-                <Icon icon="mdi--file-import" color="var(--color-primary)" />
-              ),
+              icon: <Icon icon="mdi--file-import" color="var(--color-primary)" />,
               onClick: importFile
             },
             {
               name: '导入文件夹',
-              icon: (
-                <Icon icon="ri--import-line" color="var(--color-primary)" />
-              ),
+              icon: <Icon icon="ri--import-line" color="var(--color-primary)" />,
               onClick: importDirectory
             },
             {
               name: '删除',
-              icon: (
-                <Icon
-                  icon="material-symbols--delete"
-                  color="var(--color-primary)"
-                />
-              ),
+              icon: <Icon icon="material-symbols--delete" color="var(--color-primary)" />,
               style: {
                 display: selection.length ? void 0 : 'none'
               },
@@ -385,10 +357,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         onCancel={handleCancel}
       />
 
-      <MountWebdavModal
-        open={isMountModalOpen}
-        close={() => setMountModalOpen(false)}
-      />
+      <MountWebdavModal open={isMountModalOpen} close={() => setMountModalOpen(false)} />
     </>
   );
 };

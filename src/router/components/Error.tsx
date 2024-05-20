@@ -2,13 +2,7 @@ import { useEffect } from 'react';
 
 import { Button, Typography } from 'antd';
 
-import {
-  assetsLoadHandle,
-  copy,
-  serializeError,
-  success,
-  UnknownError
-} from '@/utils';
+import { assetsLoadHandle, copy, serializeError, success, UnknownError } from '@/utils';
 
 import { Icon } from '@/components';
 
@@ -49,17 +43,11 @@ const ErrorCom: React.FC<IErrorProps> = (props) => {
       </div>
 
       <div>
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 5, fontSize: 15 }}>
           当前页面有一些错误，
         </Typography.Paragraph>
 
-        <Typography.Paragraph
-          type="secondary"
-          style={{ marginBottom: 5, fontSize: 15 }}
-        >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 5, fontSize: 15 }}>
           为保证您的体验，请前往{' '}
           <Typography.Link
             type="danger"

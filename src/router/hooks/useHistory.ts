@@ -15,10 +15,7 @@ export function useHistory() {
     }
 
     function replace(to: string, options?: HistoryOptions) {
-      routerContext?.navigate(
-        to,
-        options ? { ...options, replace: true } : { replace: true }
-      );
+      routerContext?.navigate(to, options ? { ...options, replace: true } : { replace: true });
     }
 
     function back() {

@@ -17,27 +17,15 @@ type GlobalEventKeys = keyof GlobalEventInfo;
 class GlobalEvent {
   event = new EventEmitter();
 
-  on(
-    type: 'user_tips',
-    fn: (data: GlobalEventInfo['user_tips']) => any
-  ): () => void;
-  on(
-    type: 'user_alert',
-    fn: (data: GlobalEventInfo['user_alert']) => any
-  ): () => void;
-  on<T extends GlobalEventKeys>(
-    type: GlobalEventKeys,
-    fn: (data: GlobalEventInfo[T]) => any
-  ) {
+  on(type: 'user_tips', fn: (data: GlobalEventInfo['user_tips']) => any): () => void;
+  on(type: 'user_alert', fn: (data: GlobalEventInfo['user_alert']) => any): () => void;
+  on<T extends GlobalEventKeys>(type: GlobalEventKeys, fn: (data: GlobalEventInfo[T]) => any) {
     return this.event.on(type, fn);
   }
 
   emit(type: 'user_tips', data: GlobalEventInfo['user_tips']): void;
   emit(type: 'user_alert', data: GlobalEventInfo['user_alert']): void;
-  emit<T extends GlobalEventKeys>(
-    type: GlobalEventKeys,
-    data: GlobalEventInfo[T]
-  ) {
+  emit<T extends GlobalEventKeys>(type: GlobalEventKeys, data: GlobalEventInfo[T]) {
     this.event.emit(type, data);
   }
 }

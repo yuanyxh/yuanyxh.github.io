@@ -11,3 +11,9 @@ index.html
 .analyze.html
 
 build
+
+*.mdx
+
+LICENSE
+
+CNAME

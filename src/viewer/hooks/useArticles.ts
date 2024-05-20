@@ -13,10 +13,7 @@ export function useArticles() {
     );
 
     // the latest articles are displayed first
-    articles.sort(
-      (a, b) =>
-        new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime()
-    );
+    articles.sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
 
     return articles;
   }, [routes]);

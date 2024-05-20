@@ -43,24 +43,15 @@ export const requestFullScreen = async (ele?: HTMLElement) => {
   return false;
 };
 
-export const onFullScreen = (
-  cb: (isFullScreen: boolean) => any,
-  ele?: HTMLElement
-) => {
+export const onFullScreen = (cb: (isFullScreen: boolean) => any, ele?: HTMLElement) => {
   function onChange() {
     cb(isFullScreen());
   }
 
-  (ele || document.documentElement).addEventListener(
-    'fullscreenchange',
-    onChange
-  );
+  (ele || document.documentElement).addEventListener('fullscreenchange', onChange);
 
   return () => {
-    (ele || document.documentElement).removeEventListener(
-      'fullscreenchange',
-      onChange
-    );
+    (ele || document.documentElement).removeEventListener('fullscreenchange', onChange);
   };
 };
 

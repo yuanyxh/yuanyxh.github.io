@@ -44,8 +44,7 @@ export const routesPath = resolve('src/routes.tsx');
 
 export const parseRoute = (path: string) => path.split(sep).pop()!.slice(0, -4);
 
-export const replaceFileExtension = (name: string) =>
-  name.slice(0, name.lastIndexOf('.')) + '.tsx';
+export const replaceFileExtension = (name: string) => name.slice(0, name.lastIndexOf('.')) + '.tsx';
 
 export const generateRouteJSONWithArticle = async () => {
   const paths = await fast.glob(['./src/markdowns/**/*.mdx']);
@@ -56,13 +55,9 @@ export const generateRouteJSONWithArticle = async () => {
     .map((path) => resolve(path))
     .forEach((path) => {
       const route = parseRoute(path);
-      const { attributes } = frontmatter<ArticleMeta>(
-        readFileSync(path, 'utf-8')
-      );
+      const { attributes } = frontmatter<ArticleMeta>(readFileSync(path, 'utf-8'));
 
-      const aliasPath = path
-        .replace('./src/markdowns', '@/markdowns')
-        .replace(/\\/g, '/');
+      const aliasPath = path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
 
       const str = `
         {
@@ -85,9 +80,7 @@ export const generateRouteJSONWithArticle = async () => {
 export const getExampleMeta = (path: string) => {
   const text = readFileSync(path, 'utf-8');
 
-  const match = text
-    .match(/(?<=\/\/--meta:)([\s\S]*)(?=\/\/--endmeta)/)?.[0]
-    .trim();
+  const match = text.match(/(?<=\/\/--meta:)([\s\S]*)(?=\/\/--endmeta)/)?.[0].trim();
 
   const arr = match!.replace(/\/\/\s/g, '').split(/[\n\r]/);
 
@@ -104,12 +97,7 @@ const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
 export const generateRouteJSONWithExample = async () => {
   let result = '';
 
-  async function transform(
-    dirs: string[],
-    parent: string,
-    hierarchy: number,
-    root: string
-  ) {
+  async function transform(dirs: string[], parent: string, hierarchy: number, root: string) {
     if (hierarchy === 0) {
       const directory = resolve(parent, `code`);
       const value = template.replace('base64_coder/Index', `${root}/Index`);
@@ -156,9 +144,7 @@ export const generateRouteJSONWithExample = async () => {
 
       const newName = replaceFileExtension(name);
 
-      const paths = relative(resolve(examples, root), parent)
-        .split(sep)
-        .filter(Boolean);
+      const paths = relative(resolve(examples, root), parent).split(sep).filter(Boolean);
       const folder = resolve(examples, root, 'code', ...paths);
 
       if (!existsSync(folder)) {
@@ -207,10 +193,7 @@ export const generateRouteJSON = async () => {
   };
 };
 
-export const replacePlaceRoute = (
-  code: string,
-  { books, articles, examples }: RoutePlace
-) =>
+export const replacePlaceRoute = (code: string, { books, articles, examples }: RoutePlace) =>
   code
     .replace('/** placeholder for articles */', articles)
     .replace('/** placeholder for books */', books)

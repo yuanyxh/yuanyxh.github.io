@@ -42,9 +42,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorState> {
 
   render() {
     return (
-      <ErrorBoundaryContext.Provider
-        value={{ ...this.state, reset: this.reset }}
-      >
+      <ErrorBoundaryContext.Provider value={{ ...this.state, reset: this.reset }}>
         {this.props.children}
       </ErrorBoundaryContext.Provider>
     );

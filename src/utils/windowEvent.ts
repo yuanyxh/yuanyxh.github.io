@@ -12,11 +12,7 @@ const map: {
   [key: string]: any;
 } = {};
 
-export const addGlobalListener: AddGlobalListener = (
-  type,
-  listener,
-  capture
-) => {
+export const addGlobalListener: AddGlobalListener = (type, listener, capture) => {
   const _type = capture ? `${type}Capture` : type;
 
   if (!event.has(_type)) {

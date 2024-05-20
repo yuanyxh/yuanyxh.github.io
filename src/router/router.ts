@@ -48,8 +48,7 @@ interface RouteState {
 type RouterListener = (state: RouteState) => void;
 type RouterUnListener = () => void;
 
-interface NavigateOptions
-  extends Partial<Pick<RouteState, 'query' | 'hash' | 'state'>> {
+interface NavigateOptions extends Partial<Pick<RouteState, 'query' | 'hash' | 'state'>> {
   replace?: boolean;
 }
 
@@ -73,10 +72,7 @@ function getState(): RouteState {
   };
 }
 
-function resolveFullPath(
-  routes: RouteObject[],
-  parent: string
-): ResolveRouteObject[] {
+function resolveFullPath(routes: RouteObject[], parent: string): ResolveRouteObject[] {
   return routes.map(function map(route) {
     const seps = parent.split('/');
     seps.shift();
@@ -84,8 +80,7 @@ function resolveFullPath(
     const _route = route as ResolveRouteObject;
 
     _route.fullPath = [...seps, route.path].join('/');
-    !_route.fullPath.startsWith('/') &&
-      (_route.fullPath = '/' + _route.fullPath);
+    !_route.fullPath.startsWith('/') && (_route.fullPath = '/' + _route.fullPath);
 
     if (route.children?.length) {
       resolveFullPath(route.children, _route.fullPath);
@@ -125,17 +120,15 @@ async function resolveComponents(
 ) {
   const awaits = matchs.map(fetch);
 
-  const safeMatchs: ResolveRouteObject[] = cloneDeep(matchs).map(
-    (safeMatch) => {
-      return {
-        ...safeMatch,
-        module:
-          safeMatch.module && safeMatch.module.status === 'fulfilled'
-            ? safeMatch.module
-            : { status: 'pending' }
-      };
-    }
-  );
+  const safeMatchs: ResolveRouteObject[] = cloneDeep(matchs).map((safeMatch) => {
+    return {
+      ...safeMatch,
+      module:
+        safeMatch.module && safeMatch.module.status === 'fulfilled'
+          ? safeMatch.module
+          : { status: 'pending' }
+    };
+  });
 
   return Promise.all(
     awaits.map((p, i) => {
@@ -201,10 +194,7 @@ class Router {
 
   private markObsolete: (() => void) | undefined;
 
-  constructor(
-    routes: RouteObject[],
-    { history }: { history: AbstractHistory }
-  ) {
+  constructor(routes: RouteObject[], { history }: { history: AbstractHistory }) {
     this.routes = cloneDeep(resolveFullPath(routes, ''));
     this.routeTree = new RouteTree(cloneDeep(this.routes));
 
@@ -218,9 +208,7 @@ class Router {
 
     addGlobalListener('hashchange', () => {
       try {
-        window.document
-          .getElementById(window.location.hash.slice(1))
-          ?.scrollIntoView();
+        window.document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
       } catch (err) {
         /* empty */
       }
@@ -234,16 +222,8 @@ class Router {
   }
 
   private navigateTo(to: number): boolean;
-  private navigateTo(
-    to: string,
-    options?: NavigateOptions,
-    changeHistory?: boolean
-  ): boolean;
-  private navigateTo(
-    to: number | string,
-    options?: NavigateOptions,
-    changeHistory = false
-  ) {
+  private navigateTo(to: string, options?: NavigateOptions, changeHistory?: boolean): boolean;
+  private navigateTo(to: number | string, options?: NavigateOptions, changeHistory = false) {
     if (typeof to === 'number') return this.history.go(to);
 
     // hash changes
@@ -297,9 +277,7 @@ class Router {
       let normalIndex = 0;
       resolveComponents(_matchs, (matchs: ResolveRouteObject[]) => {
         if (!isObsolete) {
-          const completed = matchs.findIndex(
-            (match) => match.module?.status === 'fulfilled'
-          );
+          const completed = matchs.findIndex((match) => match.module?.status === 'fulfilled');
 
           if (completed === normalIndex) {
             normalIndex++;
@@ -325,10 +303,7 @@ class Router {
             : '#' + options.hash
           : '';
 
-        this.history[method](
-          to + (query ? '?' + query : '') + hash,
-          options?.state
-        );
+        this.history[method](to + (query ? '?' + query : '') + hash, options?.state);
       }
 
       return true;
@@ -367,10 +342,7 @@ class Router {
     fn: (
       from: RouteState,
       to: RouteState,
-      {
-        type,
-        changeHistory
-      }: { type: 'replace' | 'push'; changeHistory: boolean }
+      { type, changeHistory }: { type: 'replace' | 'push'; changeHistory: boolean }
     ) => any
   ) {
     return this.event.on(EventKeys.BEFORE_ENTER, fn);
@@ -380,10 +352,7 @@ class Router {
     fn: (
       from: RouteState,
       to: RouteState,
-      {
-        type,
-        changeHistory
-      }: { type: 'replace' | 'push'; changeHistory: boolean }
+      { type, changeHistory }: { type: 'replace' | 'push'; changeHistory: boolean }
     ) => any
   ) {
     return this.event.on(EventKeys.AFTER_ENTER, fn);

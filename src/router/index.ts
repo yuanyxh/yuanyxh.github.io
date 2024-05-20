@@ -17,10 +17,4 @@ export type {
   RouterUnListener,
   RouteState
 } from './router';
-export {
-  createRouter,
-  INDEX_PATH,
-  NOT_FOUND_PATH,
-  NotFound,
-  default as Router
-} from './router';
+export { createRouter, INDEX_PATH, NOT_FOUND_PATH, NotFound, default as Router } from './router';

@@ -25,10 +25,7 @@ const Icon: React.FC<Readonly<IIconProps>> = (props) => {
 
   return (
     <i style={mergeStyle} {...rest}>
-      <svg
-        style={assign({ width: '1em', height: '1em' }, svgStyle)}
-        aria-hidden="true"
-      >
+      <svg style={assign({ width: '1em', height: '1em' }, svgStyle)} aria-hidden="true">
         <use xlinkHref={`#icon-${icon.replace(':', '--')}`} />
       </svg>
     </i>

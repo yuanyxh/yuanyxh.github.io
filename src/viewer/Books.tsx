@@ -27,11 +27,7 @@ const BookItem = ({ book }: { book: ResolveRouteObject }) => {
         </div>
 
         <div className={styles.imageBox}>
-          <img
-            loading="lazy"
-            src={book.meta?.imageUrl}
-            alt={book.meta?.title}
-          />
+          <img loading="lazy" src={book.meta?.imageUrl} alt={book.meta?.title} />
         </div>
       </div>
     </Link>

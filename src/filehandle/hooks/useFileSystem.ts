@@ -60,19 +60,14 @@ export interface FileSystem {
 export function useFileSystem(): FileSystem {
   const { webdavs } = useUserStore();
 
-  const root =
-    useRef<DH>() as React.MutableRefObject<FileSystemDirectoryHandle>;
+  const root = useRef<DH>() as React.MutableRefObject<FileSystemDirectoryHandle>;
 
-  const fileLinked =
-    useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
+  const fileLinked = useRef<FileLinkedList>() as React.MutableRefObject<FileLinkedList>;
 
   const fileHandlesRef = useRef<FileHandle[]>([]);
   const backgroundManagerRef = useRef(backgroundManager);
 
-  const [current, setCurrent] = useState<DH>() as [
-    DH,
-    React.Dispatch<React.SetStateAction<DH>>
-  ];
+  const [current, setCurrent] = useState<DH>() as [DH, React.Dispatch<React.SetStateAction<DH>>];
 
   const [children, setChildren] = useState<FileInfo[]>([]);
 
@@ -85,10 +80,7 @@ export function useFileSystem(): FileSystem {
       try {
         setBusy(true);
 
-        const children = await getChildren(
-          target,
-          root.current === target ? webdavs : void 0
-        );
+        const children = await getChildren(target, root.current === target ? webdavs : void 0);
 
         setCurrent(target);
         setChildren(children);
@@ -132,10 +124,7 @@ export function useFileSystem(): FileSystem {
           return false;
         }
 
-        fileHandlesRef.current = [
-          ...fileHandlesRef.current,
-          cloneDeep(handler)
-        ];
+        fileHandlesRef.current = [...fileHandlesRef.current, cloneDeep(handler)];
       });
 
       setChildren([...children]);
@@ -220,10 +209,7 @@ export function useFileSystem(): FileSystem {
     }
 
     function returnToRoot() {
-      update(
-        root.current,
-        () => (fileLinked.current = new FileLinkedList(root.current))
-      );
+      update(root.current, () => (fileLinked.current = new FileLinkedList(root.current)));
     }
 
     return {
@@ -243,14 +229,7 @@ export function useFileSystem(): FileSystem {
       importDirectory,
       forceUpdate: update
     };
-  }, [
-    current,
-    children,
-    webdavs,
-    fileLinked.current,
-    backgroundManagerRef.current,
-    isBusy
-  ]);
+  }, [current, children, webdavs, fileLinked.current, backgroundManagerRef.current, isBusy]);
 
   return fileSystem;
 }
