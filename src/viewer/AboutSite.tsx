@@ -88,6 +88,10 @@ const AboutSite = () => {
             <li style={{ padding: '4px' }}>
               自定义的路由，使用自实现的路由来对路由跳转时页面的行为进行精细的控制，允许路由加载期间继续执行操作。
             </li>
+            <li style={{ padding: '4px' }}>
+              web 文件系统，添加了 webdav 的支持，可以不断扩展文件处理程序，比如实现了{' '}
+              <Text code>markdown</Text> 在线编辑器。
+            </li>
             <li>可配置，支持自定义配置网站行为，如禁用 Service Worker 缓存、清理已加载缓存。</li>
             <li style={{ padding: '4px' }}>
               案例预览，网站提供了很多自己编写的案例，支持在线查看代码并预览效果。
