@@ -144,7 +144,13 @@ class ServiceWorkerManager {
         if (this.cancel) return;
 
         this.cancel = sleep(8000, () => {
-          this.serviceWorker?.update();
+          if (
+            window.document.hidden === false &&
+            !(this.serviceWorker?.installing || this.serviceWorker?.waiting)
+          ) {
+            this.serviceWorker?.update();
+          }
+
           this.cancel = void 0;
         });
       },
