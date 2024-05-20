@@ -1,6 +1,6 @@
 import EventEmitter from './event';
 
-import { sleep } from '.';
+import { addGlobalListener, sleep } from '.';
 
 interface ServiceWorkerManagerOptions {
   update(): any;
@@ -63,6 +63,8 @@ class ServiceWorkerManager {
 
   private isRunning = false;
 
+  private cancel: (() => any) | undefined;
+
   constructor(options?: ServiceWorkerManagerOptions) {
     if (options) {
       this.event.on(EVENT_KEY, options.update);
@@ -77,6 +79,7 @@ class ServiceWorkerManager {
           .then((serviceWorker) => {
             resolve(true);
 
+            this.listenUpdate();
             this.serviceWorker = serviceWorker;
 
             if (serviceWorker.waiting) {
@@ -132,6 +135,30 @@ class ServiceWorkerManager {
     }
 
     return true;
+  }
+
+  private listenUpdate() {
+    addGlobalListener(
+      'click',
+      () => {
+        if (this.cancel) return;
+
+        this.cancel = sleep(8000, () => {
+          this.serviceWorker?.update();
+          this.cancel = void 0;
+        });
+      },
+      true
+    );
+
+    window.document.addEventListener('visibilitychange', () => {
+      if (
+        window.document.hidden === false &&
+        !(this.cancel || this.serviceWorker?.installing || this.serviceWorker?.waiting)
+      ) {
+        this.serviceWorker?.update();
+      }
+    });
   }
 
   skipWaiting() {
