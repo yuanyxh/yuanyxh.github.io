@@ -129,15 +129,10 @@ const App: React.FC<IAppProps> = (props) => {
 
     const cancelGlobalUserTipsEventListener = globalEvent.on(
       'user_tips',
-      ({ type, message: _message }) => {
-        messageApi[type](_message);
-      }
+      ({ type, message: _message }) => messageApi[type](_message)
     );
-    const cancelGlobalUserAlertEventListener = globalEvent.on(
-      'user_alert',
-      ({ type, ...props }) => {
-        modalApi[type](props);
-      }
+    const cancelGlobalUserAlertEventListener = globalEvent.on('user_alert', ({ type, ...props }) =>
+      modalApi[type](props)
     );
 
     const cancelListenerReLoad = assetsLoadHandle.reLoadByOnline(() => !enableServiceWorkerCache);

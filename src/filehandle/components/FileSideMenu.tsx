@@ -164,7 +164,6 @@ function Menu({
           ) : (
             <a
               href="/"
-              data-id={item}
               onClick={(e) => e.preventDefault()}
               title={item.name}
               onContextMenu={(e) => {
