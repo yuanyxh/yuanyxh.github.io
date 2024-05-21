@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 import type { FH } from '@/filehandle/utils/fileManager';
 
@@ -159,6 +159,7 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor>();
   const mdStringRef = useRef('');
+  const latestHandleRef = useRef<FH | null>();
 
   uploadInfo = useMDStore().uploadInfo;
 
@@ -168,12 +169,18 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
     }
   }));
 
-  useMemo(() => {
+  useEffect(() => {
+    latestHandleRef.current = currentHandle;
+
     currentHandle
       ?.getFile()
       .then((file) => file.text())
       .then((markdown) => {
         createMDEditor(editorContainerRef.current!, markdown, onUpdate).then((value) => {
+          if (latestHandleRef.current && latestHandleRef.current !== currentHandle) {
+            return value.destroy(true);
+          }
+
           editorRef.current && editorRef.current.destroy(true);
 
           editorRef.current = value;
