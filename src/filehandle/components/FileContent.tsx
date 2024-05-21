@@ -13,7 +13,7 @@ import AddFileModal from './AddFileModal';
 import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
 import type { FileInfo } from '../utils/fileManager';
-import { FileType } from '../utils/fileManager';
+import { exportDirectory, exportFile, FileType } from '../utils/fileManager';
 import { fileOperationWarning } from '../utils/operationWarning';
 
 function MountWebdavModal(props: { open: boolean; close(): void }) {
@@ -270,6 +270,22 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
     });
   };
 
+  const handleExportFile = async () => {
+    const curr = selection[0];
+
+    if (!curr) return void 0;
+
+    try {
+      await (curr.handle.kind === 'directory'
+        ? exportDirectory(curr.handle)
+        : exportFile(curr.handle));
+
+      success(`已为你导出文件 ${curr.name}。`);
+    } catch (err) {
+      error((err as Error).message);
+    }
+  };
+
   const handleOk = async (name: string, type: FileType) => {
     try {
       await create(name, type);
@@ -333,6 +349,14 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
               name: '导入文件夹',
               icon: <Icon icon="ri--import-line" color="var(--color-primary)" />,
               onClick: importDirectory
+            },
+            {
+              name: '导出文件',
+              icon: <Icon icon="bxs--file-export" color="var(--color-primary)" />,
+              style: {
+                display: selection.length ? void 0 : 'none'
+              },
+              onClick: handleExportFile
             },
             {
               name: '删除',

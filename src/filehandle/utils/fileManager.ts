@@ -69,8 +69,6 @@ export async function getHandleType(handle: DH | FH) {
 }
 
 export async function importFile(directory: DH, options?: FilePickerOptions) {
-  if (!window.showOpenFilePicker) return false;
-
   const files = await window.showOpenFilePicker(options);
 
   await Promise.all(
@@ -81,11 +79,28 @@ export async function importFile(directory: DH, options?: FilePickerOptions) {
 }
 
 export async function importDirectory(directory: DH, options?: DirectoryPickerOptions) {
-  if (!window.showDirectoryPicker) return false;
-
   const folder = await window.showDirectoryPicker(options);
 
   await move(folder, await createDirectory(directory, folder.name));
+
+  return true;
+}
+
+export async function exportFile(file: FH) {
+  const handle = await window.showSaveFilePicker({
+    suggestedName: file.name,
+    types: [{ description: 'export file', accept: {} }]
+  });
+
+  await writeFile(handle, await file.getFile());
+
+  return true;
+}
+
+export async function exportDirectory(directory: DH) {
+  const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+  await moveDirectoryWithSelf(directory, handle);
 
   return true;
 }
@@ -123,15 +138,24 @@ export async function moveFile(origin: DH, target: DH, name: string, copy = true
   return handle;
 }
 
+export async function moveDirectoryWithSelf(origin: DH, target: DH) {
+  const _target = await target.getDirectoryHandle(origin.name, { create: true });
+
+  await move(origin, _target);
+
+  return true;
+}
+
 export async function moveDirectory(origin: DH, target: DH, name: string, copy = true) {
   const _origin = await origin.getDirectoryHandle(name);
   const _target = await createDirectory(target, name);
 
-  for await (const [key, handle] of _origin.entries()) {
+  const entries = _origin.entries();
+  for await (const [key, handle] of entries) {
     if ((await getHandleType(handle)) === FileType.FILE) {
-      return await moveFile(_origin, _target, key, copy);
+      await moveFile(_origin, _target, key, copy);
     } else {
-      return await moveDirectory(_origin, _target, key);
+      await moveDirectory(_origin, _target, key);
     }
   }
 
