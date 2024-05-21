@@ -107,6 +107,9 @@ const App: React.FC<IAppProps> = (props) => {
 
         window.alert(`${frontDesk} , ${enableNotification}`);
 
+        const sdfds = false;
+        sdfds;
+
         if (!frontDesk && enableNotification) {
           notify({
             icon: '/favicon.ico',
