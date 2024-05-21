@@ -1,12 +1,11 @@
 import { useContext, useRef, useState } from 'react';
 
 import { Form, Input, Modal, Spin, Typography } from 'antd';
-import { ExclamationCircleFilled } from '@ant-design/icons';
 
 import type { WebdavInfo } from '@/store';
 import { useUserStore } from '@/store';
 
-import { alert, confirm, error, sleep, success } from '@/utils';
+import { alert, error, sleep, success } from '@/utils';
 
 import { ContextMenu, Icon } from '@/components';
 
@@ -15,6 +14,7 @@ import { FileSystemContext } from './FilePanel';
 import styles from './styles/FileContent.module.less';
 import type { FileInfo } from '../utils/fileManager';
 import { FileType } from '../utils/fileManager';
+import { fileOperationWarning } from '../utils/operationWarning';
 
 function MountWebdavModal(props: { open: boolean; close(): void }) {
   const { open, close } = props;
@@ -241,10 +241,9 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
 
     const names = _selection.filter((file) => !file.remote).map((file) => file.name);
 
-    confirm({
-      title: '温馨提示',
-      icon: <ExclamationCircleFilled />,
-      content: '您确认要删除这个文件吗？',
+    fileOperationWarning({
+      title: '您确认要删除以下文件吗？',
+      list: names,
       async onOk() {
         try {
           let _webdavs = webdavs.slice(0);
@@ -267,9 +266,7 @@ const FileContent: React.FC<IFileContentProps> = (props) => {
         } catch (err) {
           error((err as Error).message);
         }
-      },
-      okText: '确认',
-      cancelText: '取消'
+      }
     });
   };
 

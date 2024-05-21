@@ -23,18 +23,22 @@ export interface FileInfo {
   ext?: string;
 }
 
+export async function getFileInfo(handle: DH | FH, key: string): Promise<FileInfo> {
+  const type = await getHandleType(handle);
+
+  let ext: string | undefined = void 0;
+  if (key.includes('.')) {
+    ext = '.' + key.split('.').pop();
+  }
+
+  return { name: key, type, icon: '', handle, ext };
+}
+
 export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
   const children: FileInfo[] = [];
 
   for await (const [key, handle] of directory.entries()) {
-    const type = await getHandleType(handle);
-
-    let ext: string | undefined = void 0;
-    if (key.includes('.')) {
-      ext = '.' + key.split('.').pop();
-    }
-
-    children[children.length] = { name: key, type, icon: '', handle, ext };
+    children[children.length] = await getFileInfo(handle, key);
   }
 
   return children

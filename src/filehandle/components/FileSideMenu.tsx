@@ -12,7 +12,8 @@ import AddFileInput from './AddFileInput';
 import styles from './styles/FileSideMenu.module.less';
 import { isFileHandle } from '../utils/checkFileType';
 import type { DH, FH, FileInfo } from '../utils/fileManager';
-import { FileType, getChildren, remove } from '../utils/fileManager';
+import { FileType, getChildren, getFileInfo, move, remove } from '../utils/fileManager';
+import { fileOperationWarning } from '../utils/operationWarning';
 
 export interface ExtendFileInfo extends FileInfo {
   id: string;
@@ -47,7 +48,7 @@ function replaceAndSort(list: ExtendFileInfo[], info: ExtendFileInfo, id: string
   });
 }
 
-function wrapperFileItem(parent: ExtendFileInfo, file: FileInfo): ExtendFileInfo {
+function getExtendFileInfo(parent: ExtendFileInfo, file: FileInfo): ExtendFileInfo {
   return { ...file, id: uuid(), parent };
 }
 
@@ -80,7 +81,8 @@ async function getDeepChildren(
     children
       .filter((value) => value.type === FileType.DIRECTORY || isSelect(value, exts))
       .map(async (child) => {
-        const newChild = wrapperFileItem(parent, child);
+        const newChild = getExtendFileInfo(parent, child);
+
         if (child.handle.kind === 'directory') {
           newChild.children = await getDeepChildren(child.handle, newChild, exts);
         }
@@ -104,12 +106,33 @@ const insetFile = (children: ExtendFileInfo[], child: ExtendFileInfo) => {
   }
 };
 
+function canDrop(dragdata: ExtendFileInfo, target_id: string): boolean {
+  if (dragdata.id === target_id) return false;
+
+  if (!dragdata.children?.length) return true;
+
+  function some(children: ExtendFileInfo[] = [], id: string): boolean {
+    return children.some((child) => {
+      if (child.children?.length) {
+        return some(child.children, id);
+      }
+
+      return false;
+    });
+  }
+
+  return some(dragdata.children, target_id);
+}
+
+let dragdata: ExtendFileInfo | null = null;
+
 function Menu({
   activeId,
   changed,
   items,
   replace,
   removeInput,
+  moveItem,
   onItemClick,
   onItemContextMenu
 }: {
@@ -118,6 +141,7 @@ function Menu({
   items: ExtendFileInfo[];
   replace(info: ExtendFileInfo, id: string): any;
   removeInput(id: string): any;
+  moveItem(target: ExtendFileInfo, item: ExtendFileInfo): any;
   onItemClick: (file: ExtendFileInfo) => void;
   onItemContextMenu: (file: ExtendFileInfo) => void;
 }) {
@@ -145,6 +169,41 @@ function Menu({
     onItemClick(file);
   };
 
+  const handleDropFile = (target: ExtendFileInfo) => {
+    const _dragdata = dragdata;
+
+    if (
+      !_dragdata ||
+      !_dragdata.parent ||
+      _dragdata.parent.handle.kind === 'file' ||
+      target.handle.kind === 'file' ||
+      !canDrop(_dragdata, target.id)
+    ) {
+      return void 0;
+    }
+
+    fileOperationWarning({
+      title: `您确认要将以下文件移动至 ${target.name} 吗？`,
+      list: [_dragdata.name],
+      async onOk() {
+        try {
+          await move(_dragdata.parent!.handle as DH, target.handle as DH, {
+            names: [_dragdata.name],
+            copy: false
+          });
+
+          moveItem(target, _dragdata);
+
+          if (expands.includes(target.id)) {
+            handleSetExpands(target.id);
+          }
+        } catch (err) {
+          error((err as Error).message);
+        }
+      }
+    });
+  };
+
   return (
     <ul className={styles.list} onClick={(e) => e.stopPropagation()}>
       {items.map((item) => (
@@ -164,11 +223,28 @@ function Menu({
           ) : (
             <a
               href="/"
+              style={{ position: 'relative' }}
               onClick={(e) => e.preventDefault()}
               title={item.name}
               onContextMenu={(e) => {
                 e.stopPropagation();
                 onItemContextMenu(item);
+              }}
+              onDragStart={(e) => {
+                e.stopPropagation();
+                dragdata = item;
+              }}
+              onDragEnd={(e) => {
+                e.stopPropagation();
+                dragdata = null;
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+              }}
+              onDrop={(e) => {
+                e.stopPropagation();
+                handleDropFile(item);
               }}
             >
               <div
@@ -204,6 +280,7 @@ function Menu({
               changed={changed}
               replace={replace}
               removeInput={removeInput}
+              moveItem={moveItem}
               onItemClick={onItemClick}
               onItemContextMenu={onItemContextMenu}
             />
@@ -235,6 +312,10 @@ const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
   const siderRef = useRef<HTMLDivElement>(null);
 
   useMemo(() => {
+    getList();
+  }, [handle]);
+
+  function getList() {
     if (queryingRef.current) {
       return void 0;
     }
@@ -250,7 +331,7 @@ const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
       .finally(() => {
         queryingRef.current = false;
       });
-  }, [handle]);
+  }
 
   const addExtendFileInfo = (type: FileType) => {
     const curr = selection[0];
@@ -313,6 +394,27 @@ const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
 
   const removeInput = (id: string) => setList(filter(list, id));
 
+  const moveItem = async (target: ExtendFileInfo, item: ExtendFileInfo) => {
+    if (target.handle.kind === 'directory') {
+      removeInput(item.id);
+
+      try {
+        const newHandle = await (
+          item.type === FileType.DIRECTORY
+            ? target.handle.getDirectoryHandle
+            : target.handle.getFileHandle
+        )(item.name);
+
+        insetFile(
+          target.children || (target.children = []),
+          getExtendFileInfo(target, await getFileInfo(newHandle, newHandle.name))
+        );
+      } catch (err) {
+        error((err as Error).message);
+      }
+    }
+  };
+
   const handleSelect = (file: ExtendFileInfo) => {
     if (isFileHandle(file.handle)) {
       onSelect(file.handle);
@@ -328,23 +430,29 @@ const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
 
   const handleAddDirectory = () => addExtendFileInfo(FileType.DIRECTORY);
 
-  const handleDeleteFile = async () => {
+  const handleDeleteFile = () => {
     const curr = selection[0];
-    if (curr) {
-      const dh = curr.parent?.handle || handle;
 
-      if (dh.kind === 'directory') {
-        try {
-          await remove(dh, curr.name);
-          setList(filter(list, curr.id));
+    curr &&
+      fileOperationWarning({
+        title: '您确认要删除以下文件吗？',
+        list: [curr.name],
+        async onOk() {
+          const dh = curr.parent?.handle || handle;
 
-          onRemove(curr.handle);
-          update();
-        } catch (err) {
-          error((err as Error).message);
+          if (dh.kind === 'directory') {
+            try {
+              await remove(dh, curr.name);
+              setList(filter(list, curr.id));
+
+              onRemove(curr.handle);
+              update();
+            } catch (err) {
+              error((err as Error).message);
+            }
+          }
         }
-      }
-    }
+      });
   };
 
   return (
@@ -357,6 +465,7 @@ const FileSideMenu: React.FC<Readonly<IFileSideMenuProps>> = (props) => {
             activeId={activeId}
             replace={replace}
             removeInput={removeInput}
+            moveItem={moveItem}
             onItemClick={handleSelect}
             onItemContextMenu={handleContextMenu}
           />

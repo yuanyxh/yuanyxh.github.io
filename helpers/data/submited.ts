@@ -49,5 +49,6 @@ export default [
   '/articles/Pro_Git_reading_comprehension_how_to_achieve_git.html',
   '/articles/compatible_discussion.html',
   '/articles/serviceless_blog_establishment.html',
+  '/articles/handlery_and_update_scheme.html',
   '/404.html'
 ];

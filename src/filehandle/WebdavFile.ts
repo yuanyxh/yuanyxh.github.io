@@ -125,17 +125,17 @@ class WebdavFileSystemHandle implements FileSystemHandle {
     return Promise.resolve(false);
   }
 
-  queryPermission(): Promise<PermissionStatus> {
+  queryPermission = (): Promise<PermissionStatus> => {
     throw new Error('Method not implemented.');
-  }
+  };
 
-  requestPermission(): Promise<PermissionStatus> {
+  requestPermission = (): Promise<PermissionStatus> => {
     throw new Error('Method not implemented.');
-  }
+  };
 
-  remove(): Promise<undefined> {
+  remove = (): Promise<undefined> => {
     throw new Error('Method not implemented.');
-  }
+  };
 }
 
 class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileSystemFileHandle {
@@ -147,11 +147,11 @@ class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileS
     super('file', name, fullPath, webdav, webdavInfo);
   }
 
-  createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle> {
+  createSyncAccessHandle = (): Promise<FileSystemSyncAccessHandle> => {
     throw new Error('Method not implemented.');
-  }
+  };
 
-  async getFile() {
+  getFile = async () => {
     if (this.file) {
       return this.file;
     }
@@ -163,11 +163,11 @@ class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileS
     this.file = new File([data], this.name);
 
     return this.file;
-  }
+  };
 
-  async createWritable(
+  createWritable = async (
     options?: FileSystemCreateWritableOptions | undefined
-  ): Promise<FileSystemWritableFileStream> {
+  ): Promise<FileSystemWritableFileStream> => {
     options;
 
     const { webdav, fullPath } = this;
@@ -177,7 +177,7 @@ class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileS
       fullPath,
       (buffer) => (this.file = new File([buffer], this.name))
     );
-  }
+  };
 }
 
 class WebdavFileSystemDirectoryHandle
@@ -196,17 +196,17 @@ class WebdavFileSystemDirectoryHandle
     throw new Error('Method not implemented.');
   }
 
-  keys(): AsyncIterableIterator<string> {
+  keys = (): AsyncIterableIterator<string> => {
     throw new Error('Method not implemented.');
-  }
+  };
 
-  values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle> {
+  values = (): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle> => {
     throw new Error('Method not implemented.');
-  }
+  };
 
-  entries(): AsyncIterableIterator<
+  entries = (): AsyncIterableIterator<
     [string, WebdavFileSystemDirectoryHandle | WebdavFileSystemFileHandle]
-  > {
+  > => {
     let i = 0;
 
     const { webdav, fullPath, webdavInfo } = this;
@@ -237,12 +237,12 @@ class WebdavFileSystemDirectoryHandle
         };
       }
     };
-  }
+  };
 
-  async getDirectoryHandle(
+  getDirectoryHandle = async (
     name: string,
     options?: FileSystemHandleCreateOptions
-  ): Promise<WebdavFileSystemDirectoryHandle> {
+  ): Promise<WebdavFileSystemDirectoryHandle> => {
     const { create = false } = options || {};
 
     const subFullPath = this.fullPath + name;
@@ -269,12 +269,12 @@ class WebdavFileSystemDirectoryHandle
       name,
       this.webdavInfo
     );
-  }
+  };
 
-  async getFileHandle(
+  getFileHandle = async (
     name: string,
     options?: FileSystemHandleCreateOptions
-  ): Promise<WebdavFileSystemFileHandle> {
+  ): Promise<WebdavFileSystemFileHandle> => {
     const { create = false } = options || {};
 
     const subFullPath = this.fullPath + name;
@@ -294,15 +294,15 @@ class WebdavFileSystemDirectoryHandle
     }
 
     return new WebdavFileSystemFileHandle(this.webdav, subFullPath, name, this.webdavInfo);
-  }
+  };
 
-  async removeEntry(name: string): Promise<undefined> {
+  removeEntry = async (name: string): Promise<undefined> => {
     const subFullPath = this.fullPath + name;
 
     await this.webdav.deleteFile(subFullPath);
 
     return void 0;
-  }
+  };
 }
 
 class WebdavFile {
