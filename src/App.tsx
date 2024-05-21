@@ -53,16 +53,11 @@ const App: React.FC<IAppProps> = (props) => {
   const serviceWorkerRef = useRef<ServiceWorkerManager>();
 
   const {
-    settings: { colorScheme, enableServiceWorkerCache, enableNotification },
-    status: { frontDesk },
+    settings: { colorScheme, enableServiceWorkerCache },
     setLanguage,
     setColorScheme,
     setFrontDesk
   } = useAppStore();
-
-  const listenerColorSchemeChange = (e: MediaQueryListEvent) => {
-    setColorScheme(e.matches ? 'dark' : 'light');
-  };
 
   useEffect(() => {
     resetProgressBar();
@@ -84,40 +79,6 @@ const App: React.FC<IAppProps> = (props) => {
     }
 
     {
-      const update = () => {
-        function handleReEnter() {
-          serviceWorkerRef.current?.skipWaiting();
-          notificationApi.destroy();
-        }
-
-        const btn = (
-          <Button type="primary" onClick={handleReEnter}>
-            确认
-          </Button>
-        );
-
-        notificationApi.info({
-          message: '有新内容',
-          description: '网站有更新，请点击确认以获取最新内容。',
-          placement: 'bottomRight',
-          style: { padding: '14px 16px', width: 300 },
-          btn,
-          duration: null
-        });
-
-        window.alert(`${frontDesk} , ${enableNotification}`);
-
-        const sdfds = false;
-        sdfds;
-
-        if (!frontDesk && enableNotification) {
-          notify({
-            icon: '/favicon.ico',
-            title: '有新内容',
-            data: '网站内容有更新，您可以前往查看更新。'
-          });
-        }
-      };
       serviceWorkerRef.current = new ServiceWorkerManager({ update });
       if (import.meta.env.PROD && enableServiceWorkerCache) {
         serviceWorkerRef.current.registerServiceWorker();
@@ -150,6 +111,40 @@ const App: React.FC<IAppProps> = (props) => {
       window.document.removeEventListener('visibilitychange', listenerVisibilityChange);
     };
   }, []);
+
+  const update = () => {
+    function handleReEnter() {
+      serviceWorkerRef.current?.skipWaiting();
+      notificationApi.destroy();
+    }
+
+    const btn = (
+      <Button type="primary" onClick={handleReEnter}>
+        确认
+      </Button>
+    );
+
+    notificationApi.info({
+      message: '有新内容',
+      description: '网站有更新，请点击确认以获取最新内容。',
+      placement: 'bottomRight',
+      style: { padding: '14px 16px', width: 300 },
+      btn,
+      duration: null
+    });
+
+    if (window.document.hidden && getStorage<AppState>('app')?.settings?.enableNotification) {
+      notify({
+        icon: '/favicon.ico',
+        title: '有新内容',
+        body: '网站内容有更新，您可以前往查看更新。'
+      });
+    }
+  };
+
+  const listenerColorSchemeChange = (e: MediaQueryListEvent) => {
+    setColorScheme(e.matches ? 'dark' : 'light');
+  };
 
   return (
     <>
