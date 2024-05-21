@@ -10,7 +10,7 @@ type NotifyPermissionStatus = 'allow' | 'cancel' | 'reject';
 
 export async function requestNotifyPermission() {
   return new Promise<NotifyPermissionStatus>((resolve, reject) => {
-    Notification.requestPermission((e) => {
+    window.Notification.requestPermission((e) => {
       switch (e) {
         case 'default':
           resolve('cancel');
@@ -39,7 +39,7 @@ export async function notify(options: NotifyOptions) {
   return new Promise<boolean>((resolve) => {
     const { title, onShow, onError, onClick, onClose, ...rest } = options;
 
-    const notice = new Notification(title, rest);
+    const notice = new window.Notification(title, rest);
 
     notice.addEventListener('click', function click() {
       notice.removeEventListener('click', click);
