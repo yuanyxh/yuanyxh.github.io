@@ -154,7 +154,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     },
     build: {
       target: 'es2015',
-      outDir: resolve('./build'),
+      outDir: 'build',
       sourcemap: isBuild === false,
       rollupOptions: {
         plugins: isBuild ? [visualizer({ filename: '.analyze.html', open: false })] : [],
@@ -175,6 +175,12 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         }
       }
       // https: {}
+    },
+    preview: {
+      host: 'localhost',
+      port: 8080,
+      strictPort: true,
+      open: true
     },
     optimizeDeps: {
       include: [],

@@ -77,6 +77,17 @@ const Outlet = memo(
       []
     );
 
+    useLayoutEffect(() => {
+      mountedRef.current?.();
+
+      // let fullPath = route?.fullPath || 'no_path';
+      // fullPath = fullPath.endsWith('/index') ? fullPath.slice(0, -6) : fullPath;
+
+      // if ([fullPath, `${fullPath}/`].includes(window.location.pathname)) {
+      //   window.document.dispatchEvent(new Event('pageReadyed'));
+      // }
+    }, [route]);
+
     useEffect(() => {
       routerContext?.initialize();
 
@@ -111,10 +122,6 @@ const Outlet = memo(
         });
       });
     }, [routerContext]);
-
-    useLayoutEffect(() => {
-      mountedRef.current?.();
-    }, [route]);
 
     if (route?.module === void 0) return null;
 
