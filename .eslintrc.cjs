@@ -44,7 +44,7 @@ module.exports = {
           ['^react'],
           ['^antd', '@ant-design/icons'],
           ['^qs', '^lodash-es', 'zustand', 'classnames', 'nprogress', 'webdav'],
-          ['normalize.css', 'nprogress/nprogress.css'],
+          ['normalize.css', 'nprogress/nprogress.css', 'virtual:svg-icons-register'],
           ['^@/router'],
           ['^@/store'],
           ['^@/hooks'],
