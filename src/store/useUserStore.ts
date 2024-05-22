@@ -1,6 +1,6 @@
-import { getStorage, setStorage } from '@/utils';
-
 import { create } from 'zustand';
+
+import { getStorage, setStorage } from '@/utils';
 
 export interface WebdavInfo {
   url: string;
