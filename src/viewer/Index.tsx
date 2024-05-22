@@ -33,6 +33,11 @@ const Exhibit = () => {
           站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders
           of giants.
         </Typography.Paragraph>
+
+        <Typography.Paragraph type="secondary" title="你总是不知道什么是重要的。">
+          你总是不知道什么是重要的&nbsp;-&nbsp;
+          <Typography.Text type="danger">读 《React 设计原理》</Typography.Text>
+        </Typography.Paragraph>
       </div>
 
       <div className={styles.media}>
