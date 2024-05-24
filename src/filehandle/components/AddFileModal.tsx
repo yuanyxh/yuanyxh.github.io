@@ -91,6 +91,8 @@ function AddFileModal({
       }}
     >
       <Input
+        autoComplete="off"
+        spellCheck={false}
         ref={inputRef}
         status={inputStatus.status}
         value={inputStatus.name}

@@ -48,6 +48,8 @@ const SearchWrap = (props: { onFocus: () => void; onBlur: () => void }) => {
     <>
       <div className={styles.searchWrap}>
         <Input
+          autoComplete="off"
+          spellCheck={false}
           title="搜索网站内容"
           variant="filled"
           suffix={<Icon icon="material-symbols:search-rounded" size={20} />}

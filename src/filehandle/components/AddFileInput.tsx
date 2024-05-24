@@ -99,6 +99,8 @@ function AddFileInput({
     <Spin spinning={loading}>
       <Input
         name="add-mdfile-input"
+        autoComplete="off"
+        spellCheck={false}
         style={{ marginLeft: 8 }}
         autoFocus
         size="small"
