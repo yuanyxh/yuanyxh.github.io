@@ -36,7 +36,9 @@ const Exhibit = () => {
 
         <Typography.Paragraph type="secondary" title="你总是不知道什么是重要的。">
           你总是不知道什么是重要的&nbsp;-&nbsp;
-          <Typography.Text type="danger">读 《React 设计原理》</Typography.Text>
+          <Typography.Text type="danger">
+            Codemirror6 实现 Markdown 所见即所得编辑器
+          </Typography.Text>
         </Typography.Paragraph>
       </div>
 
