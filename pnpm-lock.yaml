@@ -16,9 +16,6 @@ dependencies:
   '@milkdown/core':
     specifier: ^7.3.6
     version: 7.3.6(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6)
-  '@milkdown/plugin-clipboard':
-    specifier: ^7.3.6
-    version: 7.3.6(@milkdown/core@7.3.6)(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6)
   '@milkdown/plugin-diagram':
     specifier: ^7.3.6
     version: 7.3.6(@milkdown/core@7.3.6)(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6)
@@ -2535,21 +2532,6 @@ packages:
     resolution: {integrity: sha512-oEcQVyp3Lcvw3ySBc2EeCFAN1t/zvY+pdBsBSsIDB2uYueQK2PGSkzhd5WbvHnzv4lV4P19hoyPLwviqvQbVqA==}
     dependencies:
       tslib: 2.6.2
-    dev: false
-
-  /@milkdown/plugin-clipboard@7.3.6(@milkdown/core@7.3.6)(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6):
-    resolution: {integrity: sha512-840aG6Ntp/Wdf/I6vuyni4ycDqyO0SsAEZI0t2KmPXqCj+fW2sf0HJtsa/w/R5lBOHhxUsW98nqUvP0BeKL1Cg==}
-    peerDependencies:
-      '@milkdown/core': ^7.2.0
-      '@milkdown/prose': ^7.2.0
-    dependencies:
-      '@milkdown/core': 7.3.6(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6)
-      '@milkdown/prose': 7.3.6
-      '@milkdown/utils': 7.3.6(@milkdown/core@7.3.6)(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6)
-      tslib: 2.6.2
-    transitivePeerDependencies:
-      - '@milkdown/ctx'
-      - '@milkdown/transformer'
     dev: false
 
   /@milkdown/plugin-diagram@7.3.6(@milkdown/core@7.3.6)(@milkdown/ctx@7.3.6)(@milkdown/prose@7.3.6)(@milkdown/transformer@7.3.6):

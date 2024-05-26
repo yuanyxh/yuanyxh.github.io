@@ -10,7 +10,7 @@ import { reduce } from '../theme-reduce';
 import { toFormData } from '../utils';
 
 import { defaultValueCtx, Editor, rootCtx } from '@milkdown/core';
-import { clipboard } from '@milkdown/plugin-clipboard';
+// import { clipboard } from '@milkdown/plugin-clipboard';
 import { diagram } from '@milkdown/plugin-diagram';
 import { history } from '@milkdown/plugin-history';
 import { indent } from '@milkdown/plugin-indent';
@@ -90,7 +90,6 @@ const uploader: Uploader = async (files, schema) => {
       continue;
     }
 
-    // You can handle whatever the file type you want, we handle image here.
     if (!file.type.includes('image')) {
       continue;
     }
@@ -113,44 +112,48 @@ const uploader: Uploader = async (files, schema) => {
 };
 
 function createMDEditor(el: HTMLElement, value = '', onUpdate: (md: string) => void) {
-  return Editor.make()
-    .config((ctx) => {
-      ctx.set(rootCtx, el);
-      ctx.set(defaultValueCtx, value);
+  return (
+    Editor.make()
+      .config((ctx) => {
+        ctx.set(rootCtx, el);
+        ctx.set(defaultValueCtx, value);
 
-      ctx.update(uploadConfig.key, (prev) => ({
-        ...prev,
-        uploader
-      }));
+        ctx.update(uploadConfig.key, (prev) => ({
+          ...prev,
+          uploader
+        }));
 
-      ctx.set(prismConfig.key, {
-        configureRefractor: (r) => {
-          r.alias('shell', 'sh');
-        }
-      });
+        ctx.set(prismConfig.key, {
+          configureRefractor: (r) => {
+            r.alias('shell', 'sh');
+          }
+        });
 
-      blockElementKeys.forEach((key) => ctx.set(key, () => blockClass));
+        blockElementKeys.forEach((key) => ctx.set(key, () => blockClass));
 
-      ctx.set(inlineCodeAttr.key, () => ({ class: styles.inlineCode }));
-      ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
-      ctx.set(codeBlockAttr.key, () => ({ pre: blockClass, code: {} }));
-      ctx.set(emphasisAttr.key, () => blockClass);
+        ctx.set(inlineCodeAttr.key, () => ({ class: styles.inlineCode }));
+        ctx.set(linkAttr.key, () => ({ rel: 'noopener noreferrer' }));
+        ctx.set(codeBlockAttr.key, () => ({ pre: blockClass, code: {} }));
+        ctx.set(emphasisAttr.key, () => blockClass);
 
-      ctx.get(listenerCtx).markdownUpdated((_ctx, md) => onUpdate(md));
-    })
-    .config(reduce)
-    .use(commonmark)
-    .use(prism)
-    .use(insertImageInputRule)
-    .use(insertImageCommand)
-    .use(gfm)
-    .use(history)
-    .use(diagram)
-    .use(clipboard)
-    .use(indent)
-    .use(upload)
-    .use(listener)
-    .create();
+        ctx.get(listenerCtx).markdownUpdated((_ctx, md) => onUpdate(md));
+      })
+      .config(reduce)
+      .use(commonmark)
+      .use(prism)
+      .use(insertImageInputRule)
+      .use(insertImageCommand)
+      .use(gfm)
+      .use(history)
+      .use(diagram)
+      // FIXME: There is a problem with this plug -in,
+      // and the code block is automatically added when the text is pasted
+      // .use(clipboard)
+      .use(indent)
+      .use(upload)
+      .use(listener)
+      .create()
+  );
 }
 
 const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(props, ref) {
