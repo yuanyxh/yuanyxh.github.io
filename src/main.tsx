@@ -10,6 +10,8 @@ import { RouterProvider } from '@/router';
 import App from './App.tsx';
 import router from './routes.tsx';
 
+export const SLOGAN = '读 《React + Node.js 开发实战》';
+
 const node = (
   <StrictMode>
     <App>

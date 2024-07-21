@@ -4,6 +4,7 @@ import mainWebp from '@/assets/images/main.webp';
 import tiga from '@/assets/images/tiga.png';
 
 import styles from './styles/Index.module.less';
+import { SLOGAN } from '@/main';
 
 const Exhibit = () => {
   return (
@@ -36,9 +37,7 @@ const Exhibit = () => {
 
         <Typography.Paragraph type="secondary" title="你总是不知道什么是重要的。">
           你总是不知道什么是重要的&nbsp;-&nbsp;
-          <Typography.Text type="danger">
-            Codemirror6 实现 Markdown 所见即所得编辑器
-          </Typography.Text>
+          <Typography.Text type="danger">{SLOGAN}</Typography.Text>
         </Typography.Paragraph>
       </div>
 
