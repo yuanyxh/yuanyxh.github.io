@@ -17,3 +17,5 @@ vite.config.ts
 .analyze.html
 
 build
+
+*.mdx
