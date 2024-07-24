@@ -60,6 +60,22 @@ const blockElementKeys = [
 
 const blockClass = { class: styles.typography };
 
+const isMac = (() => {
+  const agent = navigator.userAgent.toLowerCase();
+  const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
+  if (agent.indexOf('win32') >= 0 || agent.indexOf('wow32') >= 0) {
+    return false;
+  }
+  if (agent.indexOf('win64') >= 0 || agent.indexOf('wow64') >= 0) {
+    return false;
+  }
+  if (isMac) {
+    return true;
+  }
+
+  return false;
+})();
+
 const getMDString = getMarkdown();
 
 let uploadInfo: UploadInfo | null = null;
@@ -203,10 +219,18 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
   }
 
   const handleSave = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
-      e.preventDefault();
+    if (isMac) {
+      if (e.metaKey && e.key.toLocaleLowerCase() === 's') {
+        e.preventDefault();
 
-      changed && onSave(mdStringRef.current);
+        changed && onSave(mdStringRef.current);
+      }
+    } else {
+      if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
+        e.preventDefault();
+
+        changed && onSave(mdStringRef.current);
+      }
     }
   };
 
