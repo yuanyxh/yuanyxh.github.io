@@ -30,6 +30,7 @@ export interface RoutePlace {
   books: string;
   articles: string;
   examples: string;
+  tools: string;
 }
 
 export const root = process.cwd();
@@ -186,18 +187,38 @@ export const generateRouteJSONWithExample = async () => {
   return { examples: result };
 };
 
+export const generateRouteJSONWithTools = async () => {
+  let tools = '';
+
+  const dirs = readdirSync(resolve('./src/tools'));
+
+  for (let i = 0; i < dirs.length; i++) {
+    const name = dirs[i];
+
+    tools += `{
+      path: '${name + '.html'}',
+      element: () => import('@/tools/${name}/Index.tsx')
+    },
+    `;
+  }
+
+  return { tools };
+};
+
 export const generateRouteJSON = async () => {
   return {
     ...(await generateRouteJSONWithArticle()),
-    ...(await generateRouteJSONWithExample())
+    ...(await generateRouteJSONWithExample()),
+    ...(await generateRouteJSONWithTools())
   };
 };
 
-export const replacePlaceRoute = (code: string, { books, articles, examples }: RoutePlace) =>
+export const replacePlaceRoute = (code: string, { books, articles, examples, tools }: RoutePlace) =>
   code
     .replace('/** placeholder for articles */', articles)
     .replace('/** placeholder for books */', books)
-    .replace('/** placeholder for coder */', examples);
+    .replace('/** placeholder for coder */', examples)
+    .replace('/** placeholder for tools */', tools);
 
 export function resolveFullRoutes(
   routes: ResolveRouteObject[],

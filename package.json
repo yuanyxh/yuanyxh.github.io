@@ -29,6 +29,7 @@
     "@milkdown/preset-commonmark": "^7.3.6",
     "@milkdown/preset-gfm": "^7.3.6",
     "@milkdown/utils": "^7.3.6",
+    "@monaco-editor/react": "^4.6.0",
     "antd": "^5.17.2",
     "classnames": "^2.5.1",
     "lodash-es": "^4.17.21",

@@ -124,6 +124,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           replacement: `${resolve('src/markdowns')}/`
         },
         {
+          find: /@\/tools\//,
+          replacement: `${resolve('src/tools')}/`
+        },
+        {
           find: /@\/examples\//,
           replacement: `${resolve('src/examples')}/`
         },

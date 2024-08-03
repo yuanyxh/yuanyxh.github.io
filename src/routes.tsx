@@ -57,6 +57,13 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Examples')
       },
       {
+        path: 'tools',
+        element: () => import('@/viewer/Tools'),
+        children: [
+          /** placeholder for tools */
+        ]
+      },
+      {
         path: '404.html',
         element: '不存在的页面'
       }

@@ -10,5 +10,9 @@
   {
     "label": "读过的书",
     "path": "/books"
+  },
+  {
+    "label": "工具",
+    "path": "/tools"
   }
 ]
