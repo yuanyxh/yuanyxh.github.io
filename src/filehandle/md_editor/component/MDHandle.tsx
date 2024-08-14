@@ -177,7 +177,12 @@ const MDHandle: React.FC<IMDHandle> = (props) => {
       onMinimize={handleMinimize}
       onClose={onClose}
     >
-      <MDContent ref={mdContentRef} handle={handle} update={update} />
+      <MDContent
+        style={{ borderTop: '1px solid var(--border-color-primary)' }}
+        ref={mdContentRef}
+        handle={handle}
+        update={update}
+      />
     </Dialog>
   );
 };

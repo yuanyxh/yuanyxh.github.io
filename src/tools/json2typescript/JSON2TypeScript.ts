@@ -1,202 +1,155 @@
-import { isArray, isBoolean, isNull, isNumber, isObject, isString, upperFirst } from 'lodash-es';
+import { isArray, isNull, isObject } from 'lodash-es';
 
-type type = 'string' | 'number' | 'boolean' | 'null' | Record<string, Type> | Type[];
+type BaseType = 'string' | 'number' | 'boolean' | 'null' | 'any' | JointType;
+
+type JointType = Record<string, Type>;
 
 type Type = {
-  type: type;
-  require: boolean;
+  type: BaseType;
+  required: boolean;
+  count?: number;
 };
 
 const createStringType = (): Type => {
-  return { type: 'string', require: true };
+  return { type: 'string', required: true };
 };
 
 const createNumberType = (): Type => {
-  return { type: 'number', require: true };
+  return { type: 'number', required: true };
 };
 
 const createBooleanType = (): Type => {
-  return { type: 'boolean', require: true };
+  return { type: 'boolean', required: true };
 };
 
 const createNullType = (): Type => {
-  return { type: 'null', require: true };
+  return { type: 'null', required: true };
 };
 
-const createObjectType = (data: Record<string, any>): Type => {
-  const keys = Object.keys(data);
-
-  const companion: Record<string, Type> = {};
-
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-
-    companion[key] = createType(data[key]);
+/**
+ *
+ * @param obj 需要检索类型的对象
+ * @param sibling 可选的同级类型
+ * @returns 返回对象类型
+ */
+function createObjectType(obj: Record<string, any>, sibling?: BaseType): Type {
+  // 如果有同级类型，且同级类型不是对象，则返回 any
+  if (sibling && (typeof sibling === 'string' || isArray(sibling))) {
+    return { type: 'any', required: true };
   }
 
-  return { type: companion, require: true };
-};
+  const names = Object.getOwnPropertyNames(obj);
+  const oldNames = sibling ? Object.getOwnPropertyNames(sibling) : [];
 
-const createArrayType = (data: any[]): Type => {
-  const companion: Type[] = [];
+  const typeObj: JointType = sibling || {};
 
-  for (let i = 0; i < data.length; i++) {
-    const curr = data[i];
+  const merge = (t: Type, name: string) => {
+    // 没有同级类型，不做特殊处理
+    if (!sibling) {
+      return (typeObj[name] = t);
+    }
 
-    companion.push(createType(curr));
+    // 存在同级类型，但没有相同属性，标记为可选
+    const oldType = typeObj[name];
+    if (!oldType) {
+      t.required = false;
+      return (typeObj[name] = t);
+    }
+
+    // 类型不一致，标记为 any
+    if (oldType.type !== t.type) {
+      oldType.type = 'any';
+    }
+  };
+
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+
+    const value = obj[name];
+    const type = typeof value;
+
+    switch (type) {
+      case 'string':
+        merge(createStringType(), name);
+        break;
+      case 'number':
+        merge(createNumberType(), name);
+        break;
+      case 'boolean':
+        merge(createBooleanType(), name);
+        break;
+      default:
+        if (isNull(value)) {
+          merge(createNullType(), name);
+        } else if (isArray(value)) {
+          merge(createArrayType(value), name);
+        } else if (isObject(value)) {
+          // 如果存在同级元素，将它向下传递
+          merge(createObjectType(value, typeObj[name]?.type), name);
+        }
+    }
   }
 
-  return { type: companion, require: true };
-};
+  // obj 中如果没有 sibling 的属性，需要标记为可选
+  oldNames
+    .filter((o) => !names.includes(o))
+    .forEach((o) => {
+      typeObj[o].required = false;
+    });
 
-export function createType(data: any) {
+  return { type: typeObj, required: true };
+}
+
+function createArrayType(array: any[]): Type {
   let type!: Type;
 
-  switch (true) {
-    case isString(data):
-      type = createStringType();
-      break;
-    case isNumber(data):
-      type = createNumberType();
-      break;
-    case isNull(data):
-      type = createNullType();
-      break;
-    case isBoolean(data):
-      type = createBooleanType();
-      break;
-    case isArray(data):
-      type = createArrayType(data);
-      break;
-    case isObject(data):
-      type = createObjectType(data);
-      break;
+  for (let i = 0; i < array.length; i++) {
+    const ele = array[i];
+
+    const eleType = typeof ele;
+
+    switch (eleType) {
+      case 'string':
+        createStringType();
+        break;
+      case 'number':
+        createNumberType();
+        break;
+      case 'boolean':
+        createBooleanType();
+        break;
+      default:
+        if (isNull(ele)) {
+          createNullType();
+        } else if (isArray(ele)) {
+          createArrayType(ele);
+        } else if (isObject(ele)) {
+          createObjectType(ele);
+        }
+    }
   }
 
   return type;
 }
 
-export function generate(tree: Type) {
-  const typeStr: string[] = [];
-
-  const names = new Map<string, number>();
-
-  const generateString = () => 'string;\n';
-  const generateNumber = () => 'number;\n';
-  const generateBoolean = () => 'boolean;\n';
-  const generateNull = () => 'null;\n';
-
-  function getName(key: string) {
-    let typeName = key;
-
-    if (!Number.isNaN(window.parseInt(typeName))) {
-      const name = 'N' + typeName;
-
-      let count = names.get(name);
-
-      if (typeof count === 'number') {
-        typeName = name.padStart(name.length + ++count, 'N');
-
-        names.set(name, count);
-      } else {
-        typeName = name;
-
-        names.set(name, 0);
-      }
-    } else {
-      let count = names.get(typeName);
-
-      if (typeof count === 'number') {
-        count++;
-
-        typeName += count;
-
-        names.set(typeName, count);
-      } else {
-        names.set(typeName, 0);
-      }
-    }
-
-    typeName = upperFirst(typeName);
-
-    return typeName;
+export function transform(json: Record<string, any> | any[]) {
+  if (isArray(json)) {
+    return createArrayType(json);
+  } else if (isObject(json)) {
+    return createObjectType(json);
   }
 
-  function generateObject(data: Record<string, Type>, name?: string) {
-    let type = '{\n';
+  throw new Error('Invail type of the json.');
+}
 
-    const keys = Object.keys(data);
+export const getTag = (count: number) => {
+  return '[]'.repeat(count);
+};
 
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i] as keyof typeof data;
-      const prop = data[key];
+export function json2ts(json: Record<string, any> | any[]) {
+  const tree = transform(json);
 
-      const typeName = getName(key);
+  console.log(tree);
 
-      switch (prop.type) {
-        case 'string':
-          type += `  ${key}: ${generateString()}`;
-          break;
-        case 'number':
-          type += `  ${key}: ${generateNumber()}`;
-          break;
-        case 'null':
-          type += `  ${key}: ${generateNull()}`;
-          break;
-        case 'boolean':
-          type += `  ${key}: ${generateBoolean()}`;
-          break;
-        default:
-          if (isArray(prop.type)) {
-            generateArray(prop.type, typeName);
-
-            type += `  ${key}: ${typeName};\n`;
-          } else if (isObject(prop.type)) {
-            generateObject(prop.type, typeName);
-
-            type += `  ${key}: ${typeName};\n`;
-          }
-      }
-    }
-
-    if (!name) {
-      return typeStr.push(`export interface Root ${type}}`);
-    }
-
-    typeStr.push(`export interface ${name} ${type}}`);
-  }
-
-  function generateArray(data: Type[], name?: string) {
-    let type = '';
-
-    if (data.length === 0) {
-      type += 'any[];\n';
-    } else if (data.every((e) => e.type === 'string')) {
-      type += 'string[];\n';
-    } else if (data.every((e) => e.type === 'number')) {
-      type += 'string[];\n';
-    } else if (data.every((e) => e.type === 'boolean')) {
-      type += 'boolean[];\n';
-    } else if (data.every((e) => e.type === 'null')) {
-      type += 'null[];\n';
-    } else {
-      // for (let i = 0; i < data.length; i++) {
-      //   const element = data[i];
-      // }
-    }
-
-    if (!name) {
-      return `export type Root = ` + type;
-    }
-
-    typeStr.push(`type ${name} = ${type}[];\n`);
-  }
-
-  if (isArray(tree.type)) {
-    generateArray(tree.type);
-  } else if (isObject(tree.type)) {
-    generateObject(tree.type);
-  }
-
-  return typeStr.reverse().join('\n\n');
+  return '';
 }

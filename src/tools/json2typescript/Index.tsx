@@ -1,44 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import style from './Index.module.less';
-import { createType, generate } from './JSON2TypeScript';
+import { json2ts } from './JSON2TypeScript';
 
 import Editor from '@monaco-editor/react';
-
-// const transform = (obj: any) => {
-//   const type = typeof obj;
-
-//   switch (type) {
-//     case 'string':
-//     case 'number':
-//     case 'bigint':
-//     case 'boolean':
-//     case 'object':
-//   }
-// }
-
-const json2ts = (json: string) => {
-  try {
-    const obj = JSON.parse(json);
-
-    console.log(createType(obj));
-
-    return generate(createType(obj));
-  } catch (err) {
-    console.log(err);
-
-    return void 0;
-  }
-};
 
 const JSON2TypeScript: React.FC = () => {
   const [typescript, setTypeScript] = useState('');
 
-  const handleChange = (e: string | undefined) => {
-    const ts = json2ts(e || '');
+  useEffect(() => {
+    handleChange(`{
+  "userId": 1,
+  "id": 1,
+  "title": "delectus aut autem",
+  "completed": false
+}`);
+  }, []);
 
-    if (typeof ts === 'string') {
-      setTypeScript(ts);
+  const handleChange = (e: string | undefined) => {
+    try {
+      const obj = JSON.parse(e || '');
+
+      const ts = json2ts(obj);
+
+      // console.log(ts);
+
+      if (typeof ts === 'string') {
+        setTypeScript(ts);
+      }
+    } catch (err) {
+      // console.log(err);
     }
   };
 
@@ -49,6 +40,12 @@ const JSON2TypeScript: React.FC = () => {
         <Editor
           height={'calc(100% - 60px)'}
           defaultLanguage="json"
+          defaultValue='{
+  "userId": 1,
+  "id": 1,
+  "title": "delectus aut autem",
+  "completed": false
+}'
           options={{ minimap: { enabled: false } }}
           onChange={handleChange}
         />

@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import { addGlobalListener, confirm, error } from '@/utils';
@@ -11,7 +12,7 @@ import type { IMDEditorExpose } from './MDEditor';
 import MDEditor from './MDEditor';
 import styles from './styles/MDContent.module.less';
 
-interface IMDContentProps {
+interface IMDContentProps extends HTMLAttributes<HTMLDivElement> {
   handle: DH | FH;
   update(): void;
 }
@@ -22,7 +23,7 @@ export interface IMDContentExpose {
 
 export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
   function MDContent(props, ref) {
-    const { handle, update } = props;
+    const { handle, update, ...rest } = props;
 
     const [changed, setChanged] = useState(false);
     const [currentHandle, setCurrentHandle] = useState<FH | null>(null);
@@ -127,7 +128,7 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
     };
 
     return (
-      <div className={styles.content}>
+      <div className={styles.content} {...rest}>
         {isDirectoryHandle(handle) ? (
           <FileSideMenu
             handle={handle}
@@ -140,13 +141,20 @@ export const MDContent = forwardRef<IMDContentExpose, IMDContentProps>(
         ) : null}
 
         <div className={styles.mdEditor}>
-          <MDEditor
-            ref={editorRef}
-            currentHandle={currentHandle}
-            changed={changed}
-            onChanged={handleSetChanged}
-            onSave={handleSave}
-          />
+          <div className={styles.editStatus}>
+            {currentHandle?.name}
+            {changed ? <span className={styles.changed}> - 已编辑</span> : null}
+          </div>
+
+          <div className={styles.editorWrapper}>
+            <MDEditor
+              ref={editorRef}
+              currentHandle={currentHandle}
+              changed={changed}
+              onChanged={handleSetChanged}
+              onSave={handleSave}
+            />
+          </div>
         </div>
       </div>
     );

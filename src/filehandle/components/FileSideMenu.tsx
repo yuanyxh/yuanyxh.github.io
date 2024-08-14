@@ -260,12 +260,18 @@ function Menu({
                 }
               >
                 {item.type === FileType.DIRECTORY ? (
-                  <Icon
-                    className={classNames(styles.directoryIcon, {
-                      [styles.expand]: expands.includes(item.id)
-                    })}
-                    icon="material-symbols:keyboard-arrow-right"
-                  />
+                  <>
+                    <Icon
+                      className={classNames(styles.directoryIcon, {
+                        [styles.expand]: expands.includes(item.id)
+                      })}
+                      icon="material-symbols:keyboard-arrow-right"
+                    />
+                    <Icon
+                      className={classNames(styles.directoryIcon)}
+                      icon="material-symbols-light:folder"
+                    />
+                  </>
                 ) : null}
 
                 <span>{item.name}</span>

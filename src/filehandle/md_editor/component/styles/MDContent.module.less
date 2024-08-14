@@ -7,8 +7,35 @@
 }
 
 .mdEditor {
+  position: relative;
+  padding: 0 50px 30px;
   flex: 1;
   height: 100%;
-  padding: 30px;
   overflow-y: auto;
+  background-color: rgb(199, 229, 252);
+}
+
+.editStatus {
+  position: sticky;
+  top: 0;
+  height: 45px;
+  background-color: rgb(199, 229, 252);
+  text-align: center;
+  line-height: 45px;
+  font-weight: 700;
+  z-index: var(--z-normal);
+}
+
+.changed {
+  color: var(--color-info);
+}
+
+.editorWrapper {
+  margin: 4px auto;
+  max-width: 1140px;
+  padding: 30px;
+  background-color: #fff;
+  min-height: 100%;
+  border-radius: var(--border-radius-base);
+  box-shadow: 0 0 1px 4px #495060;
 }

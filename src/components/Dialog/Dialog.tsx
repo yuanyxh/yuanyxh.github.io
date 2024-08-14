@@ -198,7 +198,7 @@ const Dialog = forwardRef<IDialogExpose, Readonly<IDialogProps>>(function Dialog
 
     return (
       <>
-        <div aria-hidden style={{ width: '100%', height: 30 }}></div>
+        <div aria-hidden style={{ width: '100%', height: 40 }}></div>
         <header className={styles.header}>
           <div
             className={styles.bar}
