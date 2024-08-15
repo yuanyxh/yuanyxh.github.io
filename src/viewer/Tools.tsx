@@ -2,7 +2,7 @@ import type { MenuProps } from 'antd';
 import { Layout, Menu } from 'antd';
 
 import type { ResolveRouteObject } from '@/router';
-import { Outlet, useHistory } from '@/router';
+import { Outlet, useHistory, useLocation } from '@/router';
 
 import { useTools } from './hooks/useTools';
 
@@ -27,12 +27,14 @@ const Tools: React.FC = () => {
   const tools = useTools();
 
   const router = useHistory();
+  const location = useLocation();
 
   return (
     <div>
       <Layout.Sider width={250} style={siderStyle}>
         <Menu
           mode="inline"
+          defaultSelectedKeys={[location.path]}
           items={wrapperToolItem(tools)}
           onClick={(e) => {
             router.push(e.key);
