@@ -190,16 +190,20 @@ export const generateRouteJSONWithExample = async () => {
 export const generateRouteJSONWithTools = async () => {
   let tools = '';
 
-  const dirs = readdirSync(resolve('./src/tools'));
+  try {
+    const dirs = readdirSync(resolve('./src/tools'));
 
-  for (let i = 0; i < dirs.length; i++) {
-    const name = dirs[i];
+    for (let i = 0; i < dirs.length; i++) {
+      const name = dirs[i];
 
-    tools += `{
-      path: '${name + '.html'}',
-      element: () => import('@/tools/${name}/Index.tsx')
-    },
-    `;
+      tools += `{
+        path: '${name + '.html'}',
+        element: () => import('@/tools/${name}/Index.tsx')
+      },
+      `;
+    }
+  } catch (err) {
+    console.log(err);
   }
 
   return { tools };
