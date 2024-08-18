@@ -61,6 +61,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
        * stylePropertyNameCase
        * tableCellAlignToStyle
        */
+      // @ts-ignore ts 异常，可正常使用
       {
         enforce: 'pre',
         ...mdx({
@@ -161,6 +162,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       outDir: 'build',
       sourcemap: isBuild === false,
       rollupOptions: {
+        // @ts-ignore ts 异常，可正常使用
         plugins: isBuild ? [visualizer({ filename: '.analyze.html', open: false })] : [],
         output: {}
       },
