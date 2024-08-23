@@ -32,7 +32,7 @@ function AddFileInput({
   const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
+    const value = e.target.value;
 
     if (!validateFileName(value) || names.some((n) => n === value)) {
       return setInputStatus({ name: value, status: 'error' });
