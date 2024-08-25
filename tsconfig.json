@@ -14,6 +14,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "allowJs": true,
 
     /* Linting */
     "strict": true,
@@ -29,8 +30,8 @@
       "@/hooks/*": ["src/hooks/*"],
       "@/markdowns/*": ["src/markdowns/*"],
       "@/examples/*": ["src/examples/*"],
-      "@/utils/*": ["src/utils/*"],
       "@/tools/*": ["src/tools/*"],
+      "@/utils/*": ["src/utils/*"],
       "@/components/*": ["src/components/*"],
       "@/filehandler/*": ["src/filehandle/*"]
     }

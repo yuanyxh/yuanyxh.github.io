@@ -4,6 +4,7 @@ module.exports = {
     browser: true,
     es2015: true
   },
+  ignorePatterns: ['*.min.js'],
   extends: [
     'plugin:mdx/recommended',
     'eslint:recommended',
@@ -54,6 +55,7 @@ module.exports = {
           ['^@/coder'],
           ['^@/markdowns'],
           ['^@/examples'],
+          ['^@/tools'],
           ['^@/components'],
           ['^@/App'],
           ['^@/assets'],
