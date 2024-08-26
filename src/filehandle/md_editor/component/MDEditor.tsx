@@ -120,6 +120,8 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
         editorRef.current.setOption('hmdInsertFile', fileHandler);
         editorRef.current.on('change', onUpdate);
         editorRef.current.on('keydown', handleSave);
+
+        editorRef.current.setSize(null, 'calc(100vh - 124px)');
       });
 
     return () => {
