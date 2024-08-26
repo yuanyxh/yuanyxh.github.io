@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { FH } from '@/filehandle/utils/fileManager';
 
 import styles from './styles/MDEditor.module.less';
+import './styles/Editor.less';
 import type { UploadInfo } from '../store/useMDStore';
 import { useMDStore } from '../store/useMDStore';
 import { toFormData } from '../utils';
@@ -80,6 +81,7 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
 
   const editorContainerRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<Editor>();
+  const selfChangedRef = useRef(false);
 
   uploadInfo = useMDStore().uploadInfo;
 
@@ -89,10 +91,9 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
     }
   }));
 
-  // FIXME: The content has not changed but the update event is triggered
-  const onUpdate = () => {
-    onChanged(true);
-  };
+  useEffect(() => {
+    selfChangedRef.current = changed;
+  }, [changed]);
 
   useEffect(() => {
     currentHandle
@@ -126,20 +127,25 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
       editorRef.current?.off('keydown', handleSave);
       editorRef.current?.toTextArea();
     };
-  }, [currentHandle, changed]);
+  }, [currentHandle]);
+
+  // FIXME: The content has not changed but the update event is triggered
+  const onUpdate = () => {
+    onChanged(true);
+  };
 
   const handleSave = (_cm: Editor, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isMac) {
       if (e.metaKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
 
-        changed && onSave(editorRef.current?.getValue() || '');
+        selfChangedRef.current && onSave(editorRef.current?.getValue() || '');
       }
     } else {
       if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
 
-        changed && onSave(editorRef.current?.getValue() || '');
+        selfChangedRef.current && onSave(editorRef.current?.getValue() || '');
       }
     }
   };

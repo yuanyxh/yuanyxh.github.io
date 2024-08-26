@@ -1,0 +1,100 @@
+.CodeMirror.cm-s-hypermd-light.CodeMirror-wrap {
+  --decorate-color: #fe5f58;
+
+  height: auto;
+  line-height: 1.8;
+}
+
+.cm-formatting-header {
+  color: var(--decorate-color);
+}
+
+.HyperMD-header-3::after,
+.HyperMD-header-4::after {
+  display: block;
+  content: ' ';
+  margin-top: 2px;
+  height: 1px;
+  background: #eee;
+}
+
+.cm-formatting-list {
+  text-align: center !important;
+}
+
+.cm-formatting-list-ul {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+.cm-formatting-list-ul::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--decorate-color);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.cm-formatting-list-ol {
+  line-height: 2 !important;
+}
+
+.cm-formatting-list-ol {
+  text-shadow: none !important;
+  color: inherit !important;
+}
+
+.cm-hmd-list-indent {
+  border: none !important;
+}
+
+.HyperMD-codeblock-begin,
+.HyperMD-codeblock-end,
+.cm-formatting-code-block {
+  color: transparent !important;
+}
+
+.HyperMD-codeblock {
+  padding: 0 12px !important;
+}
+
+.cm-hmd-table-sep,
+.cm-hmd-table-sep-dummy {
+  color: transparent !important;
+}
+
+.cm-hmd-table-sep::before {
+  background: none !important;
+}
+
+.HyperMD-table-row > span {
+  background-color: rgb(245, 245, 245) !important;
+  border-color: var(--border-color-primary);
+  border-style: solid;
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+
+.hmd-image {
+  box-shadow:
+    0 2px 2px #00000024,
+    0 1px 5px #0000001f,
+    0 3px 1px -2px #0003;
+}
+
+.cm-formatting-quote {
+  color: transparent !important;
+}
+
+.HyperMD-quote {
+  background-color: rgb(245, 245, 245) !important;
+  padding: 10px 0 !important;
+  border-radius: var(--border-radius-base);
+}
+
+.HyperMD-quote::before {
+  background: none !important;
+  border-left: 3px solid var(--decorate-color);
+}
