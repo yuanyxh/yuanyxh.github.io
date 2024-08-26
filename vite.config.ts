@@ -88,10 +88,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         iconDirs: [resolve('./src/assets/svgs')],
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
-      })
+      }),
       // basicSsl()
-      // vitePrerender(mode),
-      // viteGenerateSitemap()
+      vitePrerender(mode),
+      viteGenerateSitemap()
     ],
     resolve: {
       alias: [
