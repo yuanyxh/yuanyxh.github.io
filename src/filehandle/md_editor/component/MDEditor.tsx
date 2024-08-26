@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 import type { FH } from '@/filehandle/utils/fileManager';
 
@@ -90,9 +90,9 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
   }));
 
   // FIXME: The content has not changed but the update event is triggered
-  const onUpdate = useCallback(() => {
+  const onUpdate = () => {
     onChanged(true);
-  }, []);
+  };
 
   useEffect(() => {
     currentHandle
@@ -118,15 +118,17 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
         editorRef.current.setValue(markdown);
         editorRef.current.setOption('hmdInsertFile', fileHandler);
         editorRef.current.on('change', onUpdate);
+        editorRef.current.on('keydown', handleSave);
       });
 
     return () => {
       editorRef.current?.off('change', onUpdate);
+      editorRef.current?.off('keydown', handleSave);
       editorRef.current?.toTextArea();
     };
-  }, [currentHandle]);
+  }, [currentHandle, changed]);
 
-  const handleSave = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleSave = (_cm: Editor, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isMac) {
       if (e.metaKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
@@ -148,7 +150,6 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
       id="md-editor"
       style={{ display: 'none' }}
       className={styles.editorContainer}
-      onKeyDown={handleSave}
     ></textarea>
   );
 });
