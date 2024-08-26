@@ -7,7 +7,6 @@ import type { UploadInfo } from '../store/useMDStore';
 import { useMDStore } from '../store/useMDStore';
 import { toFormData } from '../utils';
 
-import '../utils/codemirror.min';
 import { fromTextArea } from 'hypermd';
 
 interface HandlerAction {

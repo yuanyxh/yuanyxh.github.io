@@ -1,4 +1,4 @@
-import { submit } from './submit';
+// import { submit } from './submit';
 import type { ResolveRouteObject } from './utils';
 import {
   generateRouteJSON,
@@ -134,7 +134,7 @@ async function vitePrerender(mode: string) {
   const routes = detailsRoutes.map((route) => route.fullPath);
 
   try {
-    submit(routes);
+    // submit(routes);
   } catch (err) {
     console.log('submit error', err);
   }

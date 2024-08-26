@@ -34,9 +34,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       viteRouteGenerator(),
-      vitePrerender(mode),
-      viteGenerateSitemap(),
-
       /**
        * format
        * baseUrl
@@ -93,6 +90,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         svgoOptions: true
       })
       // basicSsl()
+      // vitePrerender(mode),
+      // viteGenerateSitemap()
     ],
     resolve: {
       alias: [
