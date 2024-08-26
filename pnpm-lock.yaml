@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  hypermd@0.3.11:
+    hash: kstbikrr4fcr5lanh5drtvauuu
+    path: patches/hypermd@0.3.11.patch
   vite-plugin-prerender@1.0.8:
     hash: wzxg63f5ojygzuhh2kfcpwgc4y
     path: patches/vite-plugin-prerender@1.0.8.patch
@@ -24,7 +27,7 @@ importers:
         version: 2.5.1
       hypermd:
         specifier: ^0.3.11
-        version: 0.3.11(codemirror@5.65.17)
+        version: 0.3.11(patch_hash=kstbikrr4fcr5lanh5drtvauuu)(codemirror@5.65.17)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -10931,7 +10934,7 @@ snapshots:
 
   husky@9.0.11: {}
 
-  hypermd@0.3.11(codemirror@5.65.17):
+  hypermd@0.3.11(patch_hash=kstbikrr4fcr5lanh5drtvauuu)(codemirror@5.65.17):
     dependencies:
       codemirror: 5.65.17
     optionalDependencies:

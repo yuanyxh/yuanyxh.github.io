@@ -1,0 +1,12 @@
+diff --git a/core.js b/core.js
+index 3e24c4239b256de7b52085eb46476a8dcb018af7..fbc7fbe484b491369a8f6db36e13753756ca4945 100644
+--- a/core.js
++++ b/core.js
+@@ -318,6 +318,7 @@
+    * @returns {cm_t}
+    */
+   function fromTextArea(textArea, config) {
++      window.CodeMirror = CodeMirror;
+       var final_config = Object.assign({}, suggestedEditorConfig, config);
+       var cm = CodeMirror.fromTextArea(textArea, final_config);
+       cm[HyperMD_Mark] = true;

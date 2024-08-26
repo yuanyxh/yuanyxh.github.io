@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 
 import type { FH } from '@/filehandle/utils/fileManager';
 
@@ -80,9 +80,6 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
 
   const editorContainerRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<Editor>();
-  const mdStringRef = useRef('');
-  const latestHandleRef = useRef<FH | null>();
-  const isFirstRender = useRef(true);
 
   uploadInfo = useMDStore().uploadInfo;
 
@@ -92,17 +89,16 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
     }
   }));
 
-  useEffect(() => {
-    latestHandleRef.current = currentHandle;
+  // FIXME: The content has not changed but the update event is triggered
+  const onUpdate = useCallback(() => {
+    onChanged(true);
+  }, []);
 
+  useEffect(() => {
     currentHandle
       ?.getFile()
       .then((file) => file.text())
       .then((markdown) => {
-        if (latestHandleRef.current && latestHandleRef.current !== currentHandle) {
-          return void 0;
-        }
-
         editorRef.current = fromTextArea(editorContainerRef.current!, {
           mode: {
             name: 'hypermd',
@@ -119,40 +115,29 @@ const MDEditor = forwardRef<IMDEditorExpose, IMDEditorProps>(function MDEditor(p
           gutters: false
         });
 
-        isFirstRender.current = true;
-
+        editorRef.current.setValue(markdown);
         editorRef.current.setOption('hmdInsertFile', fileHandler);
         editorRef.current.on('change', onUpdate);
-
-        editorRef.current.setValue(markdown);
       });
 
     return () => {
+      editorRef.current?.off('change', onUpdate);
       editorRef.current?.toTextArea();
     };
   }, [currentHandle]);
-
-  function onUpdate(cm: Editor) {
-    if (isFirstRender.current) {
-      return (isFirstRender.current = false);
-    }
-
-    onChanged(true);
-    mdStringRef.current = cm.getValue();
-  }
 
   const handleSave = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isMac) {
       if (e.metaKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
 
-        changed && onSave(mdStringRef.current);
+        changed && onSave(editorRef.current?.getValue() || '');
       }
     } else {
       if (e.ctrlKey && e.key.toLocaleLowerCase() === 's') {
         e.preventDefault();
 
-        changed && onSave(mdStringRef.current);
+        changed && onSave(editorRef.current?.getValue() || '');
       }
     }
   };
