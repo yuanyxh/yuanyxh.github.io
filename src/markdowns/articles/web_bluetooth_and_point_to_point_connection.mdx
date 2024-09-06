@@ -1,0 +1,138 @@
+---
+title: Web Bluetooth 与点对点连接
+date: 2024-09-06 10:06:50
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/ed0864eceb0e30f0.png
+description: 学习 web 蓝牙技术，了解蓝牙连接的基础知识，包括蓝牙服务、特性和属性，编写一个 Android 软件实现自定义的蓝牙服务并与 Web Bluetooth 点对点连接通信。
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 前言
+
+需求需要实现手持终端设备与 web 网页的点对点数据传输，不希望有服务器参与，想到了 web 的 USB 与 Bluetooth API，对 Web Bluetooth API 进行了研究。
+
+## 蓝牙 GATT 基础知识
+
+GATT（通用属性配置文件，蓝牙低功耗（BLE）中定义的一种规范）定义了如何在蓝牙低功耗设备之间进行数据的传输和交互。它规定了蓝牙设备之间的数据格式、通信协议以及数据的组织方式。通过 GATT，不同的蓝牙设备可以交换各种类型的数据，如传感器数据、设备状态信息等。
+
+GATT 采用分层的组织结构，分为 Service（服务）、Characteristic（特性）、Property（属性）三层：
+
+- Service: 一个蓝牙设备可以有一个或多个服务，这些服务提供不同的功能，如 `battery_service`（电池服务）、`heart_rate`（心率服务）
+- Characteristic: 提供与服务相关的功能，比如 `battery_service` 服务的 `battery_level` 特征提供电池电量的数据
+- Property: 特性上的属性，用于操作特性值，比如 `write`、`read` 用于读写特性值
+
+Service、Characteristic 都有一个 UUID 用于标识服务、特性，Service 的 UUID 格式固定为 `0x0000[xxxx]-0000-1000-8000-00805F9B34FB`，其中 `[xxxx]` 是可变部分，其余固定，比如电池服务的 UUID 为 `0000180F-0000-1000-8000-00805f9b34fb`，可简写为 `0x180F`，当自定义蓝牙 GATT 服务时定义的 UUID 需要采用相同的格式。
+
+在使用 Web Bluetooth API 时，我们通过服务名称或服务 UUID 来找到我们需要的蓝牙服务。
+
+## Web Bluetooth API
+
+Web Bluetooth 所有接口构建在 `Promise` 之上，只支持在可信来源中使用（localhost 或 https），主要有以下接口（完整接口查看 MDN 文档）：
+
+- `Bluetooth`：提供查询蓝牙可用性和请求访问设备的方法
+  - `getAvailability`：返回用户代理的蓝牙可用性
+  - `requestDevice`：请求蓝牙设备，返回一个 `BluetoothDevice` 实例；必须由用户手势触发，一般会弹出蓝牙选择器，如果没有可用的蓝牙选择器则默认选择匹配的第一个
+- `BluetoothDevice`：蓝牙设备相关接口，具有一个 `gatt` 属性是对 `BluetoothRemoteGATTServer` 实例的引用
+- `BluetoothRemoteGATTServer`：可以理解为对 gatt 服务器的引用，通过 gatt 服务器可以获取到他所拥有的 Service
+  - `connected`：脚本执行环境是否已与设备连接
+  - `connect`：脚本执行环境连接到 BluetoothDevice
+  - `disconnect`：脚本执行环境断开与 BluetoothDevice 的连接
+  - `getPrimaryService`：通过服务别名或 UUID 获取到对应的 Service，是一个 `BluetoothRemoteGATTService` 实例
+  - `getPrimaryServices`：获取多个 Service
+- `BluetoothRemoteGATTService`：对 Service 的引用
+  - `isPrimary`：指示这是一个主要还是次要的服务
+  - `getCharacteristic`：获取指定 UUID 的 Characteristic 特性，是一个 `BluetoothRemoteGATTCharacteristic` 实例
+  - `getCharacteristics`：获取多个特性
+- `BluetoothRemoteGATTCharacteristic`：对特性的引用
+  - `readValue`：读取特性值
+  - `writeValueWithResponse`：写入特性值
+
+看一个简单的示例：
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button class="request">click me</button>
+
+    <script>
+      const request = window.document.querySelector('.request');
+
+      request.addEventListener('click', async function () {
+        const bluetooth = window.navigator.bluetooth;
+
+        try {
+          // 检查用户代理是否支持
+          const isSupport = await bluetooth.getAvailability();
+
+          if (!isSupport) {
+            return window.alert('用户代理不支持蓝牙请求');
+          }
+
+          // 请求蓝牙设备
+          const bluetoothDevice = await bluetooth.requestDevice({
+            /** 过滤器选项 */
+            filters: [
+              {
+                /** 过滤拥有 battery_service | 0x1101 | 0000180D-0000-1000-8000-00805f9b34fb 服务的设备 */
+                services: ['battery_service', 0x1101, '0000180D-0000-1000-8000-00805f9b34fb'],
+                /** 过滤名称为 RedMi Note13Pro 的设备 */
+                name: 'RedMi Note13Pro',
+                /** 过滤名称前缀为 RedMi 的设备 */
+                namePrefix: 'RedMi'
+              }
+            ],
+            /** 排除项，选项与 filters 相同 */
+            exclusionFilters: [],
+            /**
+             * 服务选项，通常需要包含此项，告诉浏览器你随后想要访问的蓝牙服务；
+             * 如果其他选项中没有指定服务，则必须在此处指定，否则随后访问服务时抛出异常
+             * */
+            optionalServices: ['battery_service'],
+            /** 匹配所有设备，一般不建议使用 */
+            acceptAllDevices: false
+          });
+
+          // gatt 服务器
+          const server = bluetoothDevice.gatt;
+          if (!server.connected) {
+            // 创建连接
+            await server.connect();
+          }
+
+          /** 获取电池 Service */
+          const batteryService = await server.getPrimaryService('battery_service');
+
+          /** 获取电池电量的 Characteristic */
+          const batteryLevelCharacteristic =
+            await batteryService.getCharacteristic('battery_level');
+
+          /** 读取 Characteristic 值，这里是电池剩余电量 */
+          const batteryLevelValue = await batteryLevelCharacteristic.readValue();
+
+          /** 打印剩余电量百分比 */
+          console.log(`Battery percentage is ${batteryLevelValue.getUint8(0)}`);
+        } catch (err) {
+          window.alert('Error: ' + err.message);
+        }
+      });
+    </script>
+  </body>
+</html>
+```
+
+得到的效果为：
+
+-------------------------------------------------------
+
+## Android 自定义 GATT 服务
+
+简单通过上述代码搜索设备并尝试建立连接进行通讯，会发现无法达到自己想要的效果；为了更好的理解 Web Bluetooth，自定义一个 GATT 服务实现通讯是很好的方法。
