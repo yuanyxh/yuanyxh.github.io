@@ -10,7 +10,7 @@ import { RouterProvider } from '@/router';
 import App from './App.tsx';
 import router from './routes.tsx';
 
-export const SLOGAN = '读 《React + Node.js 开发实战》';
+export const SLOGAN = '读 《Webpack 实战：入门、进阶与调优》';
 
 const node = (
   <StrictMode>
@@ -20,4 +20,5 @@ const node = (
   </StrictMode>
 );
 
-createRoot(document.getElementById('root')!).render(node);
+const root = createRoot(document.getElementById('root')!);
+root.render(node);

@@ -1,0 +1,244 @@
+---
+title: 在 React 中模拟输入
+date: 2024-09-19 14:02:30
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/2d2aae8f37b6f5b1.png
+description: 记录在 React 模拟输入时产生的问题，如何解决，
+---
+
+<Header frontmatter={frontmatter} />
+
+<Toc toc={toc} />
+
+## 需求 与 Bug
+
+项目的 C# 桌面端使用 CefSharp 内嵌了一个三方网站，在外部实现了一个登录控件，外部登录后希望内嵌的三方网站自动登录，实现代码如下：
+
+```csharp
+browser.ExecuteScriptAsync($"document.getElementsByName('username')[0].value = '{_login}'");
+browser.ExecuteScriptAsync($"document.getElementsByName('password')[0].value = '{_pwd}'");
+browser.ExecuteScriptAsync($"document.getElementsById('submitBtn').click()");
+```
+
+通过 CefSharp 提供的方法在外部执行脚本，将登录控件的值填充至网站，旧版中正常，三方网站改版后无法正常填充。
+
+## 尝试解决
+
+直接修改 input 的 value 值无效，通过控制台 sources 面板查看，发现网站用 React 重构：
+
+<Image url={'http://qkc148.bvimg.com/18470/29f35b549d849475.png'} width={1089} height={408} />
+
+React 是状态驱动的视图库，直接修改元素的 value 值不会导致 React 应用状态的改变，我们需要让 React 感知到数据变化，即事件模拟：
+
+```javascript
+const inputEl = document.querySelector('input');
+inputEl.value = "changed";
+inputEl.dispatchEvent(new Event('input', { bubbles: true, cancelable: false, composed: true }));
+```
+
+结果是页面显示已经改变：
+
+<Image url={'http://qkc148.bvimg.com/18470/f2bc9721b3dba060.png'} width={380} height={72} />
+
+但内部的状态依然未变：
+
+<Image url={'http://qkc148.bvimg.com/18470/e26431cdb387d382.png'} width={517} height={139} />
+
+查询资料找到一个 React Issues，有人在讨论中给出解决方案 [Trigger simulated input value][Trigger_simulated_input_value]，代码如下：
+
+```javascript
+let input = someInput; 
+let lastValue = input.value;
+input.value = 'new value';
+let event = new Event('input', { bubbles: true });
+// hack React15
+event.simulated = true;
+// hack React16 内部定义了 descriptor 拦截 value，此处重置状态
+let tracker = input._valueTracker;
+if (tracker) {
+  tracker.setValue(lastValue);
+}
+input.dispatchEvent(event);
+```
+
+问题解决。
+
+## 知其然而知其所以然
+
+上述问题激起了个人好奇心，尝试通过调试理解模拟输入事件无效的原因。
+
+通过控制台 -> Elements -> Event Listeners 面板，找到 input 事件，查看已注册的事件处理程序：
+
+<Image url={'http://qkc148.bvimg.com/18470/18859edd4a1cca9f.png'} width={1920} height={527} />
+
+React 实现了自己的合成事件系统，几乎所有的事件统一注册在 React 应用根元素上，这里即是截图中的 root 元素，点击右侧链接定位至源码：
+
+<Image url={'http://qkc148.bvimg.com/18470/584f3dfd84b01f54.png'} width={657} height={520} />
+
+所有事件都经过此函数，避免时间浪费，我们加上条件，只有 input 事件才会断点：
+
+<Image url={'http://qkc148.bvimg.com/18470/61c9694d8bbf1858.png'} width={1229} height={607} />
+
+输入触发断点，中间会经过很多我们不关心的流程，最终进入 `updateValueIfChanged` 函数：
+
+```javascript
+function getTracker(node) {
+  return node._valueTracker;
+}
+
+function getValueFromNode(node) {
+  var value = '';
+
+  if (!node) {
+    return value;
+  }
+
+  if (isCheckable(node)) {
+    value = node.checked ? 'true' : 'false';
+  } else {
+    value = node.value;
+  }
+
+  return value;
+}
+
+function updateValueIfChanged(node) {
+  if (!node) {
+    return false;
+  }
+
+  // 获取 tracker
+  var tracker = getTracker(node);
+
+  if (!tracker) {
+    return true;
+  }
+
+  // 获取上次的值
+  var lastValue = tracker.getValue();
+  // 获取变更值
+  var nextValue = getValueFromNode(node);
+
+  // 不同则更新，此处是关键节点
+  if (nextValue !== lastValue) {
+    tracker.setValue(nextValue);
+    return true;
+  }
+
+  return false;
+}
+```
+
+tracker 的定义如下：
+
+```javascript
+function trackValueOnNode(node) {
+  // 判断 input 类型
+  var valueField = isCheckable(node) ? 'checked' : 'value';
+
+  // 定义属性描述符
+  var descriptor = Object.getOwnPropertyDescriptor(node.constructor.prototype, valueField);
+
+  // 设置初始值
+  var currentValue = '' + node[valueField];
+
+  if (
+    node.hasOwnProperty(valueField) ||
+    typeof descriptor === 'undefined' ||
+    typeof descriptor.get !== 'function' ||
+    typeof descriptor.set !== 'function'
+  ) {
+    return;
+  }
+
+  var get = descriptor.get,
+      set = descriptor.set;
+
+  // 对 value 属性的获取与设置进行拦截
+  Object.defineProperty(node, valueField, {
+    configurable: true,
+    get: function () {
+      return get.call(this);
+    },
+    set: function (value) {
+      {
+        checkFormFieldValueStringCoercion(value);
+      }
+
+      /**
+       * 注意此处，每当设置元素的 value 属性时，currentValue 也被修改，
+       * 导致 updateValueIfChanged 函数始终返回 false
+       */
+      currentValue = '' + value;
+      set.call(this, value);
+    }
+  });
+
+  Object.defineProperty(node, valueField, {
+    enumerable: descriptor.enumerable
+  });
+  var tracker = {
+    getValue: function () {
+      return currentValue;
+    },
+    setValue: function (value) {
+      {
+        checkFormFieldValueStringCoercion(value);
+      }
+
+      currentValue = '' + value;
+    },
+    stopTracking: function () {
+      detachTracker(node);
+      delete node[valueField];
+    }
+  };
+  return tracker;
+}
+```
+
+我们来看看真实输入的流程：
+
+1. 触发输入
+2. 进入 updateValueIfChanged
+3. 获取旧值和新值
+4. 两者不同，设置 value，updateValueIfChanged 返回 true（重要）
+
+再来看看模拟的输入流程：
+
+1. input.value = 'changed'
+2. 触发 value 属性的拦截，将内部的 tracker currentValue 更新为 changed
+3. 触发输入事件
+4. 进入 updateValueIfChanged
+5. 获取旧值和新值
+6. 两者相同，updateValueIfChanged 返回 false（重要）
+
+这里模拟输入时，新旧值是相同的，所以 updateValueIfChanged 函数会返回 false，当返回 false 时不会触发 React 的更新机制去更新状态，即无法进入下图的流程：
+
+<Image url={'http://qkc148.bvimg.com/18470/ce3def0bfe6baf45.png'} width={590} height={96} />
+
+我们再来看看之前的解决方案：
+
+```javascript
+// 暂存旧值
+let lastValue = input.value;
+
+// 设置新值
+input.value = 'new value';
+
+// ...
+
+// 获取 tracker
+let tracker = input._valueTracker;
+
+if (tracker) {
+  // 将 tracker 设置为 旧值，此时新旧值不同，updateValueIfChanged 会返回 true
+  tracker.setValue(lastValue);
+}
+
+// ...
+```
+
+---end
+
+[Trigger_simulated_input_value]: https://github.com/facebook/react/issues/11488#issuecomment-347775628
