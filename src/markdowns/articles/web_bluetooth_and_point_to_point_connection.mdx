@@ -131,8 +131,329 @@ Web Bluetooth 所有接口构建在 `Promise` 之上，只支持在可信来源�
 
 得到的效果为：
 
--------------------------------------------------------
+<Image url={'http://qkc148.bvimg.com/18470/f42418038f2b2ea1.gif'} width={754} height={556} />
 
 ## Android 自定义 GATT 服务
 
-简单通过上述代码搜索设备并尝试建立连接进行通讯，会发现无法达到自己想要的效果；为了更好的理解 Web Bluetooth，自定义一个 GATT 服务实现通讯是很好的方法。
+简单通过上述代码搜索设备并尝试建立连接进行通讯，会发现无法达到自己想要的效果；为了更好的理解 Web Bluetooth，自定义一个 GATT 服务实现通讯是很好的方法：
+
+```kt
+package com.example.myapplication
+
+import android.Manifest
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattServer
+import android.bluetooth.BluetoothGattServerCallback
+import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
+import android.bluetooth.le.AdvertiseCallback
+import android.bluetooth.le.AdvertiseData
+import android.bluetooth.le.AdvertiseSettings
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.os.ParcelUuid
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
+import java.util.UUID
+
+
+class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        initBluetoothGATT()
+    }
+
+    // 初始化蓝牙 GATT 服务并开始广播
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun initBluetoothGATT() {
+        // 获取蓝牙管理器
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+
+        // 获取蓝牙适配器
+        val bluetoothAdapter = bluetoothManager.adapter
+
+        // 定义 gatt 服务器
+        var bluetoothGattServer: BluetoothGattServer? = null
+
+        // 检查权限
+        if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            // 定义 gatt 服务器的回调
+            val bluetoothGattServerCallback = object : BluetoothGattServerCallback() {
+                // 与蓝牙设备的连接状态变更
+                override fun onConnectionStateChange(
+                    device: BluetoothDevice,
+                    status: Int,
+                    newState: Int
+                ) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.d(TAG, "Device connected")
+                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        Log.d(TAG, "Device disconnected")
+                    }
+                }
+
+                // Service 被添加
+                override fun onServiceAdded(status: Int, service: BluetoothGattService) {
+                    if (service.uuid == SERVICE_UUID) {
+                        Log.d(TAG, "Service added successfully.")
+                    }
+                }
+
+                // 特性读取请求
+                override fun onCharacteristicReadRequest(
+                    device: BluetoothDevice,
+                    requestId: Int,
+                    offset: Int,
+                    characteristic: BluetoothGattCharacteristic
+                ) {
+                    // 判断是否指定特性请求
+                    if (characteristic.uuid == CHARACTERISTIC_UUID) {
+
+                        // 处理读取请求，这里可以设置返回的数据
+                        val dataToSend = "Hello from custom characteristic!".toByteArray()
+
+                        // 设置特性值
+                        characteristic.setValue(dataToSend)
+
+                        // 检查权限，这里是避免编辑器警告
+                        if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                            // 发送响应，必须调用此方法，web 端的 readValue 方法才能继续执行
+                            bluetoothGattServer!!.sendResponse(
+                                device,
+                                requestId,
+                                BluetoothGatt.GATT_SUCCESS,
+                                offset,
+                                dataToSend
+                            )
+                        }
+                    }
+                }
+
+                // 特性写入请求
+                override fun onCharacteristicWriteRequest(
+                    device: BluetoothDevice,
+                    requestId: Int,  // 请求的特性 id
+                    characteristic: BluetoothGattCharacteristic,  // 特性
+                    preparedWrite: Boolean,
+                    responseNeeded: Boolean,  // 是否需要响应
+                    offset: Int,  // 数据偏移，数据可能是分段发送的
+                    value: ByteArray // 数据值
+                ) {
+                    // 判断是否指定特性
+                    if (characteristic.uuid == CHARACTERISTIC_UUID) {
+                        characteristic.setValue(value)
+                    }
+                }
+            }
+
+            // 打开一个 gatt 服务器
+            bluetoothGattServer = bluetoothManager.openGattServer(this, bluetoothGattServerCallback)
+
+            // 获取蓝牙广播器
+            val bluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
+
+            // 判断是否支持蓝牙
+            if (bluetoothLeAdvertiser != null) {
+                // 蓝牙广播设置
+                val settings = AdvertiseSettings.Builder()
+                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY) // 设置低延迟模式
+                    .setConnectable(true) // 设置可连接
+                    .setTimeout(0) // 不超时关闭，除非手动关闭
+                    .build()
+
+                // 蓝牙广播数据
+                val data = AdvertiseData.Builder()
+                    .setIncludeDeviceName(true) // 设置广播时的数据包含设备名称
+                    .addServiceUuid(ParcelUuid(SERVICE_UUID)) // 添加自定义服务的 UUID 到广播数据中
+                    .build()
+
+                // 开始广播
+                bluetoothLeAdvertiser.startAdvertising(
+                    settings,
+                    data,
+                    object : AdvertiseCallback() {
+                        // 正常开始广播
+                        override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+                            Log.d(TAG, "Advertising started successfully.")
+                        }
+
+                        // 无法开启广播
+                        override fun onStartFailure(errorCode: Int) {
+                            Log.e(TAG, "Advertising failed with error code: $errorCode")
+                        }
+                    })
+
+                // 构造一个自定义 UUID 的 Service，指定为主要 Service
+                val service =
+                    BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
+
+                // 构造一个自定义 UUID 的 Characteristic
+                val characteristic = BluetoothGattCharacteristic(
+                    CHARACTERISTIC_UUID,
+                    // 设置读写属性
+                    BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_WRITE,
+                    // 设置读写权限
+                    BluetoothGattCharacteristic.PERMISSION_READ or BluetoothGattCharacteristic.PERMISSION_WRITE
+
+                )
+
+                // 将 Characteristic 添加至 Service
+                service.addCharacteristic(characteristic)
+
+                // 将 Service 添加至打开的 GATT 服务器
+                bluetoothGattServer.addService(service)
+            }
+        } else {
+            // 没有权限请求权限
+            requestPermissions(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                REQUEST_BLUETOOTH_PERMISSION_CODE
+            )
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // 权限被授予，可以进行蓝牙连接操作
+                initBluetoothGATT()
+            } else {
+                // 权限被拒绝
+                Toast.makeText(this, "蓝牙连接权限被拒绝", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    companion object {
+        private const val TAG = "BluetoothService"
+
+        // 请求权限 code
+        private const val REQUEST_BLUETOOTH_PERMISSION_CODE = 1001
+
+        // 定义服务 UUID
+        private val SERVICE_UUID: UUID = UUID.fromString("00009527-0000-1000-8000-00805f9b34fb")
+
+        // 定义特性 UUID
+        private val CHARACTERISTIC_UUID: UUID =
+            UUID.fromString("11009527-1100-1100-1100-110011001100")
+    }
+}
+```
+
+上述代码是 Android 应用主 Activity 的代码，配合上述代码需要在 Android 应用配置清单中添加对应的权限：
+
+```xml
+<!-- AndroidManifest.xml -->
+
+<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+<!-- 蓝牙搜索配对 -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<!-- 操纵蓝牙的开启-->
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<!-- 如果应用必须安装在支持蓝牙的设备上，可以将下面的required的值设置为true。-->
+<uses-feature
+    android:name="android.hardware.bluetooth_le"
+    android:required="false" />
+```
+
+在编译打开这个 Android 应用后，会开启一个 UUID 为 0x9527 的蓝牙服务，包含一个 UUID 为 `11009527-1100-1100-1100-110011001100` 的特性，这个特性会在被读取时，将特性值设置为 “Hello from custom characteristic!”，并发送响应到调用方。我们用以下 web 端的代码来测试一下：
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button class="request">click me</button>
+
+    <script>
+      const request = window.document.querySelector('.request');
+
+      request.addEventListener('click', async function () {
+        const bluetooth = window.navigator.bluetooth;
+
+        try {
+          const isSupport = await bluetooth.getAvailability();
+
+          if (!isSupport) {
+            return window.alert('用户代理不支持蓝牙请求');
+          }
+
+          const bluetoothDevice = await bluetooth.requestDevice({
+            filters: [
+              {
+                services: [0x9527] // 过滤蓝牙服务 UUID 为 9527 的设备
+              }
+            ],
+            optionalServices: [0x9527] // 稍后需要操作此服务
+          });
+
+          const server = bluetoothDevice.gatt; // 获取对蓝牙服务器的引用
+          if (!server.connected) {
+            await server.connect(); // 连接服务器
+          }
+
+          const service = await server.getPrimaryService(0x9527); // 获取 9527 的蓝牙服务
+
+          const characteristic = await service.getCharacteristic(
+            '11009527-1100-1100-1100-110011001100'
+          ); // 获取 11009527-1100-1100-1100-110011001100 的特性
+          
+          // 侦听特性值变更
+          characteristic.addEventListener('characteristicvaluechanged', (e) => {
+            console.log('characteristicvaluechanged: ', e.target.value);
+          });
+
+          // 读取特性值
+          const value = await characteristic.readValue();
+
+          // 编码响应
+          console.log(new TextDecoder().decode(value));
+        } catch (err) {
+          window.alert('Error: ' + err.message);
+        }
+      });
+    </script>
+  </body>
+</html>
+```
+
+查看效果：
+
+<Image url={'http://qkc148.bvimg.com/18470/72028f035113b596.gif'} width={662} height={802} />
+
+除了被动读写外，Android 端的 gatt 服务器还支持 `notifyCharacteristicChanged` 方法，此方法会触发 web 端 characteristic 实例的 `characteristicvaluechanged` 事件获取最新的特性值，通过这种方式可以做到主动通知 web 端的效果。
+
+> 通过自定义终端应用实现自定义 GATT 服务器的方式可以完成与 web 端的点对点连接，但是 web bluetooth 的兼容性还不足以支持完成大型的项目，稳定性也无法考证。
+
+## 参考资料
+
+- MDN: https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API
+- 通过 JavaScript 与蓝牙设备通信: https://developer.chrome.com/docs/capabilities/bluetooth?hl=zh-cn
+- 一文带你认识蓝牙 GATT 协议: https://juejin.cn/post/7160308393503113247
+
+-- end
