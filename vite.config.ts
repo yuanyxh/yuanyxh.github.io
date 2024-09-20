@@ -34,31 +34,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       viteRouteGenerator(),
-      /**
-       * format
-       * baseUrl
-       * development
-       * elementAttributeNameCase
-       * jsx
-       * jsxImportSource
-       * jsxRuntime
-       * mdExtensions
-       * mdxExtensions
-       * outputFormat
-       * pragma
-       * exclude
-       * include
-       * pragmaFrag
-       * pragmaImportSource
-       * providerImportSource
-       * recmaPlugins
-       * rehypePlugins
-       * remarkPlugins
-       * remarkRehypeOptions
-       * stylePropertyNameCase
-       * tableCellAlignToStyle
-       */
-      // @ts-ignore ts 异常，可正常使用
+
+      // @ts-ignore this is normal, it's just a mismatch in the type definitions
       {
         enforce: 'pre',
         ...mdx({
@@ -78,19 +55,27 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           providerImportSource: '@/viewer/Provider.tsx'
         })
       },
+
       react(),
+
       progress(),
+
       ESLintPlugin(),
+
       ViteEjsPlugin({
         title: env.VITE_APP_TITLE
       }),
+
       createSvgIconsPlugin({
         iconDirs: [resolve('./src/assets/svgs')],
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
       }),
+
       // basicSsl()
+
       vitePrerender(mode),
+
       viteGenerateSitemap()
     ],
     resolve: {
@@ -161,7 +146,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       outDir: 'build',
       sourcemap: isBuild === false,
       rollupOptions: {
-        // @ts-ignore ts 异常，可正常使用
+        // @ts-ignore this is normal, it's just a mismatch in the type definitions
         plugins: isBuild ? [visualizer({ filename: '.analyze.html', open: false })] : [],
         output: {}
       },

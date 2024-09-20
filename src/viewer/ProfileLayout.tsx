@@ -1,3 +1,4 @@
+import type { MenuProps } from 'antd';
 import { Layout, Menu } from 'antd';
 
 import { Outlet, useHistory, useLocation } from '@/router';
@@ -31,7 +32,7 @@ const ProfileLayout = () => {
           mode="inline"
           defaultSelectedKeys={[location.path]}
           style={{ height: '100%' }}
-          items={profileSiderbarData}
+          items={profileSiderbarData as MenuProps['items']}
           onClick={handleNavigate}
         />
       </Sider>

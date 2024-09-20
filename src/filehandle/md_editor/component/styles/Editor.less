@@ -12,9 +12,9 @@
 .HyperMD-header-3::after,
 .HyperMD-header-4::after {
   display: block;
-  content: ' ';
-  margin-top: 2px;
   height: 1px;
+  margin-top: 2px;
+  content: ' ';
   background: #eee;
 }
 
@@ -28,22 +28,19 @@
 }
 
 .cm-formatting-list-ul::before {
-  content: '';
   display: inline-block;
   width: 10px;
   height: 10px;
+  vertical-align: middle;
+  content: '';
   border: 2px solid var(--decorate-color);
   border-radius: 50%;
-  vertical-align: middle;
 }
 
 .cm-formatting-list-ol {
   line-height: 2 !important;
-}
-
-.cm-formatting-list-ol {
-  text-shadow: none !important;
   color: inherit !important;
+  text-shadow: none !important;
 }
 
 .cm-hmd-list-indent {
@@ -70,11 +67,11 @@
 }
 
 .HyperMD-table-row > span {
-  background-color: rgb(245, 245, 245) !important;
+  background-color: rgb(245 245 245) !important;
   border-color: var(--border-color-primary);
   border-style: solid;
-  border-left-width: 1px;
   border-right-width: 1px;
+  border-left-width: 1px;
 }
 
 .hmd-image {
@@ -89,8 +86,8 @@
 }
 
 .HyperMD-quote {
-  background-color: rgb(245, 245, 245) !important;
   padding: 10px 0 !important;
+  background-color: rgb(245 245 245) !important;
   border-radius: var(--border-radius-base);
 }
 
