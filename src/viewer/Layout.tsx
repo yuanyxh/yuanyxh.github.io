@@ -179,14 +179,14 @@ const Actions = () => {
   return (
     <div className={styles.actions}>
       <Icon
-        className={`${styles.action} ${styles.light}`}
+        className={classnames(styles.action, styles.light, 'icon-btn')}
         title="切换浅色模式"
         icon="material-symbols:light-mode"
         size={20}
         onClick={handleLight}
       />
       <Icon
-        className={`${styles.action} ${styles.dark}`}
+        className={classnames(styles.action, styles.dark, 'icon-btn')}
         title="切换深色模式"
         icon="material-symbols:nightlight-rounded"
         size={20}
@@ -194,7 +194,7 @@ const Actions = () => {
       />
 
       <Icon
-        className={`${styles.action} ${styles.fullscreen}`}
+        className={classnames(styles.action, styles.fullscreen, 'icon-btn')}
         title="进入全屏模式"
         style={{ display: fullScreen ? 'none' : 'initial' }}
         icon="material-symbols:fullscreen-rounded"
@@ -202,7 +202,7 @@ const Actions = () => {
         onClick={toggerFullScreen}
       />
       <Icon
-        className={`${styles.action} ${styles.exitFullscreen}`}
+        className={classnames(styles.action, styles.exitFullscreen, 'icon-btn')}
         title="退出全屏模式"
         style={{ display: fullScreen ? 'initial' : 'none' }}
         icon="material-symbols:fullscreen-exit-rounded"

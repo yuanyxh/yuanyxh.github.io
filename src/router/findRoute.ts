@@ -1,13 +1,17 @@
 import { isUndefined } from 'lodash-es';
 
-import { INDEX_PATH, type RouteObject } from './router';
+import type { ResolveRouteObject } from './router';
+import { INDEX_PATH } from './router';
 
-export function findRoute(routes: RouteObject[] | undefined, id: string): RouteObject | undefined {
+export function findRouteById(
+  routes: ResolveRouteObject[] | undefined,
+  id: string
+): ResolveRouteObject | undefined {
   if (isUndefined(routes) || routes.length === 0) {
     return undefined;
   }
 
-  let result: RouteObject | undefined = undefined;
+  let result: ResolveRouteObject | undefined = undefined;
 
   routes.find((route) => {
     if (route.id === id) {
@@ -17,7 +21,7 @@ export function findRoute(routes: RouteObject[] | undefined, id: string): RouteO
     }
 
     if (!isUndefined(route.children)) {
-      const fined = findRoute(route.children, id);
+      const fined = findRouteById(route.children, id);
 
       if (fined) {
         result = fined;
@@ -32,10 +36,43 @@ export function findRoute(routes: RouteObject[] | undefined, id: string): RouteO
   return result;
 }
 
-export function excludeIndex(routes: RouteObject[]) {
+export function findRouteByPath(
+  routes: ResolveRouteObject[] | undefined,
+  path: string
+): ResolveRouteObject | undefined {
+  if (isUndefined(routes) || routes.length === 0) {
+    return undefined;
+  }
+
+  let result: ResolveRouteObject | undefined = undefined;
+
+  routes.find((route) => {
+    if (route.fullPath === path) {
+      result = route;
+
+      return true;
+    }
+
+    if (!isUndefined(route.children)) {
+      const fined = findRouteByPath(route.children, path);
+
+      if (fined) {
+        result = fined;
+
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  return result;
+}
+
+export function excludeIndex(routes: ResolveRouteObject[]) {
   return (routes || []).filter((route) => route.path !== INDEX_PATH);
 }
 
-export function getChildrenById(routes: RouteObject[] | undefined, id: string) {
-  return excludeIndex(findRoute(routes, id)?.children || []);
+export function getChildrenById(routes: ResolveRouteObject[] | undefined, id: string) {
+  return excludeIndex(findRouteById(routes, id)?.children || []);
 }

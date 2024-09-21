@@ -1,0 +1,50 @@
+.list {
+  padding: 10px;
+}
+
+.list .item {
+  line-height: 1.6;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+
+  span {
+    margin-left: 8px;
+  }
+
+  .directoryIcon + span {
+    margin-left: 0;
+  }
+
+  > .list {
+    height: 0;
+    padding: 0 10px;
+    overflow: hidden;
+    transition: height 0.2s ease;
+    will-change: height;
+  }
+}
+
+.list .item.expand {
+  > .list {
+    height: fit-content;
+  }
+}
+
+.directoryIcon svg {
+  transition: transform 0.2s ease;
+}
+
+.directoryIcon.expand svg {
+  transform: rotate(90deg);
+}
+
+.list .item .row {
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+
+  &.active,
+  &:not(.directory):hover {
+    background-color: #37373d;
+  }
+}
