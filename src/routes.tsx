@@ -5,10 +5,6 @@ import { createRouter } from '@/router';
 
 import { sleep } from '@/utils';
 
-import { Articles_ID } from './viewer/hooks/useArticles';
-import { Books_ID } from './viewer/hooks/useBooks';
-import { Examples_ID } from './viewer/hooks/useExamples';
-
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -19,7 +15,7 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Index')
       },
       {
-        id: Articles_ID,
+        id: 'Articles',
         path: 'articles',
         children: [
           {
@@ -30,7 +26,7 @@ export const routes: RouteObject[] = [
         ]
       },
       {
-        id: Books_ID,
+        id: 'Books',
         path: 'books',
         children: [
           {
@@ -63,7 +59,7 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Examples')
       },
       {
-        id: Examples_ID,
+        id: 'Examples',
         path: 'coder',
         element: () => import('@/coder/Layout'),
         children: [
@@ -71,6 +67,7 @@ export const routes: RouteObject[] = [
         ]
       },
       {
+        id: 'Tools',
         path: 'tools',
         element: () => import('@/viewer/Tools'),
         children: [

@@ -223,7 +223,7 @@ const Actions = () => {
           <Space>
             <Icon
               title="切换显示语言"
-              className={styles.action}
+              className={classnames(styles.action, 'icon-btn')}
               icon="material-symbols:language-sharp"
               size={20}
             />
@@ -232,7 +232,7 @@ const Actions = () => {
       </Dropdown>
 
       <Icon
-        className={classnames(styles.action, styles.settings)}
+        className={classnames(styles.action, styles.settings, 'icon-btn')}
         title="进入设置页"
         icon="material-symbols:settings"
         size={20}
