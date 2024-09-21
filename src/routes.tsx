@@ -5,6 +5,10 @@ import { createRouter } from '@/router';
 
 import { sleep } from '@/utils';
 
+import { Articles_ID } from './viewer/hooks/useArticles';
+import { Books_ID } from './viewer/hooks/useBooks';
+import { Examples_ID } from './viewer/hooks/useExamples';
+
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -15,6 +19,7 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Index')
       },
       {
+        id: Articles_ID,
         path: 'articles',
         children: [
           {
@@ -25,6 +30,7 @@ export const routes: RouteObject[] = [
         ]
       },
       {
+        id: Books_ID,
         path: 'books',
         children: [
           {
@@ -57,6 +63,14 @@ export const routes: RouteObject[] = [
         element: () => import('@/viewer/Examples')
       },
       {
+        id: Examples_ID,
+        path: 'coder',
+        element: () => import('@/coder/Layout'),
+        children: [
+          /** placeholder for coder */
+        ]
+      },
+      {
         path: 'tools',
         element: () => import('@/viewer/Tools'),
         children: [
@@ -67,13 +81,6 @@ export const routes: RouteObject[] = [
         path: '404.html',
         element: '不存在的页面'
       }
-    ]
-  },
-  {
-    path: '/coder',
-    element: () => import('@/coder/Layout'),
-    children: [
-      /** placeholder for coder */
     ]
   }
 ];

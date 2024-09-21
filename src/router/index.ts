@@ -2,6 +2,7 @@ export { default as Link } from './components/Link';
 export type { IOutletRef } from './components/Outlet';
 export { default as Outlet } from './components/Outlet';
 export { default as RouterProvider } from './components/RouterProvider';
+export * from './findRoute';
 export { AbstractHistory } from './history';
 export { useHistory } from './hooks/useHistory';
 export { useLocation } from './hooks/useLocation';

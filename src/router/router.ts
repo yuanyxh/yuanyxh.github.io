@@ -27,6 +27,7 @@ interface ArticleMeta {
 
 interface RouteObject {
   path: string;
+  id?: string;
   element?: React.ReactNode | LazyComponent;
   children?: RouteObject[];
   meta?: ArticleMeta;
