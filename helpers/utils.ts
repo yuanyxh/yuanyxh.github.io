@@ -30,7 +30,6 @@ export interface RoutePlace {
   books: string;
   articles: string;
   examples: string;
-  tools: string;
 }
 
 export const root = process.cwd();
@@ -187,42 +186,18 @@ export const generateRouteJSONWithExample = async () => {
   return { examples: result };
 };
 
-export const generateRouteJSONWithTools = async () => {
-  let tools = '';
-
-  try {
-    const dirs = readdirSync(resolve('./src/tools'));
-
-    for (let i = 0; i < dirs.length; i++) {
-      const name = dirs[i];
-
-      tools += `{
-        path: '${name + '.html'}',
-        element: () => import('@/tools/${name}/Index.tsx')
-      },
-      `;
-    }
-  } catch (err) {
-    console.log(err);
-  }
-
-  return { tools };
-};
-
 export const generateRouteJSON = async () => {
   return {
     ...(await generateRouteJSONWithArticle()),
-    ...(await generateRouteJSONWithExample()),
-    ...(await generateRouteJSONWithTools())
+    ...(await generateRouteJSONWithExample())
   };
 };
 
-export const replacePlaceRoute = (code: string, { books, articles, examples, tools }: RoutePlace) =>
+export const replacePlaceRoute = (code: string, { books, articles, examples }: RoutePlace) =>
   code
     .replace('/** placeholder for articles */', articles)
     .replace('/** placeholder for books */', books)
-    .replace('/** placeholder for coder */', examples)
-    .replace('/** placeholder for tools */', tools);
+    .replace('/** placeholder for coder */', examples);
 
 export function resolveFullRoutes(
   routes: ResolveRouteObject[],
