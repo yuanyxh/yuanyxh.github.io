@@ -1,10 +1,9 @@
-import fs from 'node:fs';
 import { resolve } from 'node:path';
+import { rimrafSync } from 'rimraf';
 
 const filePaths = ['.eslintcache', 'build', '.analyze.html'];
 
-filePaths.forEach((filePath) => {
-  const fullFilePath = resolve(filePath);
-
-  if (fs.existsSync(fullFilePath)) fs.unlinkSync(fullFilePath);
-});
+rimrafSync(
+  filePaths.map((f) => resolve(f)),
+  { preserveRoot: false }
+);
