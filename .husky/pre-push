@@ -1,0 +1,2 @@
+pnpm run clean
+pnpm run build

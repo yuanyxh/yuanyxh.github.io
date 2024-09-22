@@ -1,4 +1,3 @@
 pnpm run lint:fix
 pnpm run stylelint:fix
 pnpm run commitlint
-pnpm run clean
