@@ -336,7 +336,6 @@ const Content = () => {
 
         <FloatButton aria-label="feedback" icon={<CommentOutlined />} onClick={handleFeedback} />
 
-        {/* FIXME: antd internal error, using outdated findDOMNode api causes react to throw warning in strict mode */}
         <FloatButton.BackTop
           aria-label="backtop"
           visibilityHeight={2000}

@@ -1,13 +1,13 @@
 import { createElement, useId, useMemo } from 'react';
 
-import { Anchor, Divider } from 'antd';
+import { Anchor, Divider, Image as AntdImage } from 'antd';
 import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 import { Link, useLocation } from '@/router';
 
 import { copy } from '@/utils';
 
-import { Icon } from '@/components';
+import { Icon, Image as InnerImage } from '@/components';
 
 import styles from './styles/Provider.module.less';
 import '@/assets/styles/prism-one-dark.css';
@@ -158,9 +158,11 @@ const Image = (props: ImageProps) => {
   const { containerWidth } = calcArticleWrapperSize();
 
   return (
-    <img
+    // @ts-expect-error img in here
+    <InnerImage
+      className={styles.image}
       src={url}
-      loading="lazy"
+      preview={true}
       {...calcImageSize({
         width,
         height,
@@ -174,7 +176,11 @@ const Image = (props: ImageProps) => {
 export const useMDXComponents = (): MDXComponents => {
   return {
     wrapper(props) {
-      return <Wrapper>{props.children}</Wrapper>;
+      return (
+        <Wrapper>
+          <AntdImage.PreviewGroup>{props.children}</AntdImage.PreviewGroup>
+        </Wrapper>
+      );
     },
     Header(props: { frontmatter: { title: string } }) {
       return (

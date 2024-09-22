@@ -1,7 +1,7 @@
 import type { PluginOption } from 'vite';
 import { generateSW } from 'workbox-build';
 
-// TODO: this is an externally defined type, just to resolve the error
+// TIPS: this is an externally defined type, just to resolve the error
 export interface ExtendableEvent {}
 
 export interface ManifestEntry {

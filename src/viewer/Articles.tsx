@@ -3,6 +3,8 @@ import { Col, Divider, Row, Typography } from 'antd';
 import type { ResolveRouteObject } from '@/router';
 import { Link } from '@/router';
 
+import { Image } from '@/components';
+
 import { useArticles } from './hooks/useArticles';
 import styles from './styles/Articles.module.less';
 
@@ -11,7 +13,7 @@ const ArticleItem = ({ article }: { article: ResolveRouteObject }) => {
     <Link rel="bookmark" to={article.fullPath}>
       <div className={styles.articleItem}>
         <div className={styles.preview}>
-          <img loading="lazy" src={article.meta?.imageUrl} alt={article.meta?.title} />
+          <Image src={article.meta?.imageUrl} alt={article.meta?.title} />
 
           <div className={styles.descriptionWrapper}>
             <Typography.Paragraph

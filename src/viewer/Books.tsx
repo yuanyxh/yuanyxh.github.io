@@ -3,6 +3,8 @@ import { Typography } from 'antd';
 import type { ResolveRouteObject } from '@/router';
 import { Link } from '@/router';
 
+import { Image } from '@/components';
+
 import { useBooks } from './hooks/useBooks';
 import styles from './styles/Books.module.less';
 
@@ -27,7 +29,7 @@ const BookItem = ({ book }: { book: ResolveRouteObject }) => {
         </div>
 
         <div className={styles.imageBox}>
-          <img loading="lazy" src={book.meta?.imageUrl} alt={book.meta?.title} />
+          <Image src={book.meta?.imageUrl} alt={book.meta?.title} />
         </div>
       </div>
     </Link>

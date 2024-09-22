@@ -176,35 +176,8 @@ code {
     margin-bottom: 6px;
   }
 
-  // p + ul,
-  // p + ol,
-  // p + dl {
-  //   margin-top: -15px;
-  // }
-
   p + p {
     margin-top: -10px;
-  }
-
-  img {
-    max-width: 100%;
-    text-align: center;
-    border-radius: var(--border-radius-base);
-    box-shadow:
-      0 0 #0000,
-      0 0 #0000,
-      7px 7px 15px 0 rgb(0 0 0 / 30%);
-
-    + p,
-    + ul,
-    + h2,
-    + h3,
-    + h4,
-    + h5,
-    + h6,
-    + img {
-      margin-top: 30px;
-    }
   }
 
   pre {
@@ -246,10 +219,6 @@ code {
     + ul {
       margin-top: 40px;
     }
-
-    + img {
-      margin-top: 30px;
-    }
   }
 
   pre + pre {
@@ -268,6 +237,25 @@ code {
     height: 4px;
   }
 
+  .image {
+    max-width: 100%;
+    text-align: center;
+    border-radius: var(--border-radius-base);
+    box-shadow:
+      0 0 #0000,
+      0 0 #0000,
+      7px 7px 15px 0 rgb(0 0 0 / 30%);
+
+    + ul,
+    + h2,
+    + h3,
+    + h4,
+    + h5,
+    + h6 {
+      margin-top: 30px;
+    }
+  }
+
   blockquote {
     padding: 1rem;
     padding-right: 0.5rem;
@@ -279,6 +267,18 @@ code {
       margin-bottom: 0;
       line-height: 1.7em;
     }
+  }
+
+  pre + .image {
+    margin-top: 30px;
+  }
+
+  .image + .image {
+    margin-top: 30px;
+  }
+
+  .image + p {
+    margin-top: 30px;
   }
 
   table {
