@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-undef
-module.exports = {
+registerPlugin({
   install: function (less, pluginManager, functions) {
     functions.add('minianimation', function (...args) {
       let result = '';
@@ -16,4 +15,4 @@ module.exports = {
       return `flex-shrink: ${num.value}`;
     });
   }
-};
+});

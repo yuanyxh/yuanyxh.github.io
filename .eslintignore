@@ -19,3 +19,5 @@ vite.config.ts
 build
 
 *.mdx
+
+helpers/less-plugin.js

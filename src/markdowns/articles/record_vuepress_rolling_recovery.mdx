@@ -6,10 +6,6 @@ imageUrl: http://qkc148.bvimg.com/18470/ff9c074093a8255d.png
 description: 一次关于滚动恢复的讨论。
 ---
 
-<Header frontmatter={frontmatter} />
-
-<Toc toc={toc} />
-
 ## 问题
 
 之前写 react 项目时在开发阶段经常需要刷新页面，导致滚动位置重置，需要滚动一段距离才能回到原位置，时间长了也有点烦，所以想研究一下滚动恢复（PS：react-router-v6 提供了 ScrollRestoration），先想到的就是我博客的滚动恢复（博客是 vuepress 搭的），然后发现了一点违反直觉的事情。

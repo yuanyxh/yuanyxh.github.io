@@ -141,7 +141,6 @@ async function vitePrerender(mode: string) {
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
   return selfVitePrerender({
-    // 要渲染的路由
     routes: routes,
     staticDir: resolve('./build'),
 
@@ -175,22 +174,6 @@ async function vitePrerender(mode: string) {
           getMetaTag(route.meta, route)
         );
       }
-
-      // <link rel="alternate" hreflang="en" href="https://developer.chrome.com/docs">
-      // //<meta property="og:title" content="文档 &nbsp;|&nbsp; Docs &nbsp;|&nbsp; Chrome for Developers">, see https://ogp.me/
-      // //<meta name="description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
-      // //<meta property="og:description" content="构建任何应用所需的代码示例、指南和 API 参考文档。">
-      // //<meta property="og:url" content="https://developer.chrome.com/docs?hl=zh-cn">
-      // rel="tag"
-      // rel="pingback"
-      // //rel=”noopener”
-      // //rel="manifest"
-      // //rel="external"
-      // //rel="bookmark"
-      // //<link rel="author" />, see https://www.zhangxinxu.com/wordpress/2019/06/html-a-link-rel/#alternateRel
-      // //<meta name="robots" content="noindex" />, see https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag?hl=zh-cn
-      // //<link rel="canonical" href="https://developer.chrome.com/docs?hl=zh-cn" />, see https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls?hl=zh-cn
-      // //<title>title: subtitle</title>
 
       return renderedRoute;
     }

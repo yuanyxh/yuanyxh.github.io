@@ -1,7 +1,6 @@
-import { generateRouteJSON, replacePlaceRoute, resolve, routesPath } from './utils';
+import { generateRouteJSON, replacePlaceRoute, resolve } from './utils';
 
 import type { PluginOption } from 'vite';
-import { createFilter } from 'vite';
 
 export interface ArticleMeta {
   title: string;
@@ -12,33 +11,35 @@ export interface ArticleMeta {
   book?: boolean;
 }
 
-function viteRouteGenerator(): PluginOption {
-  const filter = createFilter([/\.mdx$/]);
+interface RouteGeneratorOptions {
+  /** route config path */
+  routeConfig: string;
+}
+
+/**
+ *
+ * @description Generate routes from local directory
+ */
+function viteRouteGenerator(options: RouteGeneratorOptions): PluginOption {
+  const { routeConfig } = options;
 
   return {
     name: 'vite-plugin-route-generator',
     enforce: 'pre',
-    configureServer(server) {
-      const listener = (id: string) => {
-        if (!filter(id)) return;
-        server.restart();
-      };
 
-      server.watcher.add('**/*.{mdx}');
-      server.watcher.on('add', listener);
-      server.watcher.on('unlink', listener);
+    // configureServer(server) {
+    //   server.watcher.add(resolve('./src/coder/Wrapper.tsx'));
+    //   server.watcher.on('change', (id) => {
+    //     if (resolve(id) === resolve('./src/coder/Wrapper.tsx')) {
+    //       server.restart();
+    //     }
+    //   });
+    // },
 
-      server.watcher.add(resolve('./src/coder/Wrapper.tsx'));
-      server.watcher.on('change', (id) => {
-        if (resolve(id) === resolve('./src/coder/Wrapper.tsx')) {
-          server.restart();
-        }
-      });
-    },
     async transform(code, id) {
       if (id.includes('node_modules')) return;
 
-      if (resolve(routesPath) === resolve(id.split('?')[0])) {
+      if (routeConfig === resolve(id.split('?')[0])) {
         const json = await generateRouteJSON();
         const result = replacePlaceRoute(code, json);
 

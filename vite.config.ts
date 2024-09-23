@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite';
+import { createFilter, defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import progress from 'vite-plugin-progress';
 import ESLintPlugin from '@nabla/vite-plugin-eslint';
@@ -6,7 +6,7 @@ import PresetEnv from 'postcss-preset-env';
 import AutoPrefixer from 'autoprefixer';
 import { ViteEjsPlugin } from 'vite-plugin-ejs';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { resolve, root } from './helpers/utils';
+import { resolve, root, routesPath } from './helpers/utils';
 import mdx from '@mdx-js/rollup';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import remarkFrontMatter from 'remark-frontmatter';
@@ -22,6 +22,7 @@ import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 // import basicSsl from '@vitejs/plugin-basic-ssl';
 
 import type { ConfigEnv, UserConfig } from 'vite';
+import { writeFileSync } from 'fs';
 
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
@@ -29,11 +30,38 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
 
   const isBuild = command === 'build';
 
+  const filterMDX = createFilter([/\.mdx$/]);
+
   return defineConfig({
     root: root,
     base: env.VITE_BASE_PATH,
     plugins: [
-      viteRouteGenerator(),
+      viteRouteGenerator({
+        routeConfig: resolve(routesPath)
+      }),
+
+      {
+        name: 'vite-plugin-mdx-insert',
+        enforce: 'pre',
+        transform(code, id, options) {
+          if (id.includes('node_modules')) return;
+
+          // insert toc component
+          if (filterMDX(id)) {
+            const matchs = code.match(/(?<=---)[\w\W]*?(?=---)/);
+
+            if (matchs) {
+              const match = matchs[0];
+
+              const metaLength = 6 + match.length;
+
+              const result = `${code.slice(0, metaLength)}\n\n<Header frontmatter={frontmatter} />\n<Toc toc={toc} />${code.slice(metaLength)}`;
+
+              return result;
+            }
+          }
+        }
+      },
 
       // @ts-ignore this is normal, it's just a mismatch in the type definitions
       {
