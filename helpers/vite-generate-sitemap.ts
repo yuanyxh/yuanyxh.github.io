@@ -1,24 +1,23 @@
-import {
-  generateRouteJSON,
-  getEnv,
-  replacePlaceRoute,
-  resolve,
-  resolveFullRoutes,
-  routesPath
-} from './utils';
+import { generateRouteJSON, getEnv, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
 
 import { readFileSync, writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
 
-const text = readFileSync(routesPath, 'utf-8');
+interface GenerateSitemapOptions {
+  routeConfig: string;
+}
 
 const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
-const match = text.match(reg);
+function viteGenerateSitemap(options: GenerateSitemapOptions): PluginOption {
+  const { routeConfig } = options;
 
-function viteGenerateSitemap(): PluginOption {
+  const text = readFileSync(routeConfig, 'utf-8');
+
+  const match = text.match(reg);
+
   async function generateSitemap() {
     if (!match) {
       throw Error('no match routes.');

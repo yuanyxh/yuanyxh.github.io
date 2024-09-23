@@ -6,7 +6,7 @@ import PresetEnv from 'postcss-preset-env';
 import AutoPrefixer from 'autoprefixer';
 import { ViteEjsPlugin } from 'vite-plugin-ejs';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { resolve, root, routesPath } from './helpers/utils';
+import { resolve, root } from './helpers/utils';
 import mdx from '@mdx-js/rollup';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import remarkFrontMatter from 'remark-frontmatter';
@@ -22,7 +22,9 @@ import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 // import basicSsl from '@vitejs/plugin-basic-ssl';
 
 import type { ConfigEnv, UserConfig } from 'vite';
-import { writeFileSync } from 'fs';
+import fast from 'fast-glob';
+
+const routesPath = resolve('src/routes.tsx');
 
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
@@ -37,7 +39,26 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     base: env.VITE_BASE_PATH,
     plugins: [
       viteRouteGenerator({
-        routeConfig: resolve(routesPath)
+        routeConfig: routesPath,
+        routes: [
+          {
+            name: 'articles',
+            paths: fast.globSync([
+              './src/markdowns/articles/**/*.mdx',
+              './src/markdowns/source/**/*.mdx'
+            ]),
+            importAlias(path) {
+              return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+            }
+          },
+          {
+            name: 'books',
+            paths: fast.globSync(['./src/markdowns/books/**/*.mdx']),
+            importAlias(path) {
+              return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+            }
+          }
+        ]
       }),
 
       {
@@ -102,9 +123,11 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
 
       // basicSsl()
 
-      vitePrerender(mode),
+      vitePrerender({ mode, routeConfig: routesPath }),
 
-      viteGenerateSitemap()
+      viteGenerateSitemap({
+        routeConfig: routesPath
+      })
     ],
     resolve: {
       alias: [

@@ -1,13 +1,6 @@
 // import { submit } from './submit';
 import type { ResolveRouteObject } from './utils';
-import {
-  generateRouteJSON,
-  getEnv,
-  replacePlaceRoute,
-  resolve,
-  resolveFullRoutes,
-  routesPath
-} from './utils';
+import { generateRouteJSON, getEnv, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
 import type { ArticleMeta } from './vite-route-generator';
 
 import dayjs from 'dayjs';
@@ -23,11 +16,7 @@ export interface PostProcessParam {
 
 const Renderer = selfVitePrerender.PuppeteerRenderer;
 
-const text = readFileSync(routesPath, 'utf-8');
-
 const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
-
-const match = text.match(reg);
 
 const excludeOutPathRewrite = ['/', '/articles', '/examples', '/books', '/coder', '/profile'];
 
@@ -114,8 +103,18 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   return html;
 }
 
-async function vitePrerender(mode: string) {
+interface PrerenderOptions {
+  mode: string;
+  routeConfig: string;
+}
+
+async function vitePrerender(options: PrerenderOptions) {
+  const { mode, routeConfig } = options;
+
   if (mode !== 'prod') return void 0;
+
+  const text = readFileSync(routeConfig, 'utf-8');
+  const match = text.match(reg);
 
   if (!match) {
     throw Error('no match routes.');

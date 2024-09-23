@@ -10,7 +10,7 @@ import {
   readFileSync,
   writeFileSync
 } from 'node:fs';
-import { relative, sep } from 'node:path';
+import { basename, relative, sep } from 'node:path';
 import path from 'path';
 import { codeToHtml } from 'shiki';
 import { loadEnv } from 'vite';
@@ -40,10 +40,10 @@ export const getEnv = () => {
 
 export const resolve = (...paths: string[]) => path.resolve(root, ...paths);
 
-export const routesPath = resolve('src/routes.tsx');
+/** Parse filename as route name */
+export const parseRouteName = (path: string) => basename(path).slice(0, -4);
 
-export const parseRoute = (path: string) => path.split(sep).pop()!.slice(0, -4);
-
+/** Replace file extension with tsx */
 export const replaceFileExtension = (name: string) => name.slice(0, name.lastIndexOf('.')) + '.tsx';
 
 export const generateRouteJSONWithArticle = async () => {
@@ -54,7 +54,7 @@ export const generateRouteJSONWithArticle = async () => {
   paths
     .map((path) => resolve(path))
     .forEach((path) => {
-      const route = parseRoute(path);
+      const route = parseRouteName(path);
       const { attributes } = frontmatter<ArticleMeta>(readFileSync(path, 'utf-8'));
 
       const aliasPath = path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
