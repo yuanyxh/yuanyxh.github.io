@@ -1,6 +1,5 @@
 import { parseRoutes, replacePlaceRoute, resolve, RouteOptions } from './utils';
 
-import { writeFileSync } from 'node:fs';
 import type { PluginOption } from 'vite';
 
 /**
