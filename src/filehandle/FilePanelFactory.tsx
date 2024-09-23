@@ -5,6 +5,7 @@ import { createElementContainer } from '@/utils';
 
 import FilePanelContainer from './components/FilePanelContainer';
 
+/** file panel */
 class FilePanelFactory {
   private container = createElementContainer();
 

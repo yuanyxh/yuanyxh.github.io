@@ -18,7 +18,11 @@ export interface UserActions {
   setWebdavs(webdavs: WebdavInfo[]): void;
 }
 
-const useAppStore = create<UserState & UserActions>((set) => ({
+/**
+ *
+ * @description user global store data
+ */
+const useUserStore = create<UserState & UserActions>((set) => ({
   ...getStorage<UserState>('user', {
     webdavs: []
   }),
@@ -42,4 +46,4 @@ const useAppStore = create<UserState & UserActions>((set) => ({
   }
 }));
 
-export default useAppStore;
+export default useUserStore;

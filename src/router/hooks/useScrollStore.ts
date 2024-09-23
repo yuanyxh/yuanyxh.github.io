@@ -13,6 +13,12 @@ interface SavedScolllPosition {
 
 const map: { [key: string]: SavedScolllPosition } = {};
 
+/**
+ *
+ * @description page scroll position manager
+ * @param selector
+ * @returns
+ */
 export function useScrollStore(selector: string) {
   const routerContext = useContext(RouterContext);
   const elementRef = useRef<Element>();

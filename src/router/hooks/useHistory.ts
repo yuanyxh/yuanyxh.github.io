@@ -6,6 +6,11 @@ import type { NavigateOptions } from '..';
 
 type HistoryOptions = Pick<NavigateOptions, 'query' | 'state' | 'hash'>;
 
+/**
+ *
+ * @description history manager hook
+ * @returns
+ */
 export function useHistory() {
   const routerContext = useContext(RouterContext);
 

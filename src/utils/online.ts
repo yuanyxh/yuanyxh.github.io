@@ -6,7 +6,8 @@ import { sleep } from '.';
 
 const LOAD_ERROR_KEY = 'load_error';
 
-class AssetsLoadHandle {
+/** assets load handler */
+class AssetsLoadHandler {
   event = new EventEmitter();
 
   private cb = () => false;
@@ -43,4 +44,4 @@ class AssetsLoadHandle {
   }
 }
 
-export default new AssetsLoadHandle();
+export default new AssetsLoadHandler();

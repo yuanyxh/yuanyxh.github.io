@@ -16,6 +16,7 @@ export class Node {
 
 const UPDATE_KEY = 'update';
 
+/** file panel history */
 class FileLinkedList {
   root: Node;
 

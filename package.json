@@ -20,6 +20,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.5.1",
     "antd": "^5.20.6",
+    "axios": "^1.7.7",
     "classnames": "^2.5.1",
     "hypermd": "^0.3.11",
     "lodash-es": "^4.17.21",
@@ -46,7 +47,6 @@
     "@types/qs": "^6.9.16",
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
-    "@types/request": "^2.48.12",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "@vitejs/plugin-basic-ssl": "^1.1.0",

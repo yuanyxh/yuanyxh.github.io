@@ -12,6 +12,14 @@ const map: {
   [key: string]: any;
 } = {};
 
+/**
+ *
+ * @description add window event listener
+ * @param type
+ * @param listener
+ * @param capture
+ * @returns
+ */
 export const addGlobalListener: AddGlobalListener = (type, listener, capture) => {
   const _type = capture ? `${type}Capture` : type;
 

@@ -8,6 +8,11 @@ interface NotifyOptions extends NotificationOptions {
 
 type NotifyPermissionStatus = 'allow' | 'cancel' | 'reject';
 
+/**
+ *
+ * @description request notify permission
+ * @returns
+ */
 export async function requestNotifyPermission() {
   return new Promise<NotifyPermissionStatus>((resolve, reject) => {
     window.Notification.requestPermission((e) => {
@@ -29,6 +34,12 @@ export async function requestNotifyPermission() {
   });
 }
 
+/**
+ *
+ * @description notify user
+ * @param options
+ * @returns
+ */
 export async function notify(options: NotifyOptions) {
   const status = await requestNotifyPermission();
 

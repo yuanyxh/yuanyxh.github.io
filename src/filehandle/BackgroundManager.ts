@@ -14,6 +14,7 @@ export interface BackgroundProgram {
 
 const UPDATE_EVENT = 'background_update';
 
+/** Background application manager */
 export class BackgroundManager {
   private _list: BackgroundProgram[] = [];
 

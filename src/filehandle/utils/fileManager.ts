@@ -18,7 +18,7 @@ export interface FileInfo {
   type: FileType;
   icon: React.ReactNode;
   handle: DH | FH;
-  /** this is remote file? */
+  /** Is this a file from the Internet? */
   remote?: boolean;
   ext?: string;
 }

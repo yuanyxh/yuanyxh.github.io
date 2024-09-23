@@ -9,14 +9,17 @@ import type { AbstractHistory } from './history';
 import History from './history';
 import RouteTree from './route-tree';
 
+/** component module */
 interface ComponentModule {
   default(props?: any): React.ReactNode;
   [key: string]: unknown;
 }
 
+/** lazy load component module */
 type LazyComponent = (props?: any) => Promise<ComponentModule>;
 
-interface ArticleMeta {
+/** meta data in route */
+interface Meta {
   title: string;
   date: string;
   author: string;
@@ -25,20 +28,23 @@ interface ArticleMeta {
   book?: boolean;
 }
 
+/** user route */
 interface RouteObject {
   path: string;
   id?: string;
   element?: React.ReactNode | LazyComponent;
   children?: RouteObject[];
-  meta?: ArticleMeta;
-  module?: Module;
+  meta?: Meta;
+  module?: PageModule;
 }
 
+/** resolve route */
 interface ResolveRouteObject extends RouteObject {
   fullPath: string;
   children?: ResolveRouteObject[];
 }
 
+/** current route state */
 interface RouteState {
   path: string;
   hash: string;
@@ -46,24 +52,30 @@ interface RouteState {
   state: any;
 }
 
+/** route changed listener */
 type RouterListener = (state: RouteState) => void;
+/** route changed unlistener */
 type RouterUnListener = () => void;
 
+/** navigate route options */
 interface NavigateOptions extends Partial<Pick<RouteState, 'query' | 'hash' | 'state'>> {
   replace?: boolean;
 }
 
-interface Module {
+/** page Module */
+interface PageModule {
   status: 'pending' | 'fulfilled' | 'rejected';
   module?: ComponentModule;
   error?: Error;
 }
 
+/** router event define */
 const EventKeys = {
   BEFORE_ENTER: 'beforeEnter',
   AFTER_ENTER: 'afterEnter'
 } as const;
 
+/** get current route state */
 function getState(): RouteState {
   return {
     path: window.location.pathname as string,
@@ -73,6 +85,13 @@ function getState(): RouteState {
   };
 }
 
+/**
+ *
+ * @description resolve fullpath with route path
+ * @param routes
+ * @param parent
+ * @returns
+ */
 function resolveFullPath(routes: RouteObject[], parent: string): ResolveRouteObject[] {
   return routes.map(function map(route) {
     const seps = parent.split('/');
@@ -91,6 +110,12 @@ function resolveFullPath(routes: RouteObject[], parent: string): ResolveRouteObj
   });
 }
 
+/**
+ *
+ * @description request lazy component module
+ * @param match
+ * @returns
+ */
 async function fetch(match: RouteObject) {
   if (match.module && match.module.status === 'fulfilled') {
     return match.module.module!;
@@ -115,6 +140,13 @@ async function fetch(match: RouteObject) {
   };
 }
 
+/**
+ *
+ * @description resolve all page with resolved route
+ * @param matchs
+ * @param cb
+ * @returns
+ */
 async function resolveComponents(
   matchs: ResolveRouteObject[],
   cb: (data: ResolveRouteObject[]) => any
@@ -135,7 +167,7 @@ async function resolveComponents(
     awaits.map((p, i) => {
       return new Promise((resolve) => {
         p.then((value) => {
-          const module: Module = {
+          const module: PageModule = {
             status: 'fulfilled',
             module: value
           };
@@ -168,9 +200,12 @@ async function resolveComponents(
   );
 }
 
+/** 404 not found path define */
 export const NOT_FOUND_PATH = 'NOT_FOUND_PATH';
+/** index page define */
 export const INDEX_PATH = 'index';
 
+/** 404 not found error */
 export class NotFound extends Error {
   name = 'NotFound';
 
@@ -181,6 +216,7 @@ export class NotFound extends Error {
   }
 }
 
+/** router class, app route point manager */
 class Router {
   private routes: ResolveRouteObject[] = [];
 
@@ -384,8 +420,8 @@ export default Router;
 export type {
   ComponentModule,
   LazyComponent,
-  Module,
   NavigateOptions,
+  PageModule,
   ResolveRouteObject,
   RouteObject,
   RouterListener,

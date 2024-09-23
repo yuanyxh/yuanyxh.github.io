@@ -5,11 +5,13 @@ import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import type { NotificationInstance } from 'antd/es/notification/interface';
 
+import { isEmpty } from 'lodash-es';
+
 import type { AppState } from '@/store';
 import { useAppStore } from '@/store';
 
 import {
-  assetsLoadHandle,
+  assetsLoadHandler,
   getStorage,
   globalEvent,
   hasLocalStorage,
@@ -44,9 +46,11 @@ const App: React.FC<IAppProps> = (props) => {
   const [messageApi, messageContextHolder] = useMessage();
   const [modalApi, modelContextHolder] = useModal();
 
-  APP_PROVIDER.notification = notificationApi;
-  APP_PROVIDER.message = messageApi;
-  APP_PROVIDER.modal = modalApi;
+  if (isEmpty(APP_PROVIDER)) {
+    APP_PROVIDER.notification = notificationApi;
+    APP_PROVIDER.message = messageApi;
+    APP_PROVIDER.modal = modalApi;
+  }
 
   const appProvider = useRef<AppProvider>(APP_PROVIDER);
 
@@ -73,6 +77,7 @@ const App: React.FC<IAppProps> = (props) => {
       setColorScheme(getStorage<AppState>('app')?.settings?.colorScheme || 'light');
     } else {
       setLanguage(language);
+
       if (darkModeQuery.matches) {
         setColorScheme('dark');
       }
@@ -87,11 +92,10 @@ const App: React.FC<IAppProps> = (props) => {
       }
     }
 
-    darkModeQuery.addEventListener('change', listenerColorSchemeChange);
-    const listenerVisibilityChange = () => {
-      setFrontDesk(!window.document.hidden);
-    };
-    window.document.addEventListener('visibilitychange', listenerVisibilityChange);
+    darkModeQuery.addEventListener('change', listenColorSchemeChange);
+
+    const listenVisibilityChange = () => setFrontDesk(!window.document.hidden);
+    window.document.addEventListener('visibilitychange', listenVisibilityChange);
 
     const cancelGlobalUserTipsEventListener = globalEvent.on(
       'user_tips',
@@ -101,14 +105,15 @@ const App: React.FC<IAppProps> = (props) => {
       modalApi[type](props)
     );
 
-    const cancelListenerReLoad = assetsLoadHandle.reLoadByOnline(() => !enableServiceWorkerCache);
+    const cancelReLoadListener = assetsLoadHandler.reLoadByOnline(() => !enableServiceWorkerCache);
 
     return () => {
-      cancelListenerReLoad();
+      cancelReLoadListener();
       cancelGlobalUserTipsEventListener();
       cancelGlobalUserAlertEventListener();
-      darkModeQuery.removeEventListener('change', listenerColorSchemeChange);
-      window.document.removeEventListener('visibilitychange', listenerVisibilityChange);
+
+      darkModeQuery.removeEventListener('change', listenColorSchemeChange);
+      window.document.removeEventListener('visibilitychange', listenVisibilityChange);
     };
   }, []);
 
@@ -142,7 +147,7 @@ const App: React.FC<IAppProps> = (props) => {
     }
   };
 
-  const listenerColorSchemeChange = (e: MediaQueryListEvent) => {
+  const listenColorSchemeChange = (e: MediaQueryListEvent) => {
     setColorScheme(e.matches ? 'dark' : 'light');
   };
 

@@ -1,22 +1,31 @@
+import type { RefObject } from 'react';
 import { useLayoutEffect, useState } from 'react';
 
-const map: {
-  [key: string]: ResizeObserver | null;
-} = {};
+interface ISize {
+  width: number;
+  height: number;
+}
 
-const sizeMap: { [key: string]: { width: number; height: number } } = {};
+const map = new WeakMap<HTMLElement, ResizeObserver | null>();
 
-export function useResizeObserver(selector: string) {
-  const [size, setSize] = useState(
-    sizeMap[selector] || {
-      width: 0,
-      height: 0
-    }
-  );
+const sizeMap = new WeakMap<HTMLElement, ISize>();
+
+const defaultSize: ISize = {
+  width: 0,
+  height: 0
+};
+
+/**
+ *
+ * @description element size change observer
+ * @param elRef
+ * @returns
+ */
+export default function useResizeObserver<T extends HTMLElement>(elRef: RefObject<T>) {
+  const [size, setSize] = useState(defaultSize);
 
   useLayoutEffect(() => {
-    // TODO: use ref?
-    const ele = document.querySelector(selector);
+    const ele = elRef.current;
 
     if (!ele) {
       throw Error('the corresponding element cannot be found.');
@@ -34,23 +43,23 @@ export function useResizeObserver(selector: string) {
             return last;
           }
 
-          return (sizeMap[selector] = {
-            width,
-            height
-          });
+          const sizeObj = { width: width, height: height };
+          sizeMap.set(ele, sizeObj);
+
+          return sizeObj;
         });
       }
     });
 
     observer.observe(ele);
-    map[selector] = observer;
+
+    map.set(ele, observer);
 
     return () => {
-      map[selector]?.unobserve(ele);
-      map[selector] = null;
-      delete map[selector];
+      map.get(ele)?.unobserve(ele);
+      map.delete(ele);
     };
-  }, [selector]);
+  }, [elRef.current]);
 
   return size;
 }

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 import { Button, Typography } from 'antd';
 
-import { assetsLoadHandle, copy, serializeError, success, UnknownError } from '@/utils';
+import { assetsLoadHandler, copy, serializeError, success, UnknownError } from '@/utils';
 
 import { Icon } from '@/components';
 
@@ -21,7 +21,7 @@ const ErrorCom: React.FC<IErrorProps> = (props) => {
 
   useEffect(() => {
     // When rendering errors, we need to know that sending the error to the resource load processor
-    hasError && assetsLoadHandle.emitRenderError();
+    hasError && assetsLoadHandler.emitRenderError();
   }, []);
 
   const handleReload = () => {

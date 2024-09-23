@@ -4,12 +4,15 @@ import { Button, Form, Input, Modal, Select, Space } from 'antd';
 
 import { error, success } from '@/utils';
 
+import type { IIssuesPayload } from '@/http';
+import { postIssues } from '@/http';
+
 interface IFeedbackProps {
   visible: boolean;
   onChange: (visible?: boolean) => void;
 }
 
-const initialValues = {
+const initialValues: IIssuesPayload = {
   concact: '',
   type: 'suggestion',
   description: ''
@@ -31,20 +34,13 @@ export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
         try {
           setUploading(true);
 
-          await fetch('https://api.yuanyxh.com/issues', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(value),
-            signal: AbortSignal.timeout(8000)
-          });
+          await postIssues(value);
 
           form.resetFields();
 
           success('已发送反馈建议。');
         } catch (err) {
-          error('抱歉，暂时无法发送反馈，请稍后再试或前往 Github 留言。');
+          error(err as string);
         } finally {
           setUploading(false);
         }
@@ -76,7 +72,7 @@ export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
           layout="vertical"
           onFinish={handleUploadFeedback}
         >
-          <Form.Item name="type" label="类型" rules={[{ required: true }]}>
+          <Form.Item<IIssuesPayload> name="type" label="类型" rules={[{ required: true }]}>
             <Select
               options={[
                 { value: 'suggestion', label: '建议' },
@@ -86,7 +82,7 @@ export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
             />
           </Form.Item>
 
-          <Form.Item
+          <Form.Item<IIssuesPayload>
             name="description"
             label="描述"
             rules={[{ required: true, message: '请输入清晰的描述信息' }]}
@@ -94,7 +90,7 @@ export const Feedback: React.FC<IFeedbackProps> = ({ visible, onChange }) => {
             <Input.TextArea style={{ resize: 'none' }} rows={5} maxLength={1000} showCount />
           </Form.Item>
 
-          <Form.Item name="concact" label="联系方式">
+          <Form.Item<IIssuesPayload> name="concact" label="联系方式">
             <Input
               placeholder="请输入您的联系方式，并备注使用的客户端，可留空"
               maxLength={40}

@@ -14,6 +14,7 @@ function split(path: string) {
   return path.split('/').filter(Boolean);
 }
 
+/** routes generator tree */
 class RouteTree {
   tree: Tree;
 

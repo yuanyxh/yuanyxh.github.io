@@ -6,6 +6,12 @@ class FullScreenError extends Error {
   }
 }
 
+/**
+ *
+ * @description request enter the full screen mode
+ * @param ele
+ * @returns
+ */
 export const requestFullScreen = async (ele?: HTMLElement) => {
   if (isFullScreenEnabled()) {
     return new Promise<true>((resolve, reject) => {
@@ -43,6 +49,13 @@ export const requestFullScreen = async (ele?: HTMLElement) => {
   return false;
 };
 
+/**
+ *
+ * @description listener the full screen mode change
+ * @param cb
+ * @param ele
+ * @returns
+ */
 export const onFullScreen = (cb: (isFullScreen: boolean) => any, ele?: HTMLElement) => {
   function onChange() {
     cb(isFullScreen());
@@ -55,6 +68,12 @@ export const onFullScreen = (cb: (isFullScreen: boolean) => any, ele?: HTMLEleme
   };
 };
 
+/**
+ *
+ * @description check current is full screen mode
+ * @param ele
+ * @returns
+ */
 export const isFullScreen = (ele?: Element) => {
   if (ele) {
     return window.document.fullscreenElement === ele;
@@ -63,10 +82,20 @@ export const isFullScreen = (ele?: Element) => {
   return window.document.fullscreenElement !== null;
 };
 
+/**
+ *
+ * @description full screen mode is enable with current browser
+ * @returns
+ */
 export const isFullScreenEnabled = () => {
   return window.document.fullscreenEnabled;
 };
 
+/**
+ *
+ * @description fallback full screen mode
+ * @returns
+ */
 export const fallbackFullscreen = () => {
   return window.document.exitFullscreen();
 };

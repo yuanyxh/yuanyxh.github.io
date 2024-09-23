@@ -34,17 +34,6 @@ function ServiceWorkerCache() {
   const serviceWorkerRef = useRef(new ServiceWorkerManager());
 
   const handleSwitchServiceWorkerCache = async (enableServiceWorkerCache: boolean) => {
-    /*
-      TIPS: When we turn off the Service Worker, Ready will never be resolved because the page is not related to the service worker
-    */
-    // const registration = await window.navigator.serviceWorker.ready;
-
-    // if (registration.waiting || registration.installing) {
-    //   return error(
-    //     'service worker 正在安装中，此过程不可被打断，请稍后执行此操作。'
-    //   );
-    // }
-
     setSpinning(true);
 
     if (enableServiceWorkerCache) {
@@ -291,6 +280,7 @@ function StorageDetail() {
         <h5 className={styles.subTitle}>网站存储详情</h5>
 
         <div style={{ display: 'flex', gap: '0 30px', marginBlock: 10 }}>
+          {/* TODO: remove this component and add Pie chart  */}
           <Canvas ref={drawRef} width={120} height={120} />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px 0' }}>

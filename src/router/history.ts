@@ -1,5 +1,6 @@
 import type Router from './router';
 
+/** Abstract history management class, you can customize a history for Router class */
 export abstract class AbstractHistory {
   router: Router | undefined;
 
@@ -12,6 +13,7 @@ export abstract class AbstractHistory {
   }
 }
 
+/** default history manager */
 class History extends AbstractHistory {
   push(to: string, state: any) {
     window.history.pushState(state, '', to);

@@ -61,6 +61,7 @@ const SearchWrap = (props: { onFocus: () => void; onBlur: () => void }) => {
   );
 };
 
+/** navbar component in top */
 const TopNavbar = () => {
   const [extend, setExtend] = useState(false);
 
@@ -92,6 +93,7 @@ const TopNavbar = () => {
   );
 };
 
+/** navbar component in side */
 const SideNavbar = (props: { visible: boolean; onClick: () => void }) => {
   const sideContainerActiveClass = classnames(styles.sideContainer, {
     [styles.active]: props.visible
@@ -132,6 +134,7 @@ const SideNavbar = (props: { visible: boolean; onClick: () => void }) => {
   );
 };
 
+/** Action button group */
 const Actions = () => {
   const {
     settings: { language },
@@ -178,37 +181,41 @@ const Actions = () => {
 
   return (
     <div className={styles.actions}>
-      <Icon
-        className={classnames(styles.action, styles.light, 'icon-btn')}
-        title="切换浅色模式"
-        icon="material-symbols:light-mode"
-        size={20}
-        onClick={handleLight}
-      />
-      <Icon
-        className={classnames(styles.action, styles.dark, 'icon-btn')}
-        title="切换深色模式"
-        icon="material-symbols:nightlight-rounded"
-        size={20}
-        onClick={handleDark}
-      />
+      <>
+        <Icon
+          className={classnames(styles.action, styles.light, 'icon-btn')}
+          title="切换浅色模式"
+          icon="material-symbols:light-mode"
+          size={20}
+          onClick={handleLight}
+        />
+        <Icon
+          className={classnames(styles.action, styles.dark, 'icon-btn')}
+          title="切换深色模式"
+          icon="material-symbols:nightlight-rounded"
+          size={20}
+          onClick={handleDark}
+        />
+      </>
 
-      <Icon
-        className={classnames(styles.action, styles.fullscreen, 'icon-btn')}
-        title="进入全屏模式"
-        style={{ display: fullScreen ? 'none' : 'initial' }}
-        icon="material-symbols:fullscreen-rounded"
-        size={20}
-        onClick={toggerFullScreen}
-      />
-      <Icon
-        className={classnames(styles.action, styles.exitFullscreen, 'icon-btn')}
-        title="退出全屏模式"
-        style={{ display: fullScreen ? 'initial' : 'none' }}
-        icon="material-symbols:fullscreen-exit-rounded"
-        size={20}
-        onClick={toggerFullScreen}
-      />
+      <>
+        <Icon
+          className={classnames(styles.action, styles.fullscreen, 'icon-btn')}
+          title="进入全屏模式"
+          style={{ display: fullScreen ? 'none' : 'initial' }}
+          icon="material-symbols:fullscreen-rounded"
+          size={20}
+          onClick={toggerFullScreen}
+        />
+        <Icon
+          className={classnames(styles.action, styles.exitFullscreen, 'icon-btn')}
+          title="退出全屏模式"
+          style={{ display: fullScreen ? 'initial' : 'none' }}
+          icon="material-symbols:fullscreen-exit-rounded"
+          size={20}
+          onClick={toggerFullScreen}
+        />
+      </>
 
       <Dropdown
         arrow
@@ -243,13 +250,13 @@ const Actions = () => {
 };
 
 const Header = () => {
-  const [visible, setVisible] = useState(false);
+  const [visibleSideNavbar, setVisibleSideNavbar] = useState(false);
 
   const handleSwitch = () => {
-    setVisible(true);
+    setVisibleSideNavbar(true);
   };
   const handleClose = () => {
-    setVisible(false);
+    setVisibleSideNavbar(false);
   };
 
   return (
@@ -265,13 +272,14 @@ const Header = () => {
 
       <TopNavbar />
 
-      <SideNavbar visible={visible} onClick={handleClose} />
+      <SideNavbar visible={visibleSideNavbar} onClick={handleClose} />
 
       <Actions />
     </header>
   );
 };
 
+/** file system trigger, when browser support file system show in */
 const FileSystemTrigger = () => {
   const [support, setSupport] = useState(false);
   const filePanelRef = useRef<FilePanelFactory>();
@@ -309,27 +317,27 @@ const FileSystemTrigger = () => {
 };
 
 const Content = () => {
-  const mountedRef = useRef<IOutletRef>(null);
+  const outletMountedRef = useRef<IOutletRef>(null);
   const mainRef = useRef<HTMLElement>(null);
 
-  const [visible, setVisible] = useState(false);
+  const [visibleFeedback, setVisibleFeedback] = useState(false);
 
   const getSavedPosition = useScrollStore(`.${styles.main}`);
 
   useEffect(() => {
-    mountedRef.current?.onMounted(() => {
+    outletMountedRef.current?.onMounted(() => {
       const { y } = getSavedPosition();
       mainRef.current?.scrollTo(0, y);
     });
   }, []);
 
   const handleFeedback = () => {
-    setVisible(true);
+    setVisibleFeedback(true);
   };
 
   return (
     <main ref={mainRef} className={styles.main}>
-      <Outlet ref={mountedRef} />
+      <Outlet ref={outletMountedRef} />
 
       <FloatButton.Group>
         <FileSystemTrigger />
@@ -343,7 +351,7 @@ const Content = () => {
         />
       </FloatButton.Group>
 
-      <Feedback visible={visible} onChange={(value) => setVisible(!!value)} />
+      <Feedback visible={visibleFeedback} onChange={(value) => setVisibleFeedback(!!value)} />
     </main>
   );
 };

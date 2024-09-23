@@ -4,6 +4,11 @@ import { parse } from 'qs';
 
 import { RouterContext } from '../shared/context';
 
+/**
+ *
+ * @description current route location hook
+ * @returns
+ */
 export function useLocation() {
   const routerContext = useContext(RouterContext);
 

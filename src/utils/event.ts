@@ -1,5 +1,9 @@
 type EventEmitterListener = (...anys: any[]) => any;
 
+/**
+ *
+ * @description global event emitter
+ */
 class EventEmitter {
   listeners: Map<string, EventEmitterListener[]> = new Map();
 

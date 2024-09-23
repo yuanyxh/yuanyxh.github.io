@@ -10,6 +10,11 @@ const EVENT_KEY = 'update';
 
 const CACHE_KEYS = ['workbox', 'fontCache', 'imageCache'];
 
+/**
+ *
+ * @description clear the service worker canche
+ * @returns
+ */
 export async function clearCache() {
   return new Promise<boolean>((resolve) => {
     async function deleteIndexedDBCaches() {
@@ -57,6 +62,7 @@ export async function clearCache() {
   });
 }
 
+/** service workder manager */
 class ServiceWorkerManager {
   private event = new EventEmitter();
   private serviceWorker: ServiceWorkerRegistration | undefined;

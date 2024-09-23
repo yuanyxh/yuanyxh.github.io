@@ -10,6 +10,7 @@ import { RouterProvider } from '@/router';
 import App from './App.tsx';
 import router from './routes.tsx';
 
+/** Home To Do List */
 export const SLOGAN = '读 《Webpack 实战：入门、进阶与调优》';
 
 const node = (

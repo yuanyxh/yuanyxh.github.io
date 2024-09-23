@@ -9,6 +9,13 @@ export const KEYS = {
 
 type TKEYS = (typeof KEYS)[keyof typeof KEYS];
 
+/**
+ *
+ * @description set data to the local storage
+ * @param key
+ * @param data
+ * @returns
+ */
 export function setStorage(key: TKEYS, data: any) {
   try {
     if (!data) {
@@ -25,6 +32,12 @@ export function setStorage(key: TKEYS, data: any) {
   }
 }
 
+/**
+ *
+ * @description remove local storage with key
+ * @param key
+ * @returns
+ */
 export function removeStorage(key: TKEYS) {
   try {
     window.localStorage.removeItem(key);
@@ -35,6 +48,12 @@ export function removeStorage(key: TKEYS) {
   }
 }
 
+/**
+ *
+ * @description get local storage with key
+ * @param key
+ * @param fallback
+ */
 export function getStorage<T>(key: TKEYS, fallback?: T): T;
 export function getStorage<T>(key: TKEYS, fallback?: T): T | undefined {
   const value = window.localStorage.getItem(key);
@@ -50,10 +69,20 @@ export function getStorage<T>(key: TKEYS, fallback?: T): T | undefined {
   }
 }
 
+/**
+ *
+ * @description check local storage is exits
+ * @param key
+ * @returns
+ */
 export function hasLocalStorage(key: TKEYS) {
   return !!window.localStorage.getItem(key);
 }
 
+/**
+ *
+ * @description clear all local storage
+ */
 export function clearStorage() {
   window.localStorage.clear();
 }

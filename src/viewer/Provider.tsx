@@ -35,23 +35,6 @@ interface ImageProps
   height?: number;
 }
 
-const calcArticleWrapperSize = () => {
-  let containerWidth = 916;
-
-  switch (true) {
-    case window.innerWidth <= 768:
-      containerWidth = window.innerWidth - 40;
-      break;
-    case window.innerWidth <= 1366:
-      containerWidth = 768;
-      break;
-    default:
-      break;
-  }
-
-  return { containerWidth };
-};
-
 const Wrapper = ({ children }: { children: React.ReactNode }) => {
   return <article className={styles.article}>{children}</article>;
 };
@@ -125,16 +108,32 @@ const Toc = ({ toc }: { toc: Toc[] }) => {
   );
 };
 
+const calcArticleWrapperSize = () => {
+  let containerWidth = 916;
+
+  switch (true) {
+    case window.innerWidth <= 768:
+      containerWidth = window.innerWidth - 40;
+      break;
+    case window.innerWidth <= 1366:
+      containerWidth = 768;
+      break;
+    default:
+      break;
+  }
+
+  return { containerWidth };
+};
+
+/** Calculate the image size under the current container size */
 function calcImageSize({
   width,
   height,
   containerWidth
-  /* containerHeight */
 }: {
   width: number;
   height: number;
   containerWidth: number;
-  // containerHeight: number;
 }) {
   containerWidth = containerWidth > 648 ? 648 : containerWidth;
 
@@ -143,8 +142,8 @@ function calcImageSize({
   }
 
   if (width > containerWidth) {
-    height *= containerWidth / width;
     width = containerWidth;
+    height *= containerWidth / width;
   }
 
   return { width, height };
@@ -153,8 +152,7 @@ function calcImageSize({
 const Image = (props: ImageProps) => {
   const { url, width = 0, height = 0, ...rest } = props;
 
-  // use static width values, don't use dynamic values
-  // TODO: how do we set the width and height when the user jumps to the browser window size? Is there any elegant DOM operation?
+  // TIPS: use static width values, don't use dynamic values
   const { containerWidth } = calcArticleWrapperSize();
 
   return (
@@ -217,6 +215,7 @@ export const useMDXComponents = (): MDXComponents => {
       let rel: string | undefined = 'external nofollow noopener';
       if (['./', '../'].some((path) => href.startsWith(path))) {
         _href = '/articles/' + href.split('/').pop()!.replace('.mdx', '.html');
+
         rel = void 0;
       }
 

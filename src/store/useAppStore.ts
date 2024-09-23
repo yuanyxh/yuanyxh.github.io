@@ -10,6 +10,7 @@ export interface AppState {
     enableNotification: boolean;
   };
   status: {
+    /** web app is in frontdesk */
     frontDesk: boolean;
   };
 }
@@ -25,6 +26,10 @@ export interface AppActions {
   setFrontDesk(frontDesk: AppState['status']['frontDesk']): void;
 }
 
+/**
+ *
+ * @description App global store data
+ */
 const useAppStore = create<AppState & AppActions>((set) => ({
   ...getStorage<AppState>('app', {
     settings: {
