@@ -1,6 +1,3 @@
-import type { ArticleMeta } from './vite-route-generator';
-
-import fast from 'fast-glob';
 import frontmatter from 'front-matter';
 import {
   existsSync,
@@ -15,21 +12,41 @@ import path from 'path';
 import { codeToHtml } from 'shiki';
 import { loadEnv } from 'vite';
 
-interface RouteObject {
+export interface Meta {
+  title: string;
+  date: string;
+  author: string;
+  description: string;
+  imageUrl: string;
+  book?: boolean;
+}
+
+export interface ParserOptions {
+  name: string;
+  paths: string[];
+  parser?(path: string): Promise<string> | string;
+  importAlias?(path: string): string;
+  transform?(code: string): string;
+}
+
+export interface RouteOptions {
+  /** route config path */
+  routeConfig: string;
+  mode: string;
+  routes: ParserOptions[];
+  prerenderOutput: string;
+  excludeOutPathRewrite: string[];
+}
+
+export interface RouteObject {
   path: string;
   children?: RouteObject[];
-  meta?: ArticleMeta;
+  meta?: Meta;
 }
 
 export interface ResolveRouteObject extends RouteObject {
   fullPath: string;
   children?: ResolveRouteObject[];
-}
-
-export interface RoutePlace {
-  books: string;
-  articles: string;
-  examples: string;
 }
 
 export const root = process.cwd();
@@ -46,158 +63,154 @@ export const parseRouteName = (path: string) => basename(path).slice(0, -4);
 /** Replace file extension with tsx */
 export const replaceFileExtension = (name: string) => name.slice(0, name.lastIndexOf('.')) + '.tsx';
 
-export const generateRouteJSONWithArticle = async () => {
-  const paths = await fast.glob(['./src/markdowns/**/*.mdx']);
-  let articles = ',';
-  let books = ',';
+export async function parseRoute(route: ParserOptions) {
+  let routeStr = '';
 
-  paths
-    .map((path) => resolve(path))
-    .forEach((path) => {
-      const route = parseRouteName(path);
-      const { attributes } = frontmatter<ArticleMeta>(readFileSync(path, 'utf-8'));
+  for await (const path of route.paths) {
+    const fullPath = resolve(path);
 
-      const aliasPath = path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+    if (route.parser) {
+      routeStr = await route.parser(path);
 
-      const str = `
-        {
-          path: "${route + '.html'}",
-          element: () => import("${aliasPath}"),
-          meta: ${JSON.stringify(attributes)}
-        },
-      `;
-
-      if (attributes.book) {
-        books += str;
-      } else {
-        articles += str;
-      }
-    });
-
-  return { articles, books };
-};
-
-export const getExampleMeta = (path: string) => {
-  const text = readFileSync(path, 'utf-8');
-
-  const match = text.match(/(?<=\/\/--meta:)([\s\S]*)(?=\/\/--endmeta)/)?.[0].trim();
-
-  const arr = match!.replace(/\/\/\s/g, '').split(/[\n\r]/);
-
-  const obj: { [key: string]: any } = {};
-  for (let i = 0; i < arr.length; i++) {
-    const j = arr[i].indexOf(':');
-    obj[arr[i].slice(0, j).trim()] = arr[i].slice(j + 1).trim();
-  }
-
-  return { imageUrl: '', ...obj };
-};
-
-const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
-export const generateRouteJSONWithExample = async () => {
-  let result = '';
-
-  async function transform(dirs: string[], parent: string, hierarchy: number, root: string) {
-    if (hierarchy === 0) {
-      const directory = resolve(parent, `code`);
-      const value = template.replace('base64_coder/Index', `${root}/Index`);
-
-      if (!existsSync(resolve(directory))) {
-        mkdirSync(directory, { recursive: true });
-      }
-
-      writeFileSync(resolve(directory, '__.tsx'), value, 'utf-8');
-
-      result += `{
-        path: "${root}",
-        element: () => import("@/examples/${root}/code/__.tsx"),
-        meta: ${JSON.stringify(getExampleMeta(resolve(parent, 'Index.tsx')))},
-        children: [
-      `;
+      continue;
     }
 
-    for (let i = 0; i < dirs.length; i++) {
-      const name = dirs[i];
-      const fullname = resolve(parent, name);
+    const routeName = parseRouteName(path);
+    const { attributes } = frontmatter<Meta>(readFileSync(fullPath, 'utf-8'));
 
-      if (hierarchy === 0 && name === 'code') {
-        continue;
-      }
+    const aliasPath = route.importAlias?.(path) || path;
 
-      const isDirectory = lstatSync(fullname).isDirectory();
+    const str = `
+      {
+        path: "${routeName + '.html'}",
+        element: () => import("${aliasPath}"),
+        meta: ${JSON.stringify(attributes)}
+      },
+    `;
 
-      if (isDirectory) {
-        await transform(readdirSync(fullname), fullname, hierarchy + 1, root);
-        continue;
-      }
+    routeStr += str;
+  }
 
-      const code = readFileSync(fullname, 'utf-8');
+  if (route.transform) {
+    return route.transform(routeStr);
+  }
 
-      const html = await codeToHtml(code, {
-        lang: dirs[i].split('.').pop()!,
-        theme: 'one-dark-pro'
-      });
+  return routeStr;
+}
 
-      const data = `export default function Default() {
+export async function parseRoutes(routes: ParserOptions[]) {
+  const result: { name: string; value: string }[] = [];
+
+  for await (const route of routes) {
+    result.push({ name: route.name, value: await parseRoute(route) });
+  }
+
+  return result;
+}
+
+export async function buildFiles(
+  dirs: string[],
+  parent: string,
+  root: string,
+  meta: Record<string, string>
+) {
+  let result = '';
+
+  for await (const name of dirs) {
+    const fullname = resolve(parent, name);
+
+    const isDirectory = lstatSync(fullname).isDirectory();
+
+    if (isDirectory) {
+      result += await buildFiles(readdirSync(fullname), fullname, root, meta);
+      continue;
+    }
+
+    const code = readFileSync(fullname, 'utf-8');
+
+    const html = await codeToHtml(code, {
+      lang: path.extname(fullname).slice(1),
+      theme: 'one-dark-pro'
+    });
+
+    const data = `export default function Default() {
         return <div dangerouslySetInnerHTML={{ __html: \`${html}\` }}></div>
       }`;
 
-      const newName = replaceFileExtension(name);
+    const newName = replaceFileExtension(name);
 
-      const paths = relative(resolve(examples, root), parent).split(sep).filter(Boolean);
-      const folder = resolve(examples, root, 'code', ...paths);
+    const paths = relative(root, parent).split(sep).filter(Boolean);
+    const folder = resolve(root, 'code', ...paths);
 
-      if (!existsSync(folder)) {
-        mkdirSync(folder, { recursive: true });
-      }
+    if (!existsSync(folder)) {
+      mkdirSync(folder, { recursive: true });
+    }
 
-      writeFileSync(resolve(folder, newName), data, 'utf-8');
+    writeFileSync(resolve(folder, newName), data, 'utf-8');
 
-      const route =
-        newName === 'Index.tsx'
-          ? 'index'
-          : paths.length
-            ? paths.join('-') + '-' + newName
-            : newName;
+    let route = '';
 
-      result += `{
-        path: '${route + '.html'}',
-        element: () => import('@/examples/${root}/code/${paths.length === 0 ? '' : paths.length > 1 ? paths.join('/') : paths[0] + '/'}${newName}')
+    if (newName === 'Index.tsx') {
+      route = 'index';
+    } else if (paths.length) {
+      route = paths.join('-') + '-' + newName + '.html';
+    } else {
+      route = newName + '.html';
+    }
+
+    result += `{
+        path: '${route}',
+        element: () => import('@/examples/${basename(root)}/code/${paths.length === 0 ? '' : paths.length > 1 ? paths.join('/') : paths[0] + '/'}${newName}'),
+        meta: ${JSON.stringify(meta)}
       },
       `;
-    }
   }
 
-  const examples = resolve('./src/examples');
-  const dirs = readdirSync(examples);
+  return result;
+}
 
-  for (let i = 0; i < dirs.length; i++) {
-    await transform(
-      readdirSync(resolve(examples, dirs[i])),
-      resolve(examples, dirs[i]),
-      0,
-      dirs[i]
-    );
+export async function buildExample(path: string) {
+  const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
 
-    result += `]
-    },`;
+  const rootDirectory = resolve(path);
+  let result = '';
+
+  const codeDirectory = resolve(rootDirectory, `code`);
+  const value = template.replace('base64_coder/Index', `${basename(rootDirectory)}/Index`);
+
+  if (!existsSync(resolve(codeDirectory))) {
+    mkdirSync(codeDirectory, { recursive: true });
   }
 
-  return { examples: result };
-};
+  writeFileSync(resolve(codeDirectory, '__.tsx'), value, 'utf-8');
 
-export const generateRouteJSON = async () => {
-  return {
-    ...(await generateRouteJSONWithArticle()),
-    ...(await generateRouteJSONWithExample())
-  };
-};
+  const indexContent = readFileSync(resolve(rootDirectory, 'Index.tsx'), 'utf-8');
 
-export const replacePlaceRoute = (code: string, { books, articles, examples }: RoutePlace) =>
-  code
-    .replace('/** placeholder for articles */', articles)
-    .replace('/** placeholder for books */', books)
-    .replace('/** placeholder for coder */', examples);
+  let meta = {};
+  const match = indexContent.match(/(?<=export const meta = {)[\w\W]*?(?=};)/);
+
+  if (match) {
+    meta = new Function(`return {${match[0]}}`)();
+  }
+
+  result += `{
+        path: "${basename(rootDirectory)}",
+        element: () => import("@/examples/${basename(rootDirectory)}/code/__.tsx"),
+        meta: ${JSON.stringify(meta)},
+        children: [
+      `;
+
+  const children = readdirSync(rootDirectory).filter((p) => p !== 'code');
+
+  result += await buildFiles(children, rootDirectory, rootDirectory, meta);
+
+  result += ']},';
+
+  return result;
+}
+
+export const replacePlaceRoute = (code: string, key: string, value: string) =>
+  code.replace(`/** placeholder for ${key} */`, value);
 
 export function resolveFullRoutes(
   routes: ResolveRouteObject[],

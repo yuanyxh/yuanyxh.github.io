@@ -1,30 +1,37 @@
-import { generateRouteJSON, getEnv, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
+import {
+  getEnv,
+  parseRoutes,
+  replacePlaceRoute,
+  resolve,
+  resolveFullRoutes,
+  RouteOptions
+} from './utils';
 
 import { readFileSync, writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
 
-interface GenerateSitemapOptions {
-  routeConfig: string;
-}
-
 const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
-function viteGenerateSitemap(options: GenerateSitemapOptions): PluginOption {
-  const { routeConfig } = options;
+function viteGenerateSitemap(options: RouteOptions): PluginOption {
+  const { routeConfig, routes = [] } = options;
 
-  const text = readFileSync(routeConfig, 'utf-8');
-
-  const match = text.match(reg);
+  const routesString = readFileSync(routeConfig, 'utf-8');
 
   async function generateSitemap() {
+    const resolveRoutesString = (await parseRoutes(routes)).reduce(
+      (prev, route) => replacePlaceRoute(prev, route.name, route.value),
+      routesString
+    );
+
+    const match = resolveRoutesString.match(reg);
+
     if (!match) {
       throw Error('no match routes.');
     }
 
-    const routeJSON = await generateRouteJSON();
-    const getRoutes = new Function(`return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`);
+    const getRoutes = new Function(`return [${match[0]}]`);
 
     const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
 

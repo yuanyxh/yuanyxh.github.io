@@ -142,8 +142,8 @@ function calcImageSize({
   }
 
   if (width > containerWidth) {
-    width = containerWidth;
     height *= containerWidth / width;
+    width = containerWidth;
   }
 
   return { width, height };
@@ -155,17 +155,20 @@ const Image = (props: ImageProps) => {
   // TIPS: use static width values, don't use dynamic values
   const { containerWidth } = calcArticleWrapperSize();
 
+  const size = calcImageSize({
+    width,
+    height,
+    containerWidth
+  });
+
   return (
     // @ts-expect-error img in here
     <InnerImage
       className={styles.image}
       src={url}
-      preview={true}
-      {...calcImageSize({
-        width,
-        height,
-        containerWidth
-      })}
+      preview={{ mask: null }}
+      width={size.width}
+      height={size.height}
       {...rest}
     />
   );

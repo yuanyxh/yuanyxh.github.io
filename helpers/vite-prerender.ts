@@ -1,10 +1,10 @@
 // import { submit } from './submit';
-import type { ResolveRouteObject } from './utils';
-import { generateRouteJSON, getEnv, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
-import type { ArticleMeta } from './vite-route-generator';
+import type { ResolveRouteObject, RouteOptions } from './utils';
+import type { Meta } from './utils';
+import { getEnv, parseRoutes, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
 
 import dayjs from 'dayjs';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import selfVitePrerender from 'vite-plugin-prerender';
 
 export interface PostProcessParam {
@@ -18,9 +18,7 @@ const Renderer = selfVitePrerender.PuppeteerRenderer;
 
 const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
 
-const excludeOutPathRewrite = ['/', '/articles', '/examples', '/books', '/coder', '/profile'];
-
-function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
+function getMetaTag(meta: Meta | undefined, route: ResolveRouteObject) {
   const env = getEnv();
 
   let html = `
@@ -103,34 +101,34 @@ function getMetaTag(meta: ArticleMeta | undefined, route: ResolveRouteObject) {
   return html;
 }
 
-interface PrerenderOptions {
-  mode: string;
-  routeConfig: string;
-}
-
-async function vitePrerender(options: PrerenderOptions) {
-  const { mode, routeConfig } = options;
+async function vitePrerender(options: RouteOptions) {
+  const {
+    mode,
+    routeConfig,
+    prerenderOutput = resolve('./build'),
+    excludeOutPathRewrite,
+    routes = []
+  } = options;
 
   if (mode !== 'prod') return void 0;
 
-  const text = readFileSync(routeConfig, 'utf-8');
-  const match = text.match(reg);
+  const routesString = readFileSync(routeConfig, 'utf-8');
+
+  const resolveRoutesString = (await parseRoutes(routes)).reduce(
+    (prev, route) => replacePlaceRoute(prev, route.name, route.value),
+    routesString
+  );
+
+  const match = resolveRoutesString.match(reg);
 
   if (!match) {
     throw Error('no match routes.');
   }
 
-  const dirs = readdirSync(resolve('./src/examples'));
-
-  for (let i = 0; i < dirs.length; i++) {
-    excludeOutPathRewrite.push('/coder/' + dirs[i]);
-  }
-
-  const routeJSON = await generateRouteJSON();
-  const getRoutes = new Function(`return ${replacePlaceRoute(`[${match[0]}]`, routeJSON)}`);
+  const getRoutes = new Function(`return [${match[0]}]`);
 
   const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
-  const routes = detailsRoutes.map((route) => route.fullPath);
+  const allRoutes = detailsRoutes.map((route) => route.fullPath);
 
   try {
     // submit(routes);
@@ -140,8 +138,8 @@ async function vitePrerender(options: PrerenderOptions) {
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
   return selfVitePrerender({
-    routes: routes,
-    staticDir: resolve('./build'),
+    routes: allRoutes,
+    staticDir: prerenderOutput,
 
     // compression
     minify: {

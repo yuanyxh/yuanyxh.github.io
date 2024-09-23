@@ -6,7 +6,7 @@ import PresetEnv from 'postcss-preset-env';
 import AutoPrefixer from 'autoprefixer';
 import { ViteEjsPlugin } from 'vite-plugin-ejs';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { resolve, root } from './helpers/utils';
+import { buildExample, getEnv, resolve, root } from './helpers/utils';
 import mdx from '@mdx-js/rollup';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import remarkFrontMatter from 'remark-frontmatter';
@@ -17,18 +17,23 @@ import remarkEmoji from 'remark-emoji';
 import { remarkMdxToc } from 'remark-mdx-toc';
 import rehypePrism from '@mapbox/rehype-prism';
 import viteRouteGenerator from './helpers/vite-route-generator';
+import type { RouteOptions } from './helpers/utils';
 import vitePrerender from './helpers/vite-prerender';
 import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 // import basicSsl from '@vitejs/plugin-basic-ssl';
 
-import type { ConfigEnv, UserConfig } from 'vite';
+import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import fast from 'fast-glob';
 
 const routesPath = resolve('src/routes.tsx');
 
+function mergeUserPlugin(options: RouteOptions): PluginOption[] {
+  return [viteRouteGenerator(options), vitePrerender(options), viteGenerateSitemap(options)];
+}
+
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfig => {
-  const env = loadEnv(mode, root) as unknown as ImportMetaEnv;
+  const env = getEnv();
 
   const isBuild = command === 'build';
 
@@ -38,8 +43,21 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     root: root,
     base: env.VITE_BASE_PATH,
     plugins: [
-      viteRouteGenerator({
+      mergeUserPlugin({
+        mode: mode,
         routeConfig: routesPath,
+        excludeOutPathRewrite: [
+          '/',
+          '/articles',
+          '/examples',
+          '/books',
+          '/coder',
+          '/profile',
+          ...fast
+            .globSync(['./src/examples/*'], { onlyDirectories: true })
+            .map((f) => f.replace('./src/examples', '/coder'))
+        ],
+        prerenderOutput: resolve('./build'),
         routes: [
           {
             name: 'articles',
@@ -47,6 +65,9 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
               './src/markdowns/articles/**/*.mdx',
               './src/markdowns/source/**/*.mdx'
             ]),
+            transform(code) {
+              return ',' + code;
+            },
             importAlias(path) {
               return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
             }
@@ -54,8 +75,18 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           {
             name: 'books',
             paths: fast.globSync(['./src/markdowns/books/**/*.mdx']),
+            transform(code) {
+              return ',' + code;
+            },
             importAlias(path) {
               return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+            }
+          },
+          {
+            name: 'coder',
+            paths: fast.globSync(['./src/examples/*'], { onlyDirectories: true }),
+            parser(path) {
+              return buildExample(path);
             }
           }
         ]
@@ -119,15 +150,9 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         iconDirs: [resolve('./src/assets/svgs')],
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
-      }),
+      })
 
       // basicSsl()
-
-      vitePrerender({ mode, routeConfig: routesPath }),
-
-      viteGenerateSitemap({
-        routeConfig: routesPath
-      })
     ],
     resolve: {
       alias: [
