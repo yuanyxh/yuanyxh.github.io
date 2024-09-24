@@ -121,7 +121,7 @@ export function Menu({ items }: { items: IMenu[] }) {
                   icon="material-symbols:keyboard-arrow-right"
                 />
               ) : null}
-              <span>{item.path}</span>
+              <span>{item.path.replace('.html', '')}</span>
             </div>
           </a>
 

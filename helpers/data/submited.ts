@@ -51,9 +51,9 @@ export default [
   "/articles/handlery_and_update_scheme.html",
   "/404.html",
   "/articles/web_bluetooth_and_point_to_point_connection.html",
-  "/coder/base64_coder/index.html",
   "/books/deepen_vuejs.html",
   "/articles/web-component_user_experience.html",
   "/articles/debugging_and_understanding_nodejs_modules.html",
-  "/articles/simulate_input_in_react.html"
+  "/articles/simulate_input_in_react.html",
+  "/coder/base64_coder/index.html"
 ]

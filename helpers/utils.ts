@@ -8,7 +8,7 @@ import {
   writeFileSync
 } from 'node:fs';
 import { basename, relative, sep } from 'node:path';
-import path from 'path';
+import path from 'node:path';
 import { codeToHtml } from 'shiki';
 import { loadEnv } from 'vite';
 
@@ -32,8 +32,6 @@ export interface ResolveRouteObject extends RouteObject {
   fullPath: string;
   children?: ResolveRouteObject[];
 }
-
-export type ITemplateType = 'prerender' | 'sitemap';
 
 export interface ParserOptions {
   name: string;
@@ -152,7 +150,11 @@ export async function buildFiles(
       continue;
     }
 
-    const code = readFileSync(fullname, 'utf-8');
+    let code = readFileSync(fullname, 'utf-8');
+
+    if (name === 'Index.tsx') {
+      code = code.replace(/\nexport const meta = {[\w\W]*?};\n/, '');
+    }
 
     const html = await codeToHtml(code, {
       lang: path.extname(fullname).slice(1),
