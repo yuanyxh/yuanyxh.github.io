@@ -14,8 +14,7 @@ import {
 
 import { getStorageUsage } from '@/filehandle/utils/index';
 
-import type { CanvasInstance } from '@/components';
-import { Canvas } from '@/components';
+import { PieChart } from '@/components';
 
 import styles from './styles/Settings.module.less';
 
@@ -217,8 +216,6 @@ function PersistentStorage() {
 }
 
 function StorageDetail() {
-  const drawRef = useRef<CanvasInstance>(null);
-
   const [storage, setStorage] = useState<{
     quota: number;
     usage: number;
@@ -244,30 +241,6 @@ function StorageDetail() {
           usage: usage / 1000 / 1000,
           unUsage: unUsage / 1000 / 1000
         });
-
-        const usageAngle = Math.PI * 2 * (res.usage / res.quota);
-        const unUsageAngle = Math.PI * 2 * ((res.quota - res.usage) / res.quota);
-
-        const drawEl = drawRef.current!;
-
-        const centerX = drawEl.width() / 2;
-        const centerY = drawEl.height() / 2;
-
-        drawEl.arc(centerX, centerY, centerX - 2, 0, Math.PI * 2);
-        drawEl.strokeStyle('#f0f0f0');
-        drawEl.stroke();
-
-        drawEl.beginPath();
-        drawEl.moveTo(centerX, centerY);
-        drawEl.arc(centerX, centerY, centerX - 2, 0, usageAngle);
-        drawEl.fillStyle('#ff9759');
-        drawEl.fill();
-
-        drawEl.beginPath();
-        drawEl.moveTo(centerX, centerY);
-        drawEl.arc(centerX, centerY, centerX - 2, usageAngle, usageAngle + unUsageAngle);
-        drawEl.fillStyle('white');
-        drawEl.fill();
       })
       .catch((err) => {
         error((err as Error).message);
@@ -280,8 +253,19 @@ function StorageDetail() {
         <h5 className={styles.subTitle}>网站存储详情</h5>
 
         <div style={{ display: 'flex', gap: '0 30px', marginBlock: 10 }}>
-          {/* TODO: remove this component and add Pie chart  */}
-          <Canvas ref={drawRef} width={120} height={120} />
+          <PieChart
+            radius={60}
+            data={[
+              {
+                value: storage.usage,
+                color: '#627ad3'
+              },
+              {
+                value: storage.unUsage,
+                color: '#9eca7f'
+              }
+            ]}
+          />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px 0' }}>
             <div className={styles.line}>
@@ -293,17 +277,17 @@ function StorageDetail() {
             </div>
 
             <div className={styles.line}>
-              <span className={styles.symbol} style={{ backgroundColor: '#ff9759' }}></span>
+              <span className={styles.symbol} style={{ backgroundColor: '#627ad3' }}></span>
 
-              <Text type="secondary">已用存储</Text>
+              <Text type="secondary">已用存储量</Text>
 
               <Text>{storage.usage.toFixed(3)} MB</Text>
             </div>
 
             <div className={styles.line}>
-              <span className={styles.symbol} style={{ backgroundColor: '#601986' }}></span>
+              <span className={styles.symbol} style={{ backgroundColor: '#9eca7f' }}></span>
 
-              <Text type="secondary">剩余可用</Text>
+              <Text type="secondary">剩余可用量</Text>
               <Text>{storage.unUsage.toFixed(3)} MB</Text>
             </div>
           </div>

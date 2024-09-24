@@ -1,3 +1,4 @@
+export * from './canvas.ts';
 export * from './error.ts';
 export { default as EventEmitter } from './event';
 export * from './fullscreen';
