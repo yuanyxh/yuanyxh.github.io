@@ -50,7 +50,11 @@ const createMDImage = (url: string) => `![${Date.now()}](${url})`;
 let uploadInfo: UploadInfo | null = null;
 const fileHandler = (files: FileList, handler: HandlerAction) => {
   if (!uploadInfo || uploadInfo.url.trim() === '') {
-    // TODO: to base64
+    // FIXME:
+    /**
+     * We cannot use base64 instead of dataurl,
+     * because the text is too long and can easily cause the current markdown editor to freeze.
+     */
     return handler.finish(createMDImage(window.URL.createObjectURL(files[0])));
   }
 

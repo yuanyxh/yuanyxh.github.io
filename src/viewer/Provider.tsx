@@ -5,7 +5,7 @@ import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 import { Link, useLocation } from '@/router';
 
-import { copy } from '@/utils';
+import { copy, error, success } from '@/utils';
 
 import { Icon, Image as InnerImage } from '@/components';
 
@@ -49,8 +49,8 @@ const SubTitle = (
   const handleCopyAnchor = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault();
 
-    // TODO: global event show the mesage to user
     copy(new URL(`${window.location.origin}${window.location.pathname}/#${children}`).href);
+    success('Copied!');
   };
 
   return createElement(
@@ -241,8 +241,14 @@ export const useMDXComponents = (): MDXComponents => {
         const codeEl = window.document.getElementById(id);
 
         if (codeEl) {
-          // TODO: global event show the mesage to user
-          window.navigator.clipboard.writeText(codeEl.innerText);
+          window.navigator.clipboard
+            .writeText(codeEl.innerText)
+            .then(() => {
+              success('Copied!');
+            })
+            .catch(() => {
+              error('Copy failed!');
+            });
         }
       };
 

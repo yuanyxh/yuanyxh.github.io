@@ -29,11 +29,17 @@ const toCodeAt = (str: string) => {
 
 /**
  *
- * @param str 需要 base64 编码的字符串
+ * @param data 需要 base64 编码的数据
  * @returns base64 字符串
  */
-const encode = (str: string) => {
-  const bytes = toBytes(str);
+const encode = (data: string | ArrayBuffer) => {
+  let bytes: Uint8Array;
+
+  if (typeof data === 'string') {
+    bytes = toBytes(data);
+  } else {
+    bytes = new Uint8Array(data);
+  }
 
   let i = 0,
     output = '';

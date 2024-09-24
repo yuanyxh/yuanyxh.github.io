@@ -1,6 +1,7 @@
 export * from './canvas.ts';
 export * from './error.ts';
 export { default as EventEmitter } from './event';
+export * from './file.ts';
 export * from './fullscreen';
 export { default as globalEvent } from './globalEventEmitter';
 export * from './globalEventEmitter';
