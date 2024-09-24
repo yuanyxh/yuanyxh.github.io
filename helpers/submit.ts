@@ -13,6 +13,12 @@ interface SubmitError {
 process.env.http_proxy = 'http://127.0.0.1:7890'; /* Set proxy */
 process.env.HTTPS_PROXY = 'http://127.0.0.1:7890';
 
+/** mac proxy */
+if (process.platform.includes('darwin')) {
+  process.env.http_proxy = 'http://127.0.0.1:7897'; /* Set proxy */
+  process.env.HTTPS_PROXY = 'http://127.0.0.1:7897';
+}
+
 const submitedPath = resolve('./helpers/data/submited.ts');
 
 const { VITE_DOMAIN_PATH } = getEnv();

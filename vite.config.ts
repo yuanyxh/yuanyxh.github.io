@@ -6,7 +6,14 @@ import PresetEnv from 'postcss-preset-env';
 import AutoPrefixer from 'autoprefixer';
 import { ViteEjsPlugin } from 'vite-plugin-ejs';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { buildExample, getEnv, resolve, root } from './helpers/utils';
+import {
+  buildExample,
+  getEnv,
+  parseRoutes,
+  replacePlaceRoute,
+  resolve,
+  root
+} from './helpers/utils';
 import mdx from '@mdx-js/rollup';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import remarkFrontMatter from 'remark-frontmatter';
@@ -24,6 +31,7 @@ import viteGenerateSitemap from './helpers/vite-generate-sitemap';
 
 import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import fast from 'fast-glob';
+import { readFileSync } from 'fs';
 
 const routesPath = resolve('src/routes.tsx');
 
@@ -45,51 +53,82 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     plugins: [
       mergeUserPlugin({
         mode: mode,
-        routeConfig: routesPath,
-        excludeOutPathRewrite: [
-          '/',
-          '/articles',
-          '/examples',
-          '/books',
-          '/coder',
-          '/profile',
-          ...fast
-            .globSync(['./src/examples/*'], { onlyDirectories: true })
-            .map((f) => f.replace('./src/examples', '/coder'))
-        ],
-        prerenderOutput: resolve('./build'),
-        routes: [
-          {
-            name: 'articles',
-            paths: fast.globSync([
-              './src/markdowns/articles/**/*.mdx',
-              './src/markdowns/source/**/*.mdx'
-            ]),
-            transform(code) {
-              return ',' + code;
+        siteConfig: {
+          appName: env.VITE_APP_TITLE,
+          domain: 'https://yuanyxh.com',
+          title: env.VITE_APP_TITLE,
+          description:
+            '技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.',
+          logo: env.VITE_DOMAIN_PATH + 'logo.webp',
+          authorPage: `${env.VITE_DOMAIN_PATH}profile/about_me.html`,
+          keywords: 'yuanyxh, 个人博客, 个人网站, 首页, web 前端, JavaScript, css, html'
+        },
+        async getRoutes() {
+          const routeConfigCode = (await parseRoutes(this.buildRouteConfig.routes)).reduce(
+            (prev, route) => replacePlaceRoute(prev, route.name, route.value),
+            readFileSync(routesPath, 'utf-8')
+          );
+
+          const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
+
+          const match = routeConfigCode.match(reg);
+
+          const getRoutes = new Function(`return [${match![0]}]`);
+
+          return getRoutes();
+        },
+        sitemapConfig: {
+          output: resolve('./build/sitemap.xml')
+        },
+        prerenderConfig: {
+          excludeOutPathRewrite: [
+            '/',
+            '/articles',
+            '/examples',
+            '/books',
+            '/coder',
+            '/profile',
+            ...fast
+              .globSync(['./src/examples/*'], { onlyDirectories: true })
+              .map((f) => f.replace('./src/examples', '/coder'))
+          ],
+          prerenderOutput: resolve('./build')
+        },
+        buildRouteConfig: {
+          routeConfig: routesPath,
+          routes: [
+            {
+              name: 'articles',
+              paths: fast.globSync([
+                './src/markdowns/articles/**/*.mdx',
+                './src/markdowns/source/**/*.mdx'
+              ]),
+              transform(code) {
+                return ',' + code;
+              },
+              importAlias(path) {
+                return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+              }
             },
-            importAlias(path) {
-              return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
-            }
-          },
-          {
-            name: 'books',
-            paths: fast.globSync(['./src/markdowns/books/**/*.mdx']),
-            transform(code) {
-              return ',' + code;
+            {
+              name: 'books',
+              paths: fast.globSync(['./src/markdowns/books/**/*.mdx']),
+              transform(code) {
+                return ',' + code;
+              },
+              importAlias(path) {
+                return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+              }
             },
-            importAlias(path) {
-              return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
+            {
+              name: 'coder',
+              paths: fast.globSync(['./src/examples/*'], { onlyDirectories: true }),
+              parser(path) {
+                return buildExample(path);
+              }
             }
-          },
-          {
-            name: 'coder',
-            paths: fast.globSync(['./src/examples/*'], { onlyDirectories: true }),
-            parser(path) {
-              return buildExample(path);
-            }
-          }
-        ]
+          ]
+        }
       }),
 
       {

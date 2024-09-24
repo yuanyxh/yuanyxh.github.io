@@ -7,20 +7,13 @@ import type { PluginOption } from 'vite';
  * @description Generate routes from local directory
  */
 function viteRouteGenerator(options: RouteOptions): PluginOption {
-  const { routeConfig, routes = [] } = options;
+  const { buildRouteConfig = { routeConfig: '', routes: [] } } = options;
+
+  const { routeConfig, routes } = buildRouteConfig;
 
   return {
     name: 'vite-plugin-route-generator',
     enforce: 'pre',
-
-    // configureServer(server) {
-    //   server.watcher.add(resolve('./src/coder/Wrapper.tsx'));
-    //   server.watcher.on('change', (id) => {
-    //     if (resolve(id) === resolve('./src/coder/Wrapper.tsx')) {
-    //       server.restart();
-    //     }
-    //   });
-    // },
 
     async transform(code, id) {
       if (id.includes('node_modules')) return;

@@ -1,61 +1,38 @@
-import {
-  getEnv,
-  parseRoutes,
-  replacePlaceRoute,
-  resolve,
-  resolveFullRoutes,
-  RouteOptions
-} from './utils';
+import { getEnv, resolve, resolveFullRoutes, RouteOptions } from './utils';
 
-import { readFileSync, writeFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import type { PluginOption } from 'vite';
 
-const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
-
 function viteGenerateSitemap(options: RouteOptions): PluginOption {
-  const { routeConfig, routes = [] } = options;
+  const { getRoutes, sitemapConfig = { output: resolve('./build/sitemap.xml') } } = options;
 
-  const routesString = readFileSync(routeConfig, 'utf-8');
+  const { output } = sitemapConfig;
 
   async function generateSitemap() {
-    const resolveRoutesString = (await parseRoutes(routes)).reduce(
-      (prev, route) => replacePlaceRoute(prev, route.name, route.value),
-      routesString
-    );
+    const routes = await getRoutes.call(options);
 
-    const match = resolveRoutesString.match(reg);
-
-    if (!match) {
-      throw Error('no match routes.');
-    }
-
-    const getRoutes = new Function(`return [${match[0]}]`);
-
-    const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
+    const detailsRoutes = resolveFullRoutes(routes, '', []);
 
     const links = detailsRoutes.map((route) => {
-      if (route.meta) {
-        return {
-          url: route.fullPath,
-          changefreq: 'daily',
-          lastmod: route.meta.date.split(' ')[0],
-          priority: 1.0
-        };
-      }
-
-      return {
+      const link: { url: string; changefreq: string; priority: number; lastmod?: string } = {
         url: route.fullPath,
         changefreq: 'daily',
         priority: 1.0
       };
+
+      if (route.meta?.date) {
+        link.lastmod = route.meta.date.split(' ')[0];
+      }
+
+      return link;
     });
 
     const smStream = new SitemapStream({ hostname: getEnv().VITE_DOMAIN_PATH });
 
     return streamToPromise(Readable.from(links).pipe(smStream)).then((data) =>
-      writeFileSync(resolve('./build/sitemap.xml'), data.toString(), 'utf-8')
+      writeFileSync(output, data.toString(), 'utf-8')
     );
   }
 

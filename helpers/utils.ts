@@ -18,24 +18,8 @@ export interface Meta {
   author: string;
   description: string;
   imageUrl: string;
+  keywords: string;
   book?: boolean;
-}
-
-export interface ParserOptions {
-  name: string;
-  paths: string[];
-  parser?(path: string): Promise<string> | string;
-  importAlias?(path: string): string;
-  transform?(code: string): string;
-}
-
-export interface RouteOptions {
-  /** route config path */
-  routeConfig: string;
-  mode: string;
-  routes: ParserOptions[];
-  prerenderOutput: string;
-  excludeOutPathRewrite: string[];
 }
 
 export interface RouteObject {
@@ -49,12 +33,51 @@ export interface ResolveRouteObject extends RouteObject {
   children?: ResolveRouteObject[];
 }
 
+export type ITemplateType = 'prerender' | 'sitemap';
+
+export interface ParserOptions {
+  name: string;
+  paths: string[];
+  parser?(path: string): Promise<string> | string;
+  importAlias?(path: string): string;
+  transform?(code: string): string;
+}
+
+export interface RouteOptions {
+  mode: string;
+  getRoutes(): ResolveRouteObject[] | Promise<ResolveRouteObject[]>;
+  siteConfig: {
+    appName: string;
+    domain: string;
+    title: string;
+    description: string;
+    logo: string;
+    authorPage: string;
+    keywords: string;
+  };
+  buildRouteConfig: {
+    /** route config path */
+    routeConfig: string;
+    routes: ParserOptions[];
+  };
+  prerenderConfig: {
+    prerenderOutput: string;
+    excludeOutPathRewrite: string[];
+  };
+  sitemapConfig: {
+    output: string;
+  };
+}
+
+/** process runing localtion */
 export const root = process.cwd();
 
+/** get env from prod config */
 export const getEnv = () => {
   return loadEnv('prod', root) as unknown as ImportMetaEnv;
 };
 
+/** Start parsing path from cwd */
 export const resolve = (...paths: string[]) => path.resolve(root, ...paths);
 
 /** Parse filename as route name */
@@ -63,6 +86,7 @@ export const parseRouteName = (path: string) => basename(path).slice(0, -4);
 /** Replace file extension with tsx */
 export const replaceFileExtension = (name: string) => name.slice(0, name.lastIndexOf('.')) + '.tsx';
 
+/** parse sigle route from local file system */
 export async function parseRoute(route: ParserOptions) {
   let routeStr = '';
 
@@ -98,6 +122,7 @@ export async function parseRoute(route: ParserOptions) {
   return routeStr;
 }
 
+/** parse all route from local file system */
 export async function parseRoutes(routes: ParserOptions[]) {
   const result: { name: string; value: string }[] = [];
 
@@ -108,6 +133,7 @@ export async function parseRoutes(routes: ParserOptions[]) {
   return result;
 }
 
+/** parse and build local file transform to route */
 export async function buildFiles(
   dirs: string[],
   parent: string,
@@ -169,6 +195,7 @@ export async function buildFiles(
   return result;
 }
 
+/** build example transform to route page */
 export async function buildExample(path: string) {
   const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
 
@@ -209,9 +236,11 @@ export async function buildExample(path: string) {
   return result;
 }
 
+/** Replace route placeholders with route data */
 export const replacePlaceRoute = (code: string, key: string, value: string) =>
   code.replace(`/** placeholder for ${key} */`, value);
 
+/** resolve all route fullpath */
 export function resolveFullRoutes(
   routes: ResolveRouteObject[],
   parent: string,

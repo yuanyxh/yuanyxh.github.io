@@ -1,10 +1,9 @@
-// import { submit } from './submit';
+import { submit } from './submit';
 import type { ResolveRouteObject, RouteOptions } from './utils';
 import type { Meta } from './utils';
-import { getEnv, parseRoutes, replacePlaceRoute, resolve, resolveFullRoutes } from './utils';
+import { resolve, resolveFullRoutes } from './utils';
 
 import dayjs from 'dayjs';
-import { readFileSync } from 'node:fs';
 import selfVitePrerender from 'vite-plugin-prerender';
 
 export interface PostProcessParam {
@@ -16,87 +15,76 @@ export interface PostProcessParam {
 
 const Renderer = selfVitePrerender.PuppeteerRenderer;
 
-const reg = /(?<=export const routes: RouteObject\[\] = \[)([\s\S]*)(?=\];)/;
+function getMetaTag(
+  meta: Meta | undefined,
+  route: ResolveRouteObject,
+  siteConfig: RouteOptions['siteConfig']
+) {
+  let image = siteConfig.logo;
+  let description = siteConfig.description;
+  let title = siteConfig.title;
+  let keywords = siteConfig.keywords;
 
-function getMetaTag(meta: Meta | undefined, route: ResolveRouteObject) {
-  const env = getEnv();
+  const domain = siteConfig.domain;
+  const appName = siteConfig.appName;
+  const authorPage = siteConfig.authorPage;
+  const date = dayjs().toISOString();
+
+  const url = `${domain}${route.fullPath.slice(1)}`;
 
   let html = `
-    <link rel="canonical" href="${env.VITE_DOMAIN_PATH}${route.fullPath.slice(1)}" />
-    <link rel="author" href="${env.VITE_DOMAIN_PATH}profile/about_me.html" />
-    <meta property="og:url" content="${env.VITE_DOMAIN_PATH}${route.fullPath.slice(1)}">
+    <link rel="canonical" href="${url}" />
+    <link rel="author" href="${authorPage}" />
+    <meta property="og:url" content="${url}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta property="twitter:domain" content="yuanyxh.com">
-    <meta property="twitter:url" content="${env.VITE_DOMAIN_PATH}">
+    <meta property="twitter:domain" content="${domain}">
+    <meta property="twitter:url" content="${url}">
   `;
 
   if (meta) {
-    // TODO: route add keywords list?
-    html += `
-      <meta property="og:type" content="article" />
-      <meta property="article" content="${env.VITE_DOMAIN_PATH}${route.fullPath.slice(1)}" />
+    html += `<meta property="og:type" content="article" />
+      <meta property="article" content="${url}" />
       <meta property="article:published_time" content="${meta.date}" />
-      <meta property="article:author" content="${env.VITE_DOMAIN_PATH}profile/about_me.html" />
-      <meta property="og:image" content="${meta.imageUrl || env.VITE_DOMAIN_PATH + 'logo.webp'}">
-      <meta property="og:description" content="${meta.description}">
-      <meta property="og:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
-      <meta name="twitter:title" content="${env.VITE_APP_TITLE}: ${meta.title}">
-      <meta name="twitter:description" content="${meta.description}">
-      <meta name="twitter:image" content="${meta.imageUrl || env.VITE_DOMAIN_PATH + 'logo.webp'}">
-      <meta name="description" content="${meta.description}">
-      <meta name="keywords" content="yuanyxh, 文章, 代码示例, 在线操作">
-
-      <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "Article",
-          "headline": "${meta.title}",
-          "image": [
-            "${meta.imageUrl || env.VITE_DOMAIN_PATH + 'logo.webp'}"
-          ],
-          "datePublished": "${dayjs(meta.date).toISOString()}",
-          "author": [{
-              "@type": "Person",
-              "name": "yuanyxh",
-              "url": "${env.VITE_DOMAIN_PATH}profile/about_me.html"
-            }]
-        }
-      </script>
-
-      <title>${env.VITE_APP_TITLE}: ${meta.title}</title>
+      <meta property="article:author" content="${authorPage}" />
     `;
+
+    meta.imageUrl && (image = meta.imageUrl);
+    description = meta.description;
+    title = `${appName}: ${meta.title}`;
+    keywords = meta.keywords;
   } else {
-    html += `
-      <meta property="og:type" content="website" />
-      <meta property="og:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
-      <meta property="og:title" content="${env.VITE_APP_TITLE}">
-      <meta name="description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
-      <meta name="twitter:title" content="${env.VITE_APP_TITLE}">
-      <meta name="twitter:description" content="技术博客，演示站，工具站；做一个有用的网站，拥有优秀的用户体验。站在巨人的肩膀上/If I have seen further than others, it is by standing upon the shoulders of giants.">
-      <meta property="og:image" content="${env.VITE_DOMAIN_PATH}logo.webp">
-      <meta name="twitter:image" content="${env.VITE_DOMAIN_PATH}logo.webp">
-      <meta name="keywords" content="yuanyxh, 个人博客, 个人网站, 首页, web 前端, JavaScript, css, html">
+    html += `<meta property="og:type" content="website" />`;
+  }
+
+  html += `
+      <meta property="og:image" content="${image}">
+      <meta property="og:description" content="${description}">
+      <meta property="og:title" content="${title}">
+      <meta name="twitter:title" content="${title}">
+      <meta name="twitter:description" content="${description}">
+      <meta name="twitter:image" content="${image}">
+      <meta name="description" content="${description}">
+      <meta name="keywords" content="${keywords}">
 
       <script type="application/ld+json">
         {
           "@context": "https://schema.org",
           "@type": "Article",
-          "headline": "${env.VITE_APP_TITLE}",
+          "headline": "${title}",
           "image": [
-            "${env.VITE_DOMAIN_PATH}logo.webp"
+            "${image}"
           ],
-          "dateModified": "${dayjs().toISOString()}",
+          "datePublished": "${date}",
           "author": [{
               "@type": "Person",
               "name": "yuanyxh",
-              "url": "${env.VITE_DOMAIN_PATH}profile/about_me.html"
+              "url": "${authorPage}"
             }]
         }
       </script>
 
-      <title>${env.VITE_APP_TITLE}</title>
+      <title>${appName}: ${title}</title>
     `;
-  }
 
   return html;
 }
@@ -104,36 +92,27 @@ function getMetaTag(meta: Meta | undefined, route: ResolveRouteObject) {
 async function vitePrerender(options: RouteOptions) {
   const {
     mode,
-    routeConfig,
-    prerenderOutput = resolve('./build'),
-    excludeOutPathRewrite,
-    routes = []
+    siteConfig,
+    getRoutes,
+    prerenderConfig = {
+      prerenderOutput: resolve('./build'),
+      excludeOutPathRewrite: []
+    }
   } = options;
+
+  const { prerenderOutput, excludeOutPathRewrite } = prerenderConfig;
 
   if (mode !== 'prod') return void 0;
 
-  const routesString = readFileSync(routeConfig, 'utf-8');
+  const routes = await getRoutes.call(options);
 
-  const resolveRoutesString = (await parseRoutes(routes)).reduce(
-    (prev, route) => replacePlaceRoute(prev, route.name, route.value),
-    routesString
-  );
-
-  const match = resolveRoutesString.match(reg);
-
-  if (!match) {
-    throw Error('no match routes.');
-  }
-
-  const getRoutes = new Function(`return [${match[0]}]`);
-
-  const detailsRoutes = resolveFullRoutes(getRoutes(), '', []);
+  const detailsRoutes = resolveFullRoutes(routes, '', []);
   const allRoutes = detailsRoutes.map((route) => route.fullPath);
 
   try {
-    // submit(routes);
+    await submit(allRoutes);
   } catch (err) {
-    console.log('submit error', err);
+    console.log('submit error: ', err);
   }
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
@@ -153,7 +132,6 @@ async function vitePrerender(options: RouteOptions) {
     renderer: new Renderer({
       headless: true,
       renderAfterDocumentEvent: 'pageReadyed'
-      // renderAfterTime: 20000
     }),
 
     postProcess(renderedRoute: PostProcessParam) {
@@ -168,7 +146,7 @@ async function vitePrerender(options: RouteOptions) {
       if (route) {
         renderedRoute.html = renderedRoute.html.replace(
           '<!-- meta_place -->',
-          getMetaTag(route.meta, route)
+          getMetaTag(route.meta, route, siteConfig)
         );
       }
 
