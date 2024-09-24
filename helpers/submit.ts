@@ -101,7 +101,9 @@ export async function submit(routes: string[]) {
         });
         console.log('submit res: ', res.data);
 
-        submitedList.push(route);
+        if (updateList.includes(route)) {
+          submitedList.push(route);
+        }
       } catch (err) {
         console.log('submit err: ', (err as SubmitError)?.response?.data);
       } finally {
