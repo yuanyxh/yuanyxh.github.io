@@ -41,21 +41,25 @@ const encode = (data: string | ArrayBuffer) => {
     bytes = new Uint8Array(data);
   }
 
-  let i = 0,
-    output = '';
+  const PLACE_CHART = '=';
+
+  let i = 0;
+  let output = '';
 
   while (i < bytes.length) {
-    const a = bytes[i++],
-      b = bytes[i++] || 0,
-      c = bytes[i++] || 0;
+    const a = bytes[i++];
+    const b = bytes[i++];
+    const c = bytes[i++];
 
     // 3 个 8 位 二进制组合为一个 24 位二进制
-    const total = (a << 16) + (b << 8) + c;
+    const total = ((a || 0) << 16) + ((b || 0) << 8) + (c || 0);
 
-    output += CHARACTER_SET.charAt(/* 右移 18 位，截取 6 位 */ (total >>> 18) & 63);
-    output += CHARACTER_SET.charAt(/* 右移 12 位，截取 6 位 */ (total >>> 12) & 63);
-    output += b !== 0 ? CHARACTER_SET.charAt(/* 右移 6 位，截取 6 位 */ (total >>> 6) & 63) : '=';
-    output += c !== 0 ? CHARACTER_SET.charAt(/* 截取 6 位 */ total & 63) : '=';
+    output += CHARACTER_SET.charAt(/* 右移 18 位，截取 6 位 */ (total >>> 18) & 0x3f);
+    output += CHARACTER_SET.charAt(/* 右移 12 位，截取 6 位 */ (total >>> 12) & 0x3f);
+    output += isInteger(b)
+      ? CHARACTER_SET.charAt(/* 右移 6 位，截取 6 位 */ (total >>> 6) & 0x3f)
+      : PLACE_CHART;
+    output += isInteger(c) ? CHARACTER_SET.charAt(/* 截取 6 位 */ total & 0x3f) : PLACE_CHART;
   }
 
   return output;
@@ -75,21 +79,21 @@ const decode = (str: string) => {
   const original = [];
 
   while (i < codeAt.length) {
-    const a = codeAt[i++],
-      b = codeAt[i++],
-      c = codeAt[i++],
-      d = codeAt[i++];
+    const a = codeAt[i++];
+    const b = codeAt[i++];
+    const c = codeAt[i++];
+    const d = codeAt[i++];
 
-    const n_a = a,
-      n_b = b,
-      n_c = c || 0,
-      n_d = d || 0;
+    const n_a = a;
+    const n_b = b || 0;
+    const n_c = c || 0;
+    const n_d = d || 0;
 
     const total = (n_a << 18) + (n_b << 12) + (n_c << 6) + n_d;
 
-    original.push((total >> 16) & 255);
-    isInteger(c) && original.push((total >> 8) & 255);
-    isInteger(d) && original.push(total & 255);
+    original.push((total >> 16) & 0xff);
+    isInteger(c) && original.push((total >> 8) & 0xff);
+    isInteger(d) && original.push(total & 0xff);
   }
 
   return window.decodeURIComponent(new TextDecoder().decode(new Uint8Array(original)));
