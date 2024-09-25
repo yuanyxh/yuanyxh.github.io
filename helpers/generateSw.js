@@ -41,6 +41,15 @@ generateSW({
   mode: 'production',
   runtimeCaching: [
     {
+      handler: 'NetworkOnly',
+      urlPattern: (option) =>
+        ['/illustrate', '/sitemap.xml'].some((item) => {
+          console.log(option.url.pathname.includes(item));
+          return option.url.pathname.includes(item);
+        }),
+      options: {}
+    },
+    {
       handler: 'CacheFirst',
       urlPattern: (options) => options.request.destination === 'font',
       options: {

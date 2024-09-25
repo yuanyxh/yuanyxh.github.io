@@ -11,7 +11,9 @@ export function useExamples() {
     const examples = getChildrenById(routes, Examples_ID);
 
     // the latest examples are displayed first
-    examples.sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
+    examples
+      .filter((example) => !example.meta!.draft)
+      .sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
 
     return examples;
   }, [routes]);

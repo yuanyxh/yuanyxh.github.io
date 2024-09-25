@@ -26,6 +26,7 @@ interface Meta {
   description: string;
   imageUrl: string;
   book?: boolean;
+  draft?: boolean;
 }
 
 /** user route */

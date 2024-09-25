@@ -11,7 +11,9 @@ export function useBooks() {
     const books = getChildrenById(routes, Books_ID);
 
     // the latest books are displayed first
-    books.sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
+    books
+      .filter((book) => !book.meta!.draft)
+      .sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
 
     return books;
   }, [routes]);

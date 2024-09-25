@@ -1,5 +1,11 @@
 type IFileDataType = 'text' | 'dataurl' | 'binrary';
 
+/**
+ *
+ * @description read file
+ * @param file
+ * @param type
+ */
 export function readFile(file: File, type: 'text'): Promise<string>;
 export function readFile(file: File, type: 'dataurl'): Promise<string>;
 export function readFile(file: File, type: 'binrary'): Promise<ArrayBuffer>;

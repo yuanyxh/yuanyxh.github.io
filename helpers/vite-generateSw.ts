@@ -534,6 +534,11 @@ export default function vitePluginWorkbox({ mode }: ConfigParams): PluginOption 
       mode: mode,
       runtimeCaching: [
         {
+          handler: 'NetworkOnly',
+          urlPattern: (option) => ['/illustrate', '/sitemap.xml'].includes(option.url.pathname),
+          options: {}
+        },
+        {
           handler: 'CacheFirst',
           urlPattern: (options) => options.request.destination === 'font',
           options: {
