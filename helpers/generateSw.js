@@ -12,7 +12,7 @@ generateSW({
     'examples'
   ],
   directoryIndex: 'index.html',
-  navigateFallbackDenylist: [/illustrate|sitemap.xml/g],
+  navigateFallbackDenylist: [/illustrate|sitemap.xml/],
   /**
    * TIPS:
    *  For the /articles route, our file path is /articles/index.html,
