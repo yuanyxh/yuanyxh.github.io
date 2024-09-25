@@ -43,10 +43,7 @@ generateSW({
     {
       handler: 'NetworkOnly',
       urlPattern: (option) =>
-        ['/illustrate', '/sitemap.xml'].some((item) => {
-          console.log(option.url.pathname.includes(item));
-          return option.url.pathname.includes(item);
-        }),
+        ['/illustrate', '/sitemap.xml'].some((item) => option.url.pathname.includes(item)),
       options: {}
     },
     {
