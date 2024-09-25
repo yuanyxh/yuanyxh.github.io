@@ -521,6 +521,7 @@ export default function vitePluginWorkbox({ mode }: ConfigParams): PluginOption 
       globDirectory: './build',
       globPatterns: ['**/**'],
       directoryIndex: 'index.html',
+      navigateFallbackDenylist: [/illustrate|sitemap.xml/g],
       babelPresetEnvTargets: [
         'Chrome >= 87',
         'Firefox >= 78',
