@@ -1,0 +1,124 @@
+---
+title: Service worker 入门手册
+date: 2024-09-26 11:46:30
+author: yuanyxh
+imageUrl: http://qkc148.bvimg.com/18470/b2034c26096d6f8c.png
+description: Web Service worker 的基础知识; Workbox 的使用与配置, 不同的缓存策略, 运行与调试, Service worker 使用注意事项; Service worker 能做什么。
+keywords: Web Service worker, Workbox, 缓存策略, 运行与调试, 使用注意事项, Service worker 的作用。
+draft: true
+---
+
+## Service worker 基础
+
+MDN 定义：
+
+> Service worker 本质上充当 Web 应用程序、浏览器与网络（可用时）之间的**代理服务器**。这个 API 旨在创建有效的离线体验，它会拦截网络请求并根据网络是否可用来采取适当的动作、更新来自服务器的资源。它还提供入口以推送通知和访问后台同步 API。
+
+Service worker 也是 PWA 技术的基石。
+
+### 作用域
+
+service worker 通过主线程执行 `ServiceWorkerContainer.register('/sw.js', { scope: './' })` 注册。
+
+service worker 的最大作用域为 sw.js 脚本所在位置，如 `https://yuanyxh.com/js/sw.js` 所能控制的作用范围是 `https://yuanyxh.com/js/**`。
+
+可以通过 scope 参数进行精细控制，如 `ServiceWorkerContainer.register('/sw.js', { scope: './assets/' })` 控制作用范围为 `https://yuanyxh.com/assets/**`。
+
+sw.js 中可以注册 `fetch` 事件，它会拦截作用范围内的网络请求：
+
+```js
+// sw.js
+
+self.addEventListener('fetch', (e) => {
+  // do something...
+});
+```
+
+### 生命周期
+
+service worker 有三个生命周期
+
+- download 下载阶段
+- install 安装阶段
+- activate 激活阶段
+
+在首次前往包含 service worker 的站点时进入 download 阶段，此时会下载 sw.js。如果 sw.js 文件有任何变更，会触发新的生命周期流程，也可以通过 `update` 手动触发更新检查。
+
+```js
+// 主线程
+navigator.serviceWorker.ready.then((registration) => {
+  registration.update();
+});
+```
+
+下载完成后进入 install 阶段，如果 sw.js 注册了 `install` 事件则触发。`install` 事件中可以进行预缓存等操作，请求一些需要预先缓存的资源。
+
+```js
+// sw.js
+
+self.addEventListener('install', (e) => {
+  const precacheResource = [/** some url */];
+
+  self.caches.open("precache").then((cache) => {
+    return cache.addAll(precacheResource);
+  });
+});
+```
+
+在 install 阶段中，可以调用 `ExtendableEvent.waitUntil()` 方法，该方法接收一个 Promise，在此 Promise 决议前，`fetch` 事件会延迟触发。
+
+```js
+// sw.js
+
+self.addEventListener('install', (e) => {
+  const precacheResource = [/** some url */];
+
+  // 等待全部资源预缓存成功
+  e.waitUntil(Promise.all(precacheResource.map(async (url) => {
+    const cache = await self.caches.open("precache");
+    await cache.add(url);
+
+    // or
+    const cache = await self.caches.open("precache");
+    const response = await self.fetch(url);
+    await cache.put(url, response);
+  })));
+});
+
+// waitUntil 被调用时，在传入 waitUntil 的 Promise 决议前此事件被暂停触发
+self.addEventListener('fetch', (e) => {
+  // do something...
+})
+```
+
+传入 `waitUntil` 的 Promise 被拒绝时，视为本次安装失败。
+
+在安装完成后，进行激活阶段，可以在 `activate` 事件中清除旧版本的缓存。
+
+```js
+self.addEventListener('activate', (e) => {
+  const precacheResource = [/** some url */];
+
+  e.waitUntil(self.caches.open("precache").then((cache) => {
+    return Promise.all(precacheResource.map((url) => cache.delete(url)));
+  }));
+});
+```
+
+如果当前存在已激活的 service worker，且存在被 service worker 管理的客户端（可能是打开的作用范围内的标签页），新的 service worker 会进入 `activating` 阶段，直到所有客户端被关闭后激活。
+
+可以通过 `skipWaiting()` 方法跳过 `activating` 阶段，使新的 service worker 立即接管当前客户端。
+
+```js
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+
+  // do something...
+});
+```
+
+`skipWaiting` 通常配合 `clients.claim()` 方法使用，该方法允许一个激活的 service worker 将自己设置为其作用域内所有客户端的控制者。
+
+## Workbox 使用与配置
+
+Web Service worker 的使用过于繁杂，其中包含大量的 API，初期较难在项目中快速集成，为此 Google 开发团队封装了一个开发工具：Workbox。
