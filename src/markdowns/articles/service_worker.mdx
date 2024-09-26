@@ -5,7 +5,6 @@ author: yuanyxh
 imageUrl: http://qkc148.bvimg.com/18470/b2034c26096d6f8c.png
 description: Web Service worker 的基础知识; Workbox 的使用与配置, 不同的缓存策略, 运行与调试, Service worker 使用注意事项; Service worker 能做什么。
 keywords: Web Service worker, Workbox, 缓存策略, 运行与调试, 使用注意事项, Service worker 的作用。
-draft: true
 ---
 
 ## Service worker 基础
@@ -26,7 +25,7 @@ service worker 的最大作用域为 sw.js 脚本所在位置，如 `https://yua
 
 sw.js 中可以注册 `fetch` 事件，它会拦截作用范围内的网络请求：
 
-```js
+```javascript
 // sw.js
 
 self.addEventListener('fetch', (e) => {
@@ -44,7 +43,7 @@ service worker 有三个生命周期
 
 在首次前往包含 service worker 的站点时进入 download 阶段，此时会下载 sw.js。如果 sw.js 文件有任何变更，会触发新的生命周期流程，也可以通过 `update` 手动触发更新检查。
 
-```js
+```javascript
 // 主线程
 navigator.serviceWorker.ready.then((registration) => {
   registration.update();
@@ -53,7 +52,7 @@ navigator.serviceWorker.ready.then((registration) => {
 
 下载完成后进入 install 阶段，如果 sw.js 注册了 `install` 事件则触发。`install` 事件中可以进行预缓存等操作，请求一些需要预先缓存的资源。
 
-```js
+```javascript
 // sw.js
 
 self.addEventListener('install', (e) => {
@@ -67,7 +66,7 @@ self.addEventListener('install', (e) => {
 
 在 install 阶段中，可以调用 `ExtendableEvent.waitUntil()` 方法，该方法接收一个 Promise，在此 Promise 决议前，`fetch` 事件会延迟触发。
 
-```js
+```javascript
 // sw.js
 
 self.addEventListener('install', (e) => {
@@ -95,7 +94,7 @@ self.addEventListener('fetch', (e) => {
 
 在安装完成后，进行激活阶段，可以在 `activate` 事件中清除旧版本的缓存。
 
-```js
+```javascript
 self.addEventListener('activate', (e) => {
   const precacheResource = [/** some url */];
 
@@ -109,7 +108,7 @@ self.addEventListener('activate', (e) => {
 
 可以通过 `skipWaiting()` 方法跳过 `activating` 阶段，使新的 service worker 立即接管当前客户端。
 
-```js
+```javascript
 self.addEventListener('install', (e) => {
   self.skipWaiting();
 
@@ -122,3 +121,321 @@ self.addEventListener('install', (e) => {
 ## Workbox 使用与配置
 
 Web Service worker 的使用过于繁杂，其中包含大量的 API，初期较难在项目中快速集成，为此 Google 开发团队封装了一个开发工具：Workbox。
+
+### 缓存策略
+
+Workbox 存在两种不同的缓存模式：
+
+- 预缓存，资源在 service worker 的 install 阶段预取并缓存
+- 运行时缓存，资源在网络请求时动态缓存
+
+同时预定义了几种不同的缓存策略，以此来应对需要不同新鲜度的网络资源，包括：
+
+- Cache only 仅缓存
+- Network only 仅网络
+- Cache first, falling to network 缓存优先，回退至网络
+- Network first, falling to cache 网络优先，回退至缓存
+- Stale-while-revalidate 过时重新验证
+
+Cache only 适合几乎不会变更的、重要程度低的资源，如网站字体文件。
+
+Network only 针对变更频繁，数据新鲜度要求较高的资源，如查询、变更接口。
+
+Cache first, falling to network 对于 html、css、js、网站 logo 这类不经常变更的静态资源较为合适。
+
+Network first, falling to cache 用于数据新鲜度要求较高，但希望网络不可用时也能提供服务的资源。
+
+Stale-while-revalidate 优先提供缓存资源，在后台验证缓存时效性并更新。
+
+### 配置
+
+Workbox 在 npm 中有一个 `workbox-build` 包，其中导出了一个 `generateSW` 函数，通过传入特定的配置，他会帮我们自动生成一个 service worker 脚本。以我网站的配置为例进行讲解：
+
+```javascript
+import { generateSW } from 'workbox-build';
+
+generateSW({
+  // 最终生成的 service worker 脚本的输出路径
+  swDest: './build/sw.js',
+  // 对 globDirectory 中的所有文件进行匹配
+  globDirectory: './build',
+  // 需要预缓存的资源，通过 glob 模式进行匹配
+  globPatterns: [
+    '**/*.{js,css,html,json}',
+    'articles/**',
+    'books/**',
+    'coder/**',
+    'profile/**',
+    'examples'
+  ],
+  /**
+   * 目录索引，在浏览器导航栏输入 url 时，
+   * 如果此 url 以 / 结尾，则会在无法匹配到资源时在 url 后添加目录索引再次尝试
+   * */
+  directoryIndex: 'index.html',
+  // 导航时禁用缓存的资源列表
+  navigateFallbackDenylist: [/illustrate|sitemap.xml/],
+  // 导航遇到错误，如不存在的 url 时，回退到 /index.html
+  navigateFallback: '/index.html',
+  // service worker 脚本运行的目标浏览器环境
+  babelPresetEnvTargets: [
+    'Chrome >= 87',
+    'Firefox >= 78',
+    'Safari >= 14',
+    'Edge >= 88',
+    'Opera >= 80',
+    'defaults and fully supports es6-module'
+  ],
+  // 每次版本更新时删除旧的预缓存资源
+  cleanupOutdatedCaches: true,
+  // service worker 被激活后立即获取作用域内的客户端控制权
+  clientsClaim: true,
+  // 生产模式
+  mode: 'production',
+  // 运行时缓存配置
+  runtimeCaching: [
+    {
+      // handler 可以是关键字和函数
+      handler: 'NetworkOnly',
+      // urlPattern 返回 true 表示应被此 handler 处理
+      urlPattern: (option) =>
+        ['/illustrate', '/sitemap.xml'].some((item) => option.url.pathname.includes(item)),
+      options: {}
+    },
+    {
+      handler: 'CacheFirst',
+      urlPattern: (options) => options.request.destination === 'font',
+      options: {
+        // 创建一个名为 fontCache 的缓存，用于存储字体资源
+        cacheName: 'fontCache',
+        expiration: {
+          // 最大缓存时长 3 个月
+          maxAgeSeconds: 3 * 30 * 24 * 60 * 60
+        }
+      }
+    },
+    {
+      handler: 'CacheFirst',
+      urlPattern: (options) => options.request.destination === 'image',
+      options: {
+        cacheName: 'imageCache',
+        expiration: {
+          maxAgeSeconds: 7 * 24 * 60 * 60
+        },
+        // 响应状态码为 0 或 200 的视为成功响应
+        cacheableResponse: {
+          statuses: [0, 200]
+        }
+      }
+    }
+  ],
+  // 不生成 sourcemap
+  sourcemap: false
+});
+```
+
+完整的配置可以在 `workbox-build` 中的类型定义中找到。
+
+**注意事项**：配置了 `navigateFallback` 后，导航失败的都会回退到指定 url，当你有一个部署在此应用的子站点时，如 `/illustrate`，访问此 url 时会被 service worker 重定向至主应用，可以配置 `navigateFallbackDenylist` 将子应用排除在外。
+
+### 使用
+
+配置 Workbox 后，在项目中使用 Service worker 变的简单，你只需要在 webpack、vite 等打包工具输出编译产物后执行 `generateSW` 函数即可生成 `sw.js` 文件，但同时也需要在你的主应用中添加注册、更新的代码：
+
+```typescript
+import EventEmitter from './event';
+
+import { sleep } from '.';
+
+interface ServiceWorkerManagerOptions {
+  update(): any;
+}
+
+const EVENT_KEY = 'update';
+
+class ServiceWorkerManager {
+  /** 事件发射器 */
+  private event = new EventEmitter();
+  private serviceWorker: ServiceWorkerRegistration | undefined;
+
+  private isRunning = false;
+
+  private cancel: (() => any) | undefined;
+
+  constructor(options?: ServiceWorkerManagerOptions) {
+    if (options) {
+      // 外部注册更新事件，以便于提示用户
+      this.event.on(EVENT_KEY, options.update);
+    }
+  }
+
+  // 注册 service worker
+  registerServiceWorker() {
+    if ('serviceWorker' in window.navigator) {
+      return new Promise<boolean>((resolve) => {
+        // 注册 service worker
+        window.navigator.serviceWorker
+          .register('/sw.js')
+          .then((serviceWorker) => {
+            resolve(true);
+
+            this.serviceWorker = serviceWorker;
+
+            // 发现待激活的 service worker，触发更新事件
+            if (serviceWorker.waiting) {
+              return this.event.emit(EVENT_KEY);
+            }
+
+            const _self = this;
+            function serviceWorkerUpdate() {
+              // 安装中的 service worker
+              const installingWorker = serviceWorker.installing;
+
+              function stateChange() {
+                // 如果新的 service worker 已安装且取得客户端控制权，则通知外部更新
+                if (installingWorker?.state === 'installed' && navigator.serviceWorker.controller) {
+                  _self.event.emit(EVENT_KEY);
+
+                  installingWorker.removeEventListener('statechange', stateChange);
+                }
+              }
+
+              // 注册状态变更事件
+              installingWorker?.addEventListener('statechange', stateChange);
+
+              serviceWorker.removeEventListener('updatefound', serviceWorkerUpdate);
+            }
+
+            // 注册 updatefound 事件，发现 sw.js 更新时触发事件回调
+            serviceWorker.addEventListener('updatefound', serviceWorkerUpdate);
+          })
+          .catch(() => {
+            resolve(false);
+          });
+      });
+    }
+
+    return Promise.resolve(false);
+  }
+
+  // 由外部调用，强制跳过 activating 阶段
+  skipWaiting() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+
+    /**
+     * 发送 SKIP_WAITING 消息给等待激活的 service worker,
+     * 此消息被 workbox 处理, workbox 调用 skipWaiting
+     * */
+    this.serviceWorker?.waiting?.postMessage({ type: 'SKIP_WAITING' });
+
+    // 等待 200ms 后重载页面
+    return new Promise((resolve) => sleep(200, resolve)).then(() => {
+      this.isRunning = false;
+      window.location.reload();
+    });
+  }
+}
+
+export default ServiceWorkerManager;
+```
+
+## Service worker 调试
+
+Service worker 因为缓存、代码运行在主线程之外等原因，通常较难调试，但好在像 Chrome 之类的现代浏览器都提供了良好的调试工具，我们就来聊聊如何在 Chrome 中调试 Service worker。
+
+在 `chrome://serviceworker-internals/` 中可以查看所有已注册的 Service worker:
+
+<Image url={'http://qkc148.bvimg.com/18470/e3f7bfe8971c0e76.png'} width={3528} height={2060} />
+
+<Image url={'http://qkc148.bvimg.com/18470/4313daf4428882ed.png'} width={3526} height={1488} />
+
+上图是开发者工具 Application -> Service workers 面板，来看看图中的选项：
+
+- Offline 表示网站将在离线模式下运行，用来测试 service worker 缓存是否生效
+- Update on reload 表示在重新加载时触发更新
+- Bypass for network 表示始终从网络获取，一般用于需要实时查看数据更新的情况
+- Update 立即触发更新检查
+- Unregister 取消注册 service worker
+- Source 指向了 service worker 脚本所在
+- Status 指示了当前 service worker 的状态/生命周期
+- Upate cycle 记录了当前版本与生命周期时长
+
+同样在 Application 中，可以查看 indexedDB 和 Cache storage 选项：
+
+<Image url={'http://qkc148.bvimg.com/18470/cb497b2ab2c6e821.png'} width={3526} height={1104} />
+
+Cache 是真正存放缓存的地方，同时为了快速判断缓存是否失效，Workbox 还将缓存时间和有效期存储在 indexedDB 中。
+
+再来看看 Sources 面板，你可以在这里看到已注册的 service worker 脚本，同时可以像调试其他脚本一样在上面打上断点：
+
+<Image url={'http://qkc148.bvimg.com/18470/5dcfbfd4d03f887c.png'} width={3520} height={1816} />
+
+为了更好的调试 sw.js，你还可以在 Console 面板中将 JavaScript 上下文切换至 service worker:
+
+<Image url={'http://qkc148.bvimg.com/18470/0009f11294e68ce4.png'} width={2002} height={1136} />
+
+## Service worker 注意事项
+
+接下来聊聊使用 Service worker 过程中需要注意的一些问题，如更新延迟、数据的时效性等等。
+
+### 更新延迟
+
+在一般情况下，浏览器只会在导航至 service worker 作用范围内时去检查更新，这对于使用 SPA 的网站来说是不太友好的，假设一个 SPA 网站已经在运行且存在激活的 service worker，此时后台发布了新版本，这个 SPA 网站是无法接收到更新的，因为在 SPA 中的所有路由操作都由客户端脚本处理。
+
+为了解决这种更新延迟的问题，我们可以在合适的时机主动触发 `registration.update()` 方法去触发更新检查，比如 `visibilitychange` 事件中，或以一定的时间间隔来调用。
+
+### 版本迭代
+
+假设我们有一个后台项目，使用了 service worker 缓存了 html、css、js 资源，这个后台项目有一个对应的后端接口。现在需要进行版本迭代，前端、后端都有变更，此时因为 service worker 更新延迟的原因，客户端使用旧版本的前端代码请求了新版本的后端接口，可能出现问题。
+
+可以在接口请求中加入版本字段，由后端适配。
+
+### 存储配额
+
+Service worker 依赖于 `self.caches` 接口缓存资源，caches 有效存储空间受限于浏览器为每个源分配的额度。你可以通过 `navigator.storage.estimate()` 获取当前源的大概存储信息，也可以在 Application -> Storage 选项中查看：
+
+<Image url={'http://qkc148.bvimg.com/18470/67ee82eacb55bd59.png'} width={2440} height={1132} />
+
+### 取消注册
+
+你可以通过 `ServiceWorkerRegistration.unregister()` 来取消注册 service worker，但需要注意的是，避免在重新进入页面时再次注册 service worker。
+
+### 启动延时
+
+在首次导航至 service worker 作用域内的页面时，浏览器会首先启动 service worker，在此期间浏览器无法处理任何事件，如果启动耗时过长，我们可能会看到空白的页面，可以通过导航预加载来并行请求网络上的资源以加快速度：
+
+```javascript
+self.addEventListener('activate', event => {
+  event.waitUntil(async function() {
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable();
+    }
+  }());
+});
+```
+
+## Service worker 能做什么
+
+将 service worker 看做一个指定作用域下共享的代理服务器，他可以：
+
+- 拦截并重写请求、响应
+- 离线缓存与访问
+- 后台数据同步；利用 BackgroundSync API 对失败请求进行重试，即使用户离开了站点
+- 多个标签页的集中数据管理
+- 以开发为目的，对 ts、less 等类型的模块进行客户端编译和依赖管理
+- 性能增强，预取用户可能很快需要的资源
+- API 接口模拟
+
+通过 service worker 提供的离线访问能力非常适合一些工具、博客类的站点，如 [draw.io]；Workbox 也提供了非常多的插件帮助我们构建功能强大的 Service worker。
+
+## 参考
+
+- Service_Worker_API: [Service_Worker_API]
+- Workbox: [Workbox]
+
+---end
+
+[draw.io]: https://app.diagrams.net/
+[Service_Worker_API]: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
+[Workbox]: https://developer.chrome.com/docs/workbox/service-worker-overview?hl=zh-cn

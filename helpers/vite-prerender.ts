@@ -107,7 +107,9 @@ async function vitePrerender(options: RouteOptions) {
   const routes = await getRoutes.call(options);
 
   const detailsRoutes = resolveFullRoutes(routes, '', []);
-  const allRoutes = detailsRoutes.map((route) => route.fullPath);
+  const allRoutes = detailsRoutes
+    .filter((route) => (typeof route.meta !== 'undefined' ? !route.meta.draft : true))
+    .map((route) => route.fullPath);
 
   try {
     await submit(allRoutes);

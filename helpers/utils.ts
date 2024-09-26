@@ -20,6 +20,7 @@ export interface Meta {
   imageUrl: string;
   keywords: string;
   book?: boolean;
+  draft?: boolean;
 }
 
 export interface RouteObject {
