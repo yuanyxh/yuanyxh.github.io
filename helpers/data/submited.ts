@@ -54,5 +54,6 @@ export default [
   "/books/deepen_vuejs.html",
   "/articles/web-component_user_experience.html",
   "/articles/debugging_and_understanding_nodejs_modules.html",
-  "/articles/simulate_input_in_react.html"
+  "/articles/simulate_input_in_react.html",
+  "/articles/service_worker.html"
 ]
