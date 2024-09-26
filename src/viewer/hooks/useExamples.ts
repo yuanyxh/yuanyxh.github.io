@@ -8,12 +8,13 @@ export function useExamples() {
   const routes = useRoutes();
 
   const examples = useMemo(() => {
-    const examples = getChildrenById(routes, Examples_ID);
+    let examples = getChildrenById(routes, Examples_ID);
 
-    // the latest examples are displayed first
-    examples
-      .filter((example) => !example.meta!.draft)
-      .sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
+    // Don't show drafts in production
+    examples = examples.filter((example) => (import.meta.env.PROD ? !example.meta!.draft : true));
+
+    // the latest books are displayed first
+    examples.sort((a, b) => new Date(b.meta!.date).getTime() - new Date(a.meta!.date).getTime());
 
     return examples;
   }, [routes]);
