@@ -27,10 +27,22 @@ class GlobalEvent {
    * @param type
    * @param fn
    */
-  on(type: 'user_tips', fn: (data: GlobalEventInfo['user_tips']) => any): () => void;
-  on(type: 'user_alert', fn: (data: GlobalEventInfo['user_alert']) => any): () => void;
-  on<T extends GlobalEventKeys>(type: GlobalEventKeys, fn: (data: GlobalEventInfo[T]) => any) {
-    return this.event.on(type, fn);
+  on(
+    type: 'user_tips',
+    fn: (data: GlobalEventInfo['user_tips']) => any,
+    options?: EventOptions
+  ): () => void;
+  on(
+    type: 'user_alert',
+    fn: (data: GlobalEventInfo['user_alert']) => any,
+    options?: EventOptions
+  ): () => void;
+  on<T extends GlobalEventKeys>(
+    type: GlobalEventKeys,
+    fn: (data: GlobalEventInfo[T]) => any,
+    options?: EventOptions
+  ) {
+    return this.event.on(type, fn, options);
   }
 
   /**

@@ -7,7 +7,7 @@ type EventEmitterListener = (...anys: any[]) => any;
 class EventEmitter {
   listeners: Map<string, EventEmitterListener[]> = new Map();
 
-  on<K extends (...anys: any[]) => any>(key: string, fn: K) {
+  on<K extends (...anys: any[]) => any>(key: string, fn: K, options?: EventOptions) {
     let listeners: EventEmitterListener[] = [];
     if (this.listeners.has(key)) {
       listeners = this.listeners.get(key)!;
@@ -15,7 +15,18 @@ class EventEmitter {
 
     this.listeners.set(key, [...listeners, fn]);
 
-    return () => this.off(key, fn);
+    const abortListener = () => {
+      this.off(key, fn);
+
+      options?.signal?.removeEventListener('abort', abortListener);
+    };
+    options?.signal?.addEventListener('abort', abortListener);
+
+    return () => {
+      this.off(key, fn);
+
+      options?.signal?.removeEventListener('abort', abortListener);
+    };
   }
 
   off<K extends (...anys: any[]) => any>(key: string, fn: K) {

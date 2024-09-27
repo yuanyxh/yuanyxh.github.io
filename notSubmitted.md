@@ -1,16 +1,5 @@
 ## Google
 
-- https://yuanyxh.com/articles/js_prototype_and_inheri.html
-- https://yuanyxh.com/articles/serviceless_blog_establishment.html
-- https://yuanyxh.com/articles/simulate_input_in_react.html
-- https://yuanyxh.com/articles/upload_component_create.html
-- https://yuanyxh.com/articles/use_file_system.html
-- https://yuanyxh.com/articles/web-component_user_experience.html
-- https://yuanyxh.com/articles/web_bluetooth_and_point_to_point_connection.html
-- https://yuanyxh.com/articles/what_is_functional_programming.html
-- https://yuanyxh.com/articles/what_is_gif.html
-- https://yuanyxh.com/articles/axios_source_2.html
-- https://yuanyxh.com/books
 - https://yuanyxh.com/books/deepen_vuejs.html
 - https://yuanyxh.com/books/professional_js.html
 - https://yuanyxh.com/profile/about_me.html
@@ -21,16 +10,6 @@
 
 ## Baidu
 
-- https://yuanyxh.com/articles
-- https://yuanyxh.com/articles/Idle_mobile_and_intranet_penetration.html
-- https://yuanyxh.com/articles/Pro_Git_reading_comprehension_how_to_achieve_git.html
-- https://yuanyxh.com/articles/blog_product_with_hexo.html
-- https://yuanyxh.com/articles/boss_article_auto_upload.html
-- https://yuanyxh.com/articles/compatible_discussion.html
-- https://yuanyxh.com/articles/create_picgo_plugin.html
-- https://yuanyxh.com/articles/css_type_of_data.html
-- https://yuanyxh.com/articles/debugging_and_understanding_nodejs_modules.html
-- https://yuanyxh.com/articles/drop_api.html
 - https://yuanyxh.com/articles/es6_arrow_func.html
 - https://yuanyxh.com/articles/es6_async_func.html
 - https://yuanyxh.com/articles/es6_class.html

@@ -92,29 +92,32 @@ const App: React.FC<IAppProps> = (props) => {
       }
     }
 
-    darkModeQuery.addEventListener('change', listenColorSchemeChange);
+    const abortController = new AbortController();
 
-    const listenVisibilityChange = () => setFrontDesk(!window.document.hidden);
-    window.document.addEventListener('visibilitychange', listenVisibilityChange);
+    darkModeQuery.addEventListener('change', (e) => setColorScheme(e.matches ? 'dark' : 'light'), {
+      signal: abortController.signal
+    });
 
-    const cancelGlobalUserTipsEventListener = globalEvent.on(
-      'user_tips',
-      ({ type, message: _message }) => messageApi[type](_message)
+    window.document.addEventListener(
+      'visibilitychange',
+      () => setFrontDesk(!window.document.hidden),
+      {
+        signal: abortController.signal
+      }
     );
-    const cancelGlobalUserAlertEventListener = globalEvent.on('user_alert', ({ type, ...props }) =>
-      modalApi[type](props)
-    );
 
-    const cancelReLoadListener = assetsLoadHandler.reLoadByOnline(() => !enableServiceWorkerCache);
+    globalEvent.on('user_tips', ({ type, message: _message }) => messageApi[type](_message), {
+      signal: abortController.signal
+    });
+    globalEvent.on('user_alert', ({ type, ...props }) => modalApi[type](props), {
+      signal: abortController.signal
+    });
 
-    return () => {
-      cancelReLoadListener();
-      cancelGlobalUserTipsEventListener();
-      cancelGlobalUserAlertEventListener();
+    assetsLoadHandler.reLoadByOnline(() => !enableServiceWorkerCache, {
+      signal: abortController.signal
+    });
 
-      darkModeQuery.removeEventListener('change', listenColorSchemeChange);
-      window.document.removeEventListener('visibilitychange', listenVisibilityChange);
-    };
+    return () => abortController.abort();
   }, []);
 
   const update = () => {
@@ -145,10 +148,6 @@ const App: React.FC<IAppProps> = (props) => {
         body: '网站内容有更新，您可以前往查看更新。'
       });
     }
-  };
-
-  const listenColorSchemeChange = (e: MediaQueryListEvent) => {
-    setColorScheme(e.matches ? 'dark' : 'light');
   };
 
   return (

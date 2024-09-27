@@ -31,11 +31,11 @@ class AssetsLoadHandler {
     this.event.emit(LOAD_ERROR_KEY);
   }
 
-  reLoadByOnline(cb: () => boolean) {
+  reLoadByOnline(cb: () => boolean, options?: EventOptions) {
     this.cb = cb;
 
     const cancelGlobalErrorListener = addGlobalListener('error', this.listener, true);
-    const cancelRenderErrorListener = this.event.on(LOAD_ERROR_KEY, this.listener);
+    const cancelRenderErrorListener = this.event.on(LOAD_ERROR_KEY, this.listener, options);
 
     return () => {
       cancelGlobalErrorListener();

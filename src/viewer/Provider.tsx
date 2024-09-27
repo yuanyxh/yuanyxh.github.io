@@ -1,6 +1,6 @@
 import { createElement, useId, useMemo } from 'react';
 
-import { Anchor, Divider, Image as AntdImage } from 'antd';
+import { Anchor, Divider } from 'antd';
 import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 import { Link, useLocation } from '@/router';
@@ -177,11 +177,7 @@ const Image = (props: ImageProps) => {
 export const useMDXComponents = (): MDXComponents => {
   return {
     wrapper(props) {
-      return (
-        <Wrapper>
-          <AntdImage.PreviewGroup>{props.children}</AntdImage.PreviewGroup>
-        </Wrapper>
-      );
+      return <Wrapper>{props.children}</Wrapper>;
     },
     Header(props: { frontmatter: { title: string } }) {
       return (

@@ -5,3 +5,5 @@ declare interface ProcedureFunction {
 declare interface AsyncFunction {
   (): Promise<boolean>;
 }
+
+declare type ArgsFunction = <T>(...args: unknown[]) => T;
