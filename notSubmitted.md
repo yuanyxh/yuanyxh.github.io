@@ -5,6 +5,7 @@
 - https://yuanyxh.com/profile/about_me.html
 - https://yuanyxh.com/profile/about_site.html
 - https://yuanyxh.com/coder/base64_coder
+- https://yuanyxh.com/articles/service_worker.html
 
 ---
 
@@ -51,3 +52,4 @@
 - https://yuanyxh.com/profile/about_site.html
 - https://yuanyxh.com/examples
 - https://yuanyxh.com/coder/base64_coder
+- https://yuanyxh.com/articles/service_worker.html
