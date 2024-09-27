@@ -20,6 +20,9 @@ concurrency:
   group: 'pages'
   cancel-in-progress: true
 
+env:
+  HUSKY: 0
+
 jobs:
   # 单次部署的工作描述
   deploy:
