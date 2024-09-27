@@ -81,8 +81,10 @@ router.beforeEnter(() => {
   clear = sleep(200, () => NProgress.start());
 });
 
-router.afterEnter(() => {
+const appTitle = import.meta.env.VITE_APP_TITLE;
+router.afterEnter((_from, to) => {
   resetProgressBar();
+  window.document.title = to.meta?.title ? `${to.meta.title} - ${appTitle}` : appTitle;
 });
 
 export const resetProgressBar = () => {

@@ -43,7 +43,7 @@ const PieChart: React.FC<Readonly<IPieChartProps>> = (props) => {
       ctx.fillStyle = sector.color;
       ctx.fill();
 
-      ratio = nextRatio;
+      ratio = i === data.length - 1 ? circle : nextRatio;
     }
   }, [radius, data]);
 

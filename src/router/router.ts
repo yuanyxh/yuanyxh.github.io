@@ -51,6 +51,7 @@ interface RouteState {
   hash: string;
   query: Record<string, string | string[] | ParsedQs | ParsedQs[] | undefined>;
   state: any;
+  meta?: Meta;
 }
 
 /** route changed listener */
@@ -262,31 +263,41 @@ class Router {
   private navigateTo(to: number): boolean;
   private navigateTo(to: string, options?: NavigateOptions, changeHistory?: boolean): boolean;
   private navigateTo(to: number | string, options?: NavigateOptions, changeHistory = false) {
-    if (typeof to === 'number') return this.history.go(to);
-
-    // hash changes
-    if (to.startsWith('#')) {
-      options = { ...this.state, hash: to, replace: true };
-      to = this.state?.path || '/';
-    }
-
-    const newState = {
-      path: to,
-      query: options?.query || {},
-      hash: options?.hash || '',
-      state: options?.state || null
-    };
-
-    const isSome = isEqual(this.state, newState);
-    if (changeHistory && isSome) return false;
-
-    // cancel last update
-    if (this.markObsolete) {
-      this.markObsolete();
-      this.markObsolete = void 0;
+    if (typeof to === 'number') {
+      return this.history.go(to);
     }
 
     try {
+      // hash changes
+      if (to.startsWith('#')) {
+        options = { ...this.state, hash: to, replace: true };
+        to = this.state?.path || '/';
+      }
+
+      const _matchs = this.routeTree.match(to);
+
+      const newState: RouteState = {
+        path: to,
+        query: options?.query || {},
+        hash: options?.hash || '',
+        state: options?.state || null
+      };
+
+      if (_matchs[_matchs.length - 1]?.meta) {
+        newState.meta = _matchs[_matchs.length - 1].meta;
+      }
+
+      const isSome = isEqual(this.state, newState);
+      if (changeHistory && isSome) {
+        return false;
+      }
+
+      // cancel last update
+      if (this.markObsolete) {
+        this.markObsolete();
+        this.markObsolete = void 0;
+      }
+
       const fromState = this.state;
       this.state = newState;
       const toState = cloneDeep(this.state);
@@ -301,8 +312,6 @@ class Router {
           changeHistory
         });
       }
-
-      const _matchs = this.routeTree.match(to);
 
       // We don't want stale requests
       let isObsolete = false;
