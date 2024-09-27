@@ -11,12 +11,13 @@ const prePush = async () => {
   try {
     const branch = await getBranch();
 
-    console.log(branch);
+    if (branch === 'origin/master') {
+      childProcess.execSync('pnpm run clean');
 
-    if (branch === 'master') {
-      let result =  childProcess.execSync('pnpm run clean');
-      result = childProcess.execSync('pnpm run build');
-      result = childProcess.execSync('pnpm run clean');
+      const result = childProcess.execSync('pnpm run build');
+      console.log(result.toString());
+
+      childProcess.execSync('pnpm run clean');
     }
 
   } catch(err) {
