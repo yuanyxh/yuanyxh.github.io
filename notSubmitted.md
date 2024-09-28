@@ -11,16 +11,6 @@
 
 ## Baidu
 
-- https://yuanyxh.com/articles/es6_arrow_func.html
-- https://yuanyxh.com/articles/es6_async_func.html
-- https://yuanyxh.com/articles/es6_class.html
-- https://yuanyxh.com/articles/es6_deconstruct.html
-- https://yuanyxh.com/articles/es6_iterator.html
-- https://yuanyxh.com/articles/es6_let_and_const.html
-- https://yuanyxh.com/articles/es6_promise.html
-- https://yuanyxh.com/articles/es6_symbol.html
-- https://yuanyxh.com/articles/flashback_analysis_and_develop_native_plug.html
-- https://yuanyxh.com/articles/habits.html
 - https://yuanyxh.com/articles/handlery_and_update_scheme.html
 - https://yuanyxh.com/articles/js_closure.html
 - https://yuanyxh.com/articles/js_event_loop.html
