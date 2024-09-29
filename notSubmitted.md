@@ -1,15 +1,5 @@
 ## Baidu
 
-- https://yuanyxh.com/articles/handlery_and_update_scheme.html
-- https://yuanyxh.com/articles/js_closure.html
-- https://yuanyxh.com/articles/js_event_loop.html
-- https://yuanyxh.com/articles/js_pro_func.html
-- https://yuanyxh.com/articles/js_prototype_and_inheri.html
-- https://yuanyxh.com/articles/record_vuepress_rolling_recovery.html
-- https://yuanyxh.com/articles/serviceless_blog_establishment.html
-- https://yuanyxh.com/articles/simulate_input_in_react.html
-- https://yuanyxh.com/articles/typora_synchronization.html
-- https://yuanyxh.com/articles/uniapp_multi_end_adaptation_problem.html
 - https://yuanyxh.com/articles/uniapp_project_development_experience_summary.html
 - https://yuanyxh.com/articles/upload_component_create.html
 - https://yuanyxh.com/articles/use_file_system.html
