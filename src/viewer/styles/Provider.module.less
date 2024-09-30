@@ -1,6 +1,5 @@
 code {
   font-family: var(--font-family-code);
-  // background-color: rgb(127 127 127 / 12%);
   border-radius: var(--border-radius-base);
 }
 
@@ -331,6 +330,7 @@ code {
   code {
     &.inline {
       padding: 1px 4px;
+      background-color: rgb(0 0 0 / 6%);
     }
   }
 
@@ -365,6 +365,14 @@ code {
     th {
       color: var(--text-color);
       background-color: #1d1e1f;
+    }
+  }
+
+  code {
+    &.inline {
+      padding: 1px 4px;
+      background-color: inherit;
+      border: 1px solid rgb(255 255 255 / 20%);
     }
   }
 }
