@@ -322,7 +322,7 @@ const Content = () => {
 
   const [visibleFeedback, setVisibleFeedback] = useState(false);
 
-  const getSavedPosition = useScrollStore(`.${styles.main}`);
+  const getSavedPosition = useScrollStore(mainRef);
 
   useEffect(() => {
     outletMountedRef.current?.onMounted(() => {
