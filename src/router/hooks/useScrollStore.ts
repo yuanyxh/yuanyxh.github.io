@@ -98,8 +98,6 @@ export function useScrollStore(eleRef: RefObject<HTMLElement | null>) {
       return state.timestamp > savedScrollPosition.timestamp ? state : savedScrollPosition;
     }
 
-    console.log('2', toLocation.current);
-
     // we take the scroll position from history.state, if it doesn't exist, from the map, otherwise the scroll position is 0
     return state || savedScrollPosition || { y: 0 };
   };
