@@ -1,15 +1,5 @@
 ## Baidu
 
-- https://yuanyxh.com/articles/uniapp_project_development_experience_summary.html
-- https://yuanyxh.com/articles/upload_component_create.html
-- https://yuanyxh.com/articles/use_file_system.html
-- https://yuanyxh.com/articles/web-component_user_experience.html
-- https://yuanyxh.com/articles/web_bluetooth_and_point_to_point_connection.html
-- https://yuanyxh.com/articles/what_is_functional_programming.html
-- https://yuanyxh.com/articles/what_is_gif.html
-- https://yuanyxh.com/articles/what_is_pdf.html
-- https://yuanyxh.com/articles/axios_source_1.html
-- https://yuanyxh.com/articles/axios_source_2.html
 - https://yuanyxh.com/articles/axios_source_3.html
 - https://yuanyxh.com/articles/redux_source.html
 - https://yuanyxh.com/books
