@@ -50,7 +50,7 @@ function getMetaTag(
 
     meta.imageUrl && (image = meta.imageUrl);
     description = meta.description;
-    title = `${appName}: ${meta.title}`;
+    title = `${meta.title} - ${appName}`;
     keywords = meta.keywords;
   } else {
     html += `<meta property="og:type" content="website" />`;
@@ -83,7 +83,7 @@ function getMetaTag(
         }
       </script>
 
-      <title>${appName}: ${title}</title>
+      <title>${title}</title>
     `;
 
   return html;
