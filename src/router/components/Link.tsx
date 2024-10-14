@@ -46,8 +46,12 @@ const Link: React.FC<Readonly<ILinkProps>> = (props) => {
       }
 
       e.preventDefault();
-      if (replace) history.replace(to, location);
-      else history.push(to, location);
+
+      if (replace) {
+        history.replace(to, location);
+      } else {
+        history.push(to, location);
+      }
     },
     [props]
   );
