@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/profile",
+    "label": "网站设置",
+    "title": "网站设置",
+    "key": "/profile"
+  },
+  {
+    "path": "/profile/about_me.html",
+    "label": "关于我",
+    "title": "关于我",
+    "key": "/profile/about_me.html"
+  },
+  {
+    "path": "/profile/about_site.html",
+    "label": "关于网站",
+    "title": "关于网站",
+    "key": "/profile/about_site.html"
+  }
+]

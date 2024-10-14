@@ -73,7 +73,7 @@ function ServiceWorkerCache() {
   return (
     <Spin spinning={spinning}>
       <Row className={styles.row} gutter={20} align={'middle'}>
-        <Col span={21}>
+        <Col span={21} xs={18}>
           <h5 className={styles.subTitle}>离线缓存</h5>
 
           <Paragraph type="danger">
@@ -82,7 +82,7 @@ function ServiceWorkerCache() {
           </Paragraph>
         </Col>
 
-        <Col span={3} style={{ textAlign: 'center' }}>
+        <Col span={3} xs={6} style={{ textAlign: 'center' }}>
           <Switch
             disabled={isLocal}
             value={enableServiceWorkerCache}
@@ -141,7 +141,7 @@ function WebNotification() {
   return (
     <Spin spinning={spinning}>
       <Row className={styles.row} gutter={20} align={'middle'}>
-        <Col span={21}>
+        <Col span={21} xs={18}>
           <h5 className={styles.subTitle}>网站通知</h5>
 
           <Paragraph type="secondary">
@@ -149,7 +149,7 @@ function WebNotification() {
           </Paragraph>
         </Col>
 
-        <Col span={3} style={{ textAlign: 'center' }}>
+        <Col span={3} xs={6} style={{ textAlign: 'center' }}>
           <Switch value={enableNotification} onChange={handleSwitchWebNotification} />
         </Col>
       </Row>
@@ -192,7 +192,7 @@ function PersistentStorage() {
 
   return (
     <Row className={styles.row} gutter={20} align={'middle'}>
-      <Col span={21}>
+      <Col span={21} xs={18}>
         <h5 className={styles.subTitle}>持久化存储</h5>
 
         <Paragraph type="danger">
@@ -204,7 +204,7 @@ function PersistentStorage() {
         </Paragraph>
       </Col>
 
-      <Col span={3} style={{ textAlign: 'center' }}>
+      <Col span={3} xs={6} style={{ textAlign: 'center' }}>
         <Switch
           disabled={enablePersistent}
           value={enablePersistent}
@@ -267,28 +267,36 @@ function StorageDetail() {
             ]}
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px 0' }}>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '10px 0', overflowX: 'hidden' }}
+          >
             <div className={styles.line}>
               <span className={styles.symbol} style={{ backgroundColor: 'white' }}></span>
 
-              <Text type="secondary">总可用存储</Text>
+              <Text type="secondary" ellipsis>
+                总可用存储
+              </Text>
 
-              <Text>{storage.quota.toFixed(3)} MB</Text>
+              <Text ellipsis>{storage.quota.toFixed(3)} MB</Text>
             </div>
 
             <div className={styles.line}>
               <span className={styles.symbol} style={{ backgroundColor: '#627ad3' }}></span>
 
-              <Text type="secondary">已用存储量</Text>
+              <Text type="secondary" ellipsis>
+                已用存储量
+              </Text>
 
-              <Text>{storage.usage.toFixed(3)} MB</Text>
+              <Text ellipsis>{storage.usage.toFixed(3)} MB</Text>
             </div>
 
             <div className={styles.line}>
               <span className={styles.symbol} style={{ backgroundColor: '#9eca7f' }}></span>
 
-              <Text type="secondary">剩余可用量</Text>
-              <Text>{storage.unUsage.toFixed(3)} MB</Text>
+              <Text type="secondary" ellipsis>
+                剩余可用量
+              </Text>
+              <Text ellipsis>{storage.unUsage.toFixed(3)} MB</Text>
             </div>
           </div>
         </div>

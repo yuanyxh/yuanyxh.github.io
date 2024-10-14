@@ -284,6 +284,10 @@ const FileSystemTrigger = () => {
   const [support, setSupport] = useState(false);
   const filePanelRef = useRef<FilePanelFactory>();
 
+  const {
+    status: { isSmallScreen }
+  } = useAppStore();
+
   useEffect(() => {
     isSupportOPFS().then((res) => {
       setSupport(res);
@@ -307,7 +311,7 @@ const FileSystemTrigger = () => {
     filePanelRef.current?.toggle();
   };
 
-  return support ? (
+  return support && !isSmallScreen ? (
     <FloatButton
       aria-label="filesystem"
       icon={<Icon icon="octicon--file-directory-open-fill-16" color="var(--color-primary)" />}
