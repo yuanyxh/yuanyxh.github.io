@@ -117,6 +117,8 @@ const App: React.FC<IAppProps> = (props) => {
       { signal: abortController.signal }
     );
 
+    setIsSmallScreen(window.innerWidth <= SMALL_SCREEN_WIDTH);
+
     globalEvent.on('user_tips', ({ type, message: _message }) => messageApi[type](_message), {
       signal: abortController.signal
     });
