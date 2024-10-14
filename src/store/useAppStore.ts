@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import { getStorage, setStorage } from '@/utils';
 
+import { SMALL_SCREEN_WIDTH } from '@/enum';
+
 export interface AppState {
   settings: {
     language: string;
@@ -12,6 +14,7 @@ export interface AppState {
   status: {
     /** web app is in frontdesk */
     frontDesk: boolean;
+    isSmallScreen: boolean;
   };
 }
 
@@ -24,6 +27,7 @@ export interface AppActions {
   ): void;
   setEnableNotification(enableNotification: AppState['settings']['enableNotification']): void;
   setFrontDesk(frontDesk: AppState['status']['frontDesk']): void;
+  setIsSmallScreen(isSmallScreen: AppState['status']['isSmallScreen']): void;
 }
 
 /**
@@ -39,7 +43,8 @@ const useAppStore = create<AppState & AppActions>((set) => ({
       enableNotification: false
     },
     status: {
-      frontDesk: true
+      frontDesk: true,
+      isSmallScreen: window.innerWidth <= SMALL_SCREEN_WIDTH
     }
   }),
   setLanguage(language) {
@@ -106,7 +111,10 @@ const useAppStore = create<AppState & AppActions>((set) => ({
     });
   },
   setFrontDesk(frontDesk) {
-    set((state) => ({ ...state, status: { frontDesk: frontDesk } }));
+    set((state) => ({ ...state, status: { ...state.status, frontDesk: frontDesk } }));
+  },
+  setIsSmallScreen(isSmallScreen) {
+    set((state) => ({ ...state, status: { ...state.status, isSmallScreen: isSmallScreen } }));
   }
 }));
 

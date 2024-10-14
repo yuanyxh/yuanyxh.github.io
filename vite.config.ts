@@ -238,6 +238,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         {
           find: /@\/filehandle\//,
           replacement: `${resolve('src/filehandle')}/`
+        },
+        {
+          find: /@\/enum\//,
+          replacement: `${resolve('src/enum')}/`
         }
       ]
     },

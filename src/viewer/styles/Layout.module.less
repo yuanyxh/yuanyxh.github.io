@@ -11,13 +11,13 @@
   > a {
     flex-shrink: 0;
 
-    > .logo {
+    .logo {
       width: 40px;
       height: 39px;
       border-radius: var(--border-radius-base);
     }
 
-    > .title {
+    .title {
       display: inline;
       margin-left: 10px;
       font-size: 1.125rem;
@@ -82,13 +82,13 @@
 
   .headerStyle();
 
-  > .drawer {
+  .drawer {
     display: none;
 
     .headerIconStyle();
   }
 
-  > .topNavbar {
+  .topNavbar {
     display: flex;
     flex: 1;
     align-items: center;
@@ -101,7 +101,7 @@
       flex: 1;
       height: 100%;
 
-      > li {
+      li {
         flex-shrink: 0;
 
         .tabStyle();
@@ -121,13 +121,13 @@
         display: none;
       }
 
-      > .searchWrap {
+      .searchWrap {
         width: 100%;
       }
     }
   }
 
-  > .sideContainer {
+  .sideContainer {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -144,17 +144,17 @@
       transform: translateX(100%);
     }
 
-    > .sideHeader {
+    .sideHeader {
       box-shadow: @sideTabBorderBottom;
 
       .headerStyle();
 
-      > .close {
+      .close {
         .headerIconStyle();
       }
     }
 
-    > .sideNavbar {
+    .sideNavbar {
       width: 100%;
       height: calc(100% - var(--navbar-height));
       overflow: auto;
@@ -174,7 +174,7 @@
     }
   }
 
-  > .mask {
+  .mask {
     position: fixed;
     inset: 0;
     z-index: var(--z-ignore);
@@ -184,7 +184,7 @@
     transition: opacity 0.2s ease;
   }
 
-  > .actions {
+  .actions {
     margin-left: 10px;
 
     .action {
@@ -219,7 +219,7 @@
       0 1px 6px -1px rgb(255 255 255 / 2%),
       0 2px 4px 0 rgb(255 255 255 / 2%);
 
-    > .actions {
+    .actions {
       .action {
         &.dark {
           display: none;
@@ -233,30 +233,40 @@
   }
 }
 
-@media screen and (width <= 768px) {
+@media screen and (width <= 796px) {
   .header {
-    > .drawer {
+    > a {
+      display: none;
+    }
+
+    .drawer {
       display: block;
     }
 
-    > .topNavbar {
-      > ul {
+    .topNavbar {
+      ul {
         display: none;
       }
 
-      > .searchWrap {
+      .searchWrap {
         display: none;
       }
     }
 
-    > .sideContainer {
+    .sideContainer {
       display: block;
     }
 
-    > .mask.active {
+    .mask.active {
       z-index: var(--z-useful);
       display: block;
       opacity: 1;
+    }
+
+    .actions {
+      .fullscreen {
+        display: none !important;
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ import type { AppState } from '@/store';
 import { useAppStore } from '@/store';
 
 import {
+  addGlobalListener,
   assetsLoadHandler,
   getStorage,
   globalEvent,
@@ -19,6 +20,7 @@ import {
   ServiceWorkerManager
 } from '@/utils';
 
+import { SMALL_SCREEN_WIDTH } from './enum';
 import { resetProgressBar } from './routes';
 import './App.less';
 
@@ -58,6 +60,7 @@ const App: React.FC<IAppProps> = (props) => {
 
   const {
     settings: { colorScheme, enableServiceWorkerCache },
+    setIsSmallScreen,
     setLanguage,
     setColorScheme,
     setFrontDesk
@@ -104,6 +107,14 @@ const App: React.FC<IAppProps> = (props) => {
       {
         signal: abortController.signal
       }
+    );
+
+    addGlobalListener(
+      'resize',
+      () => {
+        setIsSmallScreen(window.innerWidth <= SMALL_SCREEN_WIDTH);
+      },
+      { signal: abortController.signal }
     );
 
     globalEvent.on('user_tips', ({ type, message: _message }) => messageApi[type](_message), {

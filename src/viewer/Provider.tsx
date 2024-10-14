@@ -10,6 +10,7 @@ import { copy, error, success } from '@/utils';
 import { Icon, Image as InnerImage } from '@/components';
 
 import styles from './styles/Provider.module.less';
+import { SMALL_SCREEN_WIDTH } from '@/enum';
 import '@/assets/styles/prism-one-dark.css';
 
 import type { MDXComponents } from 'mdx/types';
@@ -112,11 +113,11 @@ const calcArticleWrapperSize = () => {
   let containerWidth = 916;
 
   switch (true) {
-    case window.innerWidth <= 768:
+    case window.innerWidth <= SMALL_SCREEN_WIDTH:
       containerWidth = window.innerWidth - 40;
       break;
     case window.innerWidth <= 1366:
-      containerWidth = 768;
+      containerWidth = SMALL_SCREEN_WIDTH;
       break;
     default:
       break;
