@@ -2,7 +2,7 @@
 title: Service worker 入门手册
 date: 2024-09-26 11:46:30
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/b2034c26096d6f8c.png
+imageUrl: https://qkc148.bvimg.com/18470/b2034c26096d6f8c.png
 description: Web Service worker 的基础知识; Workbox 的使用与配置, 不同的缓存策略, 运行与调试, Service worker 使用注意事项; Service worker 能做什么。
 keywords: Web Service worker, Workbox, 缓存策略, 运行与调试, 使用注意事项, Service worker 的作用。
 ---
@@ -346,9 +346,9 @@ Service worker 因为缓存、代码运行在主线程之外等原因，通常�
 
 在 `chrome://serviceworker-internals/` 中可以查看所有已注册的 Service worker:
 
-<Image url={'http://qkc148.bvimg.com/18470/e3f7bfe8971c0e76.png'} width={3528} height={2060} />
+<Image url={'https://qkc148.bvimg.com/18470/e3f7bfe8971c0e76.png'} width={3528} height={2060} />
 
-<Image url={'http://qkc148.bvimg.com/18470/4313daf4428882ed.png'} width={3526} height={1488} />
+<Image url={'https://qkc148.bvimg.com/18470/4313daf4428882ed.png'} width={3526} height={1488} />
 
 上图是开发者工具 Application -> Service workers 面板，来看看图中的选项：
 
@@ -363,17 +363,17 @@ Service worker 因为缓存、代码运行在主线程之外等原因，通常�
 
 同样在 Application 中，可以查看 indexedDB 和 Cache storage 选项：
 
-<Image url={'http://qkc148.bvimg.com/18470/cb497b2ab2c6e821.png'} width={3526} height={1104} />
+<Image url={'https://qkc148.bvimg.com/18470/cb497b2ab2c6e821.png'} width={3526} height={1104} />
 
 Cache 是真正存放缓存的地方，同时为了快速判断缓存是否失效，Workbox 还将缓存时间和有效期存储在 indexedDB 中。
 
 再来看看 Sources 面板，你可以在这里看到已注册的 service worker 脚本，同时可以像调试其他脚本一样在上面打上断点：
 
-<Image url={'http://qkc148.bvimg.com/18470/5dcfbfd4d03f887c.png'} width={3520} height={1816} />
+<Image url={'https://qkc148.bvimg.com/18470/5dcfbfd4d03f887c.png'} width={3520} height={1816} />
 
 为了更好的调试 sw.js，你还可以在 Console 面板中将 JavaScript 上下文切换至 service worker:
 
-<Image url={'http://qkc148.bvimg.com/18470/0009f11294e68ce4.png'} width={2002} height={1136} />
+<Image url={'https://qkc148.bvimg.com/18470/0009f11294e68ce4.png'} width={2002} height={1136} />
 
 ## Service worker 注意事项
 
@@ -395,7 +395,7 @@ Cache 是真正存放缓存的地方，同时为了快速判断缓存是否失�
 
 Service worker 依赖于 `self.caches` 接口缓存资源，caches 有效存储空间受限于浏览器为每个源分配的额度。你可以通过 `navigator.storage.estimate()` 获取当前源的大概存储信息，也可以在 Application -> Storage 选项中查看：
 
-<Image url={'http://qkc148.bvimg.com/18470/67ee82eacb55bd59.png'} width={2440} height={1132} />
+<Image url={'https://qkc148.bvimg.com/18470/67ee82eacb55bd59.png'} width={2440} height={1132} />
 
 ### 取消注册
 

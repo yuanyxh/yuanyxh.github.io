@@ -2,7 +2,7 @@
 title: 学习 axios 源码（二）
 date: 2023-03-14 16:22:00
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/1dbf569c31dd90e6.png
+imageUrl: https://qkc148.bvimg.com/18470/1dbf569c31dd90e6.png
 description: 学习目前主流的网络请求库 axios 的源码，了解其内部的执行流程，知晓实现的细节。
 keywords: axios, 源码, source
 ---
@@ -193,7 +193,7 @@ if (!synchronousRequestInterceptors) {
 
 代码将请求的过渡函数 `dispatchRequest` 存入了一个数组 `chain`，并将请求拦截的数组添加至 `chain` 的前面，响应拦截的数组添加至 `chain` 的后面，随后创建了一个 `Promise`，不断的链式调用，最终它们会以下图的顺序被执行：
 
-<Image url='http://qkc148.bvimg.com/18470/f2c436db9d475ae8.png' width={558} height={601} alt='展示请求拦截的演示图片' />
+<Image url='https://qkc148.bvimg.com/18470/f2c436db9d475ae8.png' width={558} height={601} alt='展示请求拦截的演示图片' />
 
 #### 同步执行请求拦截
 

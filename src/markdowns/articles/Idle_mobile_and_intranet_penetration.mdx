@@ -2,7 +2,7 @@
 title: 【折腾向】闲置手机 + 内网穿透 + caddy + rclone = ？
 date: 2024-03-10 17:20:00
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/6516a9300533ca12.png
+imageUrl: https://qkc148.bvimg.com/18470/6516a9300533ca12.png
 description: 通过 frp 内网穿透将闲置手机暴露至公网，并使用 caddy 搭建 webdav 服务，客户端使用 rclone 实现 webdav 挂载，达到类坚果云的效果。
 keywords: 闲置手机, 内网穿透, caddy, rclone, 坚果云, webdav, frp
 ---
@@ -22,9 +22,9 @@ keywords: 闲置手机, 内网穿透, caddy, rclone, 坚果云, webdav, frp
 
 首先将仓库源更换为国内速度更客观的 USTC，输入 `termux-change-repo` 后出现下图界面：
 
-<Image url='http://qkc148.bvimg.com/18470/6a51e165ea2323d3.jpg' width={1080} height={2340} alt='termux 换源的图片' />
+<Image url='https://qkc148.bvimg.com/18470/6a51e165ea2323d3.jpg' width={1080} height={2340} alt='termux 换源的图片' />
 
-<Image url='http://qkc148.bvimg.com/18470/3f819cf6139f5991.jpg' width={1080} height={2340} alt='termux 换源的图片2' />
+<Image url='https://qkc148.bvimg.com/18470/3f819cf6139f5991.jpg' width={1080} height={2340} alt='termux 换源的图片2' />
 
 空格选择，回车确认。
 
@@ -37,11 +37,11 @@ pkg upgarde
 
 开启存储权限，输入 `termux-setup-storage` 并同意权限申请，这一步是为了访问外部存储并将部分公用文件夹映射到 termux 的私有目录，所以不要手动开启 termux 的存储权限：
 
-<Image url='http://qkc148.bvimg.com/18470/bdc46520a9034ede.jpg' width={1080} height={2340} alt='termux 开启存储的图片' />
+<Image url='https://qkc148.bvimg.com/18470/bdc46520a9034ede.jpg' width={1080} height={2340} alt='termux 开启存储的图片' />
 
 开启后通过 ls 命令列举根目录的文件夹会出现 storage：
 
-<Image url='http://qkc148.bvimg.com/18470/f0c58604a680b3bb.jpg' width={1080} height={2340} alt='termux 开启存储后的文件列表图片' />
+<Image url='https://qkc148.bvimg.com/18470/f0c58604a680b3bb.jpg' width={1080} height={2340} alt='termux 开启存储后的文件列表图片' />
 
 安装 vim：
 
@@ -57,7 +57,7 @@ pkg install vim
 
 我们下载机器 CPU 对应的版本，这里我下载 linux_arm64：
 
-<Image url='http://qkc148.bvimg.com/18470/d948fc5a4917a17f.png' width={748} height={573} alt='github frp 列表的图片' />
+<Image url='https://qkc148.bvimg.com/18470/d948fc5a4917a17f.png' width={748} height={573} alt='github frp 列表的图片' />
 
 右键复制链接，在服务器中通过 `wget` 命令下载：
 
@@ -67,7 +67,7 @@ wget https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_
 
 在闲置手机中，我们先将文件下载到 `/storage/emulated/0/Download/` 目录下，此时 `termux` 内的 `storage/downloads` 下也会出现对应的文件：
 
-<Image url='http://qkc148.bvimg.com/18470/732c559fdfdb03b2.jpg' width={1080} height={2340} alt='文件列表的图片' />
+<Image url='https://qkc148.bvimg.com/18470/732c559fdfdb03b2.jpg' width={1080} height={2340} alt='文件列表的图片' />
 
 通过 `mv` 命令移动到私有目录：
 
@@ -75,7 +75,7 @@ wget https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_
 mv ~/storage/downloads/frp_0.54.0_linux_arm64.tar.gz ~/frp
 ```
 
-<Image url='http://qkc148.bvimg.com/18470/1e0dc5d0df86d525.jpg' width={1080} height={2340} alt='文件列表的图片2' />
+<Image url='https://qkc148.bvimg.com/18470/1e0dc5d0df86d525.jpg' width={1080} height={2340} alt='文件列表的图片2' />
 
 两端对压缩文件进行解压：
 
@@ -143,7 +143,7 @@ nohup ./frpc -c ./frpc.toml &
 
 下载 CPU 对应的二进制可执行文件：
 
-<Image url='http://qkc148.bvimg.com/18470/7cc83a2bbae02ef4.png' width={1350} height={696} alt='github caddy 的列表图片' />
+<Image url='https://qkc148.bvimg.com/18470/7cc83a2bbae02ef4.png' width={1350} height={696} alt='github caddy 的列表图片' />
 
 将二进制文件移动到 termux 的私有目录中，创建需要等下用的密码：
 
@@ -151,7 +151,7 @@ nohup ./frpc -c ./frpc.toml &
 ./caddy hash-password --plaintext yourpassword
 ```
 
-<Image url='http://qkc148.bvimg.com/18470/6f12fc1d63c1b75c.jpg' width={1080} height={2340} alt='创建 caddy 密码的图片' />
+<Image url='https://qkc148.bvimg.com/18470/6f12fc1d63c1b75c.jpg' width={1080} height={2340} alt='创建 caddy 密码的图片' />
 
 使用 `touch` 命令在同级目录创建 caddy 配置文件：
 
@@ -244,7 +244,7 @@ sv-enable caddy
 
 下载需要的可执行文件：
 
-<Image url='http://qkc148.bvimg.com/18470/4639e981345f005f.png' width={1366} height={607} alt='github rclone 的图片' />
+<Image url='https://qkc148.bvimg.com/18470/4639e981345f005f.png' width={1366} height={607} alt='github rclone 的图片' />
 
 运行：
 
@@ -338,7 +338,7 @@ remotePort = 9833      # 服务器侦听的端口，防火墙需放行
 
 将电脑锁屏（win + L），在另一台客户端中使用远程桌面连接
 
-<Image url='http://qkc148.bvimg.com/18470/70ba551fbacd8b77.png' width={473} height={605} alt='远程连接面板的图片' />
+<Image url='https://qkc148.bvimg.com/18470/70ba551fbacd8b77.png' width={473} height={605} alt='远程连接面板的图片' />
 
 注意：电脑不能进入休眠状态。
 

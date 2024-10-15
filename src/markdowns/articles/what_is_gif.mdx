@@ -2,7 +2,7 @@
 title: 深入浅出 GIF
 date: 2023-09-12 13:41:00
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/5fb84fd5087780ea.jpg
+imageUrl: https://qkc148.bvimg.com/18470/5fb84fd5087780ea.jpg
 description: 本文深入探讨了 gif 编解码的原理与技术。涵盖了 gif 文件的格式、压缩算法、八叉树颜色量化和字典树等关键内容。通过这些知识，我们成功实现了视频转 gif、图片转 gif 和 gif 播放器等功能。无论是从理论还是实践角度，本文都将为你展示 gif 编解码的精髓。
 keywords: git, compress, octree color quantization, gif player, video to gif, picture to gif
 ---
@@ -35,19 +35,19 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 这里我们以下面的 gif 文件为例来讲解各个块的实际意义。
 
-<Image url="http://qkc148.bvimg.com/18470/6c9b329e24d97c4e.gif" width={320} height={200} alt='示例图片' />
+<Image url="https://qkc148.bvimg.com/18470/6c9b329e24d97c4e.gif" width={320} height={200} alt='示例图片' />
 
 ### Header
 
 在文件头中总是包含着 magic number 数据，标识当前的文件类型，对于 gif 而言，它的前三个字节总是 `0x47, 0x49, 0x46`，而后三个字节标识当前 gif 的版本，可能是 87a 也可能是 89a，这是 header 中包含的全部信息，如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/302f3fa33391f95d.png" width={1280} height={704} alt='文件头图片' />
+<Image url="https://qkc148.bvimg.com/18470/302f3fa33391f95d.png" width={1280} height={704} alt='文件头图片' />
 
 ### LogicScreenDescriptor
 
 紧随 Header 之后的是 LogicScreenDescriptor，这里包含了整个 gif 文件的全局信息，固定 7 个字节，如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/e4b8d54aaef9e533.png" width={1282} height={728} alt='全局信息的图片' />
+<Image url="https://qkc148.bvimg.com/18470/e4b8d54aaef9e533.png" width={1282} height={728} alt='全局信息的图片' />
 
 前 4 个字节描述了这个 gif 的宽高，需要注意的是，在 gif 中，多字节数据是以小端形式存储的，也就是说 `0x40, 0x01` (宽) 和 `0xc8, 0x00` (高) 按人们所能接受的表示应该是 `0x01, 0x40` 和 `0x00, 0xc8`，也就是 320 x 200。
 
@@ -66,7 +66,7 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 全局色表，只有当全局颜色标识为 1 时才存在；gif 中颜色以 rgb 格式排序，也就是说每个颜色三字节，128 个颜色则占用 384 个字节，如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/a2b2997771b78520.png" width={1280} height={704} alt='全局色表的图片' />
+<Image url="https://qkc148.bvimg.com/18470/a2b2997771b78520.png" width={1280} height={704} alt='全局色表的图片' />
 
 ### Extension
 
@@ -90,13 +90,13 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 在示例中，`0x21, 0xfe` 后的 `0xa1` 表示后续有 161 个字节的数据，跳过这些字节后遇到 `0x00`，表示没有其他数据子块了，此块结束。如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/f1671570f29ae4e0.png" width={1280} height={704} alt='评论扩展的图片' />
+<Image url="https://qkc148.bvimg.com/18470/f1671570f29ae4e0.png" width={1280} height={704} alt='评论扩展的图片' />
 
 ### Graphic-Control-Extension
 
 图形控制扩展，顾名思义包含了可以控制图形展示的信息，它的作用范围是此块出现后的第一个 `Image` 或 `Plain Text Extension`，固定 7 字节，其中 `0x21, 0xf9` 占用两个字节。如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/fa884d776fcc7469.png" width={1282} height={728} alt='图形控制扩展的图片' />
+<Image url="https://qkc148.bvimg.com/18470/fa884d776fcc7469.png" width={1282} height={728} alt='图形控制扩展的图片' />
 
 第 3 个字节为固定值 `0x04`，表示后续有 4 个字节的数据，即 `[info]` 数据。
 
@@ -122,7 +122,7 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 图像描述符，描述了当前图像的信息。遇到此块时则表示着一个 `Image` 的开始，固定 10 个字节，其中第一个字节始终是 `0x2c`。如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/02129d069ddfbe62.png" width={1280} height={704} alt='图像描述符的图片' />
+<Image url="https://qkc148.bvimg.com/18470/02129d069ddfbe62.png" width={1280} height={704} alt='图像描述符的图片' />
 
 第 2 - 9 字节分别是图像在整个 gif 图形区域中的左偏移、上偏移、图像宽、图像高，每个值占两个字节，以小端格式存储。
 
@@ -152,7 +152,7 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 纯文本扩展，存放 ASCII 文本数据，这些文本需要被渲染到 gif 中，虽然大部分解析器都忽略它。此块包含 15 字节的固定信息，其后是可变长度的数据子块，用于存放文本数据。如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/ea76a08f203542ee.png" width={1280} height={704} alt='纯文本扩展的图片' />
+<Image url="https://qkc148.bvimg.com/18470/ea76a08f203542ee.png" width={1280} height={704} alt='纯文本扩展的图片' />
 
 15 个字节中 `0x21, 0x01` 是固定的，标识这是一个纯文本扩展，其余字节的含义如下：
 
@@ -168,7 +168,7 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 应用程序扩展，该块以 `0x21, 0xff` 开始。示例文件中没有该块，下图是另一个 gif 中的应用程序扩展块：
 
-<Image url="http://qkc148.bvimg.com/18470/050d4872a4c38fc9.png" width={1280} height={704} alt='应用程序扩展的图片' />
+<Image url="https://qkc148.bvimg.com/18470/050d4872a4c38fc9.png" width={1280} height={704} alt='应用程序扩展的图片' />
 
 第三个字节开始是 `[info]` 数据，第一个字节标识后续有多少 (0x0b) 个字节，后续字节一般是 ASCII 码值 `NETSCAPE2.0`。
 
@@ -204,19 +204,19 @@ gif，即 Graphics Interchange Format，图片互换格式，实际上是一种�
 
 我们先取 rgb 值的最高位，也就是上面索引为 0 的位，以 r 为高位 b 为低位的顺序排列，组成 `111` 的二进制数据，也就是数字 7，我们即在八叉树中 `root` 树子树位置 7 的地方插入一个新的节点 (如果不存在)。
 
-<Image url="http://qkc148.bvimg.com/18470/63c84f91f8d0ca8b.png" width={339} height={99} alt='rgb 收集的图片' />
+<Image url="https://qkc148.bvimg.com/18470/63c84f91f8d0ca8b.png" width={339} height={99} alt='rgb 收集的图片' />
 
 接下来我们再读取矩阵中索引为 1 的位，再次执行上述操作，但这次我们插入到刚刚创建的新节点的子树中，以此类推，因为字节总共有八位，所以八叉树最深也只能有八层 (除去 root 树)。
 
 经过这一步操作，我们会发现相同的颜色总是会落到相同的位置，相近的颜色也会落到同一颗树中。以下图为例
 
-<Image url="http://qkc148.bvimg.com/18470/7f4a65aacc959abb.png" width={341} height={1144} alt='rgb 树展示的图片' />
+<Image url="https://qkc148.bvimg.com/18470/7f4a65aacc959abb.png" width={341} height={1144} alt='rgb 树展示的图片' />
 
-<Image url="http://qkc148.bvimg.com/18470/723268bd85db31ee.png" width={1366} height={360} alt='rgb 树展示的图片2' />
+<Image url="https://qkc148.bvimg.com/18470/723268bd85db31ee.png" width={1366} height={360} alt='rgb 树展示的图片2' />
 
 上面的数据只是最低位发生了变化，可以看到结果确实是将它们归纳到了同一颗树中，这些颜色如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/2a55b6b16180a7b5.png" width={1366} height={279} alt='rgb 同一颗树颜色的展示图片' />
+<Image url="https://qkc148.bvimg.com/18470/2a55b6b16180a7b5.png" width={1366} height={279} alt='rgb 同一颗树颜色的展示图片' />
 
 你能看出区别吗？是不是很难，那如果我们将这第八层的数据丢弃改用它们共同的父节点，这样导致的颜色差异是不是很小呢？
 
@@ -765,7 +765,7 @@ function decoder(codeStream: number[], lzwMiniCodeSize: number) {
 
 视频转 gif 需要控制帧数，为了保证流畅我设置的是每秒 24 帧，5 秒大概有 122 帧，以下是一个 640 x 360 视频编码的 5 秒 gif 文件，耗时 2 分 40 秒，还是比较慢的。
 
-<Image url="http://qkc148.bvimg.com/18470/103cb89dd2180c85.gif" width={640} height={360} alt='gif 展示的图片' />
+<Image url="https://qkc148.bvimg.com/18470/103cb89dd2180c85.gif" width={640} height={360} alt='gif 展示的图片' />
 
 ### 图片转 gif
 
@@ -775,7 +775,7 @@ function decoder(codeStream: number[], lzwMiniCodeSize: number) {
 
 也是实现了一个简易的 gif 播放器，同时添加了用户控制扩展，不过不支持渲染文本。思路是解码 gif 的图像数据后通过变量一帧一帧的绘制到 `canvas` 中，同时也支持将全部帧图片下载为单独的图片。如下图：
 
-<Image url="http://qkc148.bvimg.com/18470/5b90ec5020e61cf0.png" width={1069} height={551} alt='gif 播放器展示的图片' />
+<Image url="https://qkc148.bvimg.com/18470/5b90ec5020e61cf0.png" width={1069} height={551} alt='gif 播放器展示的图片' />
 
 在实现 gif 解码的过程中发现了 web 支持了一个新的 API [ImageDecoder] 可以很方便的解码图像，可以基于此来实现播放器功能。
 

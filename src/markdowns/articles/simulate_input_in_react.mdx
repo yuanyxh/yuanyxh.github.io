@@ -2,7 +2,7 @@
 title: 在 React 中模拟输入
 date: 2024-09-19 14:02:30
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/2d2aae8f37b6f5b1.png
+imageUrl: https://qkc148.bvimg.com/18470/2d2aae8f37b6f5b1.png
 description: 记录在 React 模拟输入时产生的问题，如何解决，调试理解他的原理。
 keywords: react, input, simulate input
 ---
@@ -23,7 +23,7 @@ browser.ExecuteScriptAsync($"document.getElementsById('submitBtn').click()");
 
 直接修改 input 的 value 值无效，通过控制台 sources 面板查看，发现网站用 React 重构：
 
-<Image url={'http://qkc148.bvimg.com/18470/29f35b549d849475.png'} width={1089} height={408} />
+<Image url={'https://qkc148.bvimg.com/18470/29f35b549d849475.png'} width={1089} height={408} />
 
 React 是状态驱动的视图库，直接修改元素的 value 值不会导致 React 应用状态的改变，我们需要让 React 感知到数据变化，即事件模拟：
 
@@ -35,11 +35,11 @@ inputEl.dispatchEvent(new Event('input', { bubbles: true, cancelable: false, com
 
 结果是页面显示已经改变：
 
-<Image url={'http://qkc148.bvimg.com/18470/f2bc9721b3dba060.png'} width={380} height={72} />
+<Image url={'https://qkc148.bvimg.com/18470/f2bc9721b3dba060.png'} width={380} height={72} />
 
 但内部的状态依然未变：
 
-<Image url={'http://qkc148.bvimg.com/18470/e26431cdb387d382.png'} width={517} height={139} />
+<Image url={'https://qkc148.bvimg.com/18470/e26431cdb387d382.png'} width={517} height={139} />
 
 查询资料找到一个 React Issues，有人在讨论中给出解决方案 [Trigger simulated input value][Trigger_simulated_input_value]，代码如下：
 
@@ -66,15 +66,15 @@ input.dispatchEvent(event);
 
 通过控制台 -> Elements -> Event Listeners 面板，找到 input 事件，查看已注册的事件处理程序：
 
-<Image url={'http://qkc148.bvimg.com/18470/18859edd4a1cca9f.png'} width={1920} height={527} />
+<Image url={'https://qkc148.bvimg.com/18470/18859edd4a1cca9f.png'} width={1920} height={527} />
 
 React 实现了自己的合成事件系统，几乎所有的事件统一注册在 React 应用根元素上，这里即是截图中的 root 元素，点击右侧链接定位至源码：
 
-<Image url={'http://qkc148.bvimg.com/18470/584f3dfd84b01f54.png'} width={657} height={520} />
+<Image url={'https://qkc148.bvimg.com/18470/584f3dfd84b01f54.png'} width={657} height={520} />
 
 所有事件都经过此函数，避免时间浪费，我们加上条件，只有 input 事件才会断点：
 
-<Image url={'http://qkc148.bvimg.com/18470/61c9694d8bbf1858.png'} width={1229} height={607} />
+<Image url={'https://qkc148.bvimg.com/18470/61c9694d8bbf1858.png'} width={1229} height={607} />
 
 输入触发断点，中间会经过很多我们不关心的流程，最终进入 `updateValueIfChanged` 函数：
 
@@ -212,7 +212,7 @@ function trackValueOnNode(node) {
 
 这里模拟输入时，新旧值是相同的，所以 updateValueIfChanged 函数会返回 false，当返回 false 时不会触发 React 的更新机制去更新状态，即无法进入下图的流程：
 
-<Image url={'http://qkc148.bvimg.com/18470/ce3def0bfe6baf45.png'} width={590} height={96} />
+<Image url={'https://qkc148.bvimg.com/18470/ce3def0bfe6baf45.png'} width={590} height={96} />
 
 我们再来看看之前的解决方案：
 

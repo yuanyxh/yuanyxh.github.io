@@ -2,7 +2,7 @@
 title: JavaScript 概念 - 闭包
 date: 2022-11-12 12:04:03
 author: yuanyxh
-imageUrl: http://qkc148.bvimg.com/18470/879ccc71f21e0fbd.jpg
+imageUrl: https://qkc148.bvimg.com/18470/879ccc71f21e0fbd.jpg
 description: 详解 JavaScript 中的闭包，并了解为什么大量使用闭包会造成内存泄漏
 keywords: javascript 闭包, closure
 ---
@@ -39,7 +39,7 @@ function outside() {
 
 在上述代码中存在三个相互嵌套的作用域：全局作用域，`outside` 函数作用域与 `inside` 函数作用域，它们的关系如下图
 
-<Image url='http://qkc148.bvimg.com/18470/53a0d59308b01bb1.png' width={271} height={201} alt='作用域嵌套' />
+<Image url='https://qkc148.bvimg.com/18470/53a0d59308b01bb1.png' width={271} height={201} alt='作用域嵌套' />
 
 其中
 
@@ -50,7 +50,7 @@ function outside() {
 
 这三个相互嵌套的作用域形成的作用域链如下图
 
-<Image url='http://qkc148.bvimg.com/18470/ec4e0ff3c6eab643.png' width={429} height={271} alt='作用域链' />
+<Image url='https://qkc148.bvimg.com/18470/ec4e0ff3c6eab643.png' width={429} height={271} alt='作用域链' />
 
 从这些规则中可以发现，外层作用域无法直接访问内层作用域内的变量，比如示例代码中，全局作用域下无法访问变量 `outside_` 和 函数 `inside` ，`outside` 函数内无法访问 `inside` 函数内的变量 `inside_`。
 
@@ -185,7 +185,7 @@ function outside() {
 
 以上述代码为例，它们的词法作用域以及所能访问的作用域分别如下
 
-<Image url='http://qkc148.bvimg.com/18470/2faf8ca411c3f816.png' width={656} height={451} alt='词法作用域' />
+<Image url='https://qkc148.bvimg.com/18470/2faf8ca411c3f816.png' width={656} height={451} alt='词法作用域' />
 
 现在还有一个问题：函数执行完毕以后，它所在作用域内的变量应该被销毁了才对，为什么还能访问呢？
 
