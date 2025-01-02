@@ -12,8 +12,6 @@ import {
   success
 } from '@/utils';
 
-import { getStorageUsage } from '@/filehandle/utils/index';
-
 import { PieChart } from '@/components';
 
 import styles from './styles/Settings.module.less';
@@ -21,6 +19,10 @@ import styles from './styles/Settings.module.less';
 const { Paragraph, Text } = Typography;
 
 const isLocal = import.meta.env.PROD === false;
+
+const getStorageUsage = () => {
+  return window.navigator.storage.estimate();
+};
 
 function ServiceWorkerCache() {
   const {

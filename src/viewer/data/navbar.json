@@ -4,10 +4,6 @@
     "path": "/articles"
   },
   {
-    "label": "代码案例",
-    "path": "/examples"
-  },
-  {
     "label": "读过的书",
     "path": "/books"
   }

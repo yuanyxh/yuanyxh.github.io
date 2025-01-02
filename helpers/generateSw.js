@@ -3,14 +3,7 @@ import { generateSW } from 'workbox-build';
 generateSW({
   swDest: './build/sw.js',
   globDirectory: './build',
-  globPatterns: [
-    '**/*.{js,css,html,json}',
-    'articles/**',
-    'books/**',
-    'coder/**',
-    'profile/**',
-    'examples'
-  ],
+  globPatterns: ['**/*.{js,css,html,json}', 'articles/**', 'books/**', 'profile/**'],
   directoryIndex: 'index.html',
   navigateFallbackDenylist: [/illustrate|sitemap.xml|robots.txt/],
   /**
@@ -26,7 +19,6 @@ generateSW({
   // navigateFallbackAllowlist: [
   //   /\/articles$/,
   //   /\/books$/,
-  //   /\/coder$/,
   //   /\/profile$/
   // ],
   babelPresetEnvTargets: [

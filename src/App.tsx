@@ -34,7 +34,7 @@ interface AppProvider {
 
 const APP_PROVIDER = {} as AppProvider;
 
-/** app context, provider global tools */
+/** App context, provider global tools */
 export const AppContext = createContext(APP_PROVIDER);
 
 const { useNotification } = notification;
@@ -97,38 +97,46 @@ const App: React.FC<IAppProps> = (props) => {
 
     const abortController = new AbortController();
 
-    darkModeQuery.addEventListener('change', (e) => setColorScheme(e.matches ? 'dark' : 'light'), {
-      signal: abortController.signal
-    });
+    {
+      darkModeQuery.addEventListener(
+        'change',
+        (e) => setColorScheme(e.matches ? 'dark' : 'light'),
+        {
+          signal: abortController.signal
+        }
+      );
+    }
 
-    window.document.addEventListener(
-      'visibilitychange',
-      () => setFrontDesk(!window.document.hidden),
-      {
+    {
+      window.document.addEventListener(
+        'visibilitychange',
+        () => setFrontDesk(!window.document.hidden),
+        {
+          signal: abortController.signal
+        }
+      );
+    }
+
+    {
+      const onResize = () => setIsSmallScreen(window.innerWidth <= SMALL_SCREEN_WIDTH);
+      addGlobalListener('resize', onResize, { signal: abortController.signal });
+      onResize();
+    }
+
+    {
+      globalEvent.on('user_tips', ({ type, message: _message }) => messageApi[type](_message), {
         signal: abortController.signal
-      }
-    );
+      });
+      globalEvent.on('user_alert', ({ type, ...props }) => modalApi[type](props), {
+        signal: abortController.signal
+      });
+    }
 
-    addGlobalListener(
-      'resize',
-      () => {
-        setIsSmallScreen(window.innerWidth <= SMALL_SCREEN_WIDTH);
-      },
-      { signal: abortController.signal }
-    );
-
-    setIsSmallScreen(window.innerWidth <= SMALL_SCREEN_WIDTH);
-
-    globalEvent.on('user_tips', ({ type, message: _message }) => messageApi[type](_message), {
-      signal: abortController.signal
-    });
-    globalEvent.on('user_alert', ({ type, ...props }) => modalApi[type](props), {
-      signal: abortController.signal
-    });
-
-    assetsLoadHandler.reLoadByOnline(() => !enableServiceWorkerCache, {
-      signal: abortController.signal
-    });
+    {
+      assetsLoadHandler.reLoadByOnline(() => !enableServiceWorkerCache, {
+        signal: abortController.signal
+      });
+    }
 
     return () => abortController.abort();
   }, []);

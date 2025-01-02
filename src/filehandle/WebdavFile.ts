@@ -4,12 +4,17 @@ import { isEqual } from 'lodash-es';
 import type { FileStat, WebDAVClient } from 'webdav';
 import { AuthType, createClient } from 'webdav';
 
-import type { WebdavInfo } from '@/store';
-
 import { Icon } from '@/components';
 
-import { FilePathNotExistsError, FileTypeError } from './utils/error';
-import { FileType } from './utils/fileManager';
+import { FilePathNotExistsError, FileTypeError } from './error';
+import { FileType } from './fileManager';
+
+export interface WebdavInfo {
+  url: string;
+  name: string;
+  username: string;
+  password: string;
+}
 
 function createWebdavFileSystemHandle(
   file: FileStat,

@@ -85,23 +85,6 @@ table {
   border-collapse: separate;
 }
 
-.shiki {
-  code {
-    counter-reset: step;
-    counter-increment: step 0;
-  }
-
-  code .line::before {
-    display: inline-block;
-    width: 1.5rem;
-    margin-right: 1rem;
-    color: #6e7681;
-    text-align: right;
-    content: counter(step);
-    counter-increment: step;
-  }
-}
-
 .ant-notification-notice-description {
   margin: 0 !important;
 }

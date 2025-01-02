@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { MenuProps } from 'antd';
 import { Dropdown, FloatButton, Input, Space } from 'antd';
-import { CommentOutlined } from '@ant-design/icons';
 
 import classnames from 'classnames';
 
@@ -11,23 +10,12 @@ import { Link, Outlet, useHistory, useScrollStore } from '@/router';
 
 import { useAppStore } from '@/store';
 
-import {
-  error,
-  fallbackFullscreen,
-  isFullScreen,
-  onFullScreen,
-  requestFullScreen,
-  sleep
-} from '@/utils';
-
-import type { FilePanelFactory } from '@/filehandle';
-import { isSupportOPFS } from '@/filehandle/utils/checkSupport';
+import { fallbackFullscreen, isFullScreen, onFullScreen, requestFullScreen } from '@/utils';
 
 import { Icon } from '@/components';
 
 import LogoImage from '@/assets/images/main.webp';
 
-import { Feedback } from './components/Feedback';
 import languageData from './data/language.json';
 import navbarData from './data/navbar.json';
 import styles from './styles/Layout.module.less';
@@ -279,52 +267,9 @@ const Header = () => {
   );
 };
 
-/** file system trigger, when browser support file system show in */
-const FileSystemTrigger = () => {
-  const [support, setSupport] = useState(false);
-  const filePanelRef = useRef<FilePanelFactory>();
-
-  const {
-    status: { isSmallScreen }
-  } = useAppStore();
-
-  useEffect(() => {
-    isSupportOPFS().then((res) => {
-      setSupport(res);
-    });
-  }, []);
-
-  const handleOpenFilePanel = () => {
-    if (!filePanelRef.current) {
-      return import('@/filehandle')
-        .then(({ default: filePanel }) => {
-          filePanelRef.current = filePanel;
-
-          // await render mounted
-          sleep(0, () => filePanelRef.current?.toggle());
-        })
-        .catch((err) => {
-          error((err as Error).message);
-        });
-    }
-
-    filePanelRef.current?.toggle();
-  };
-
-  return support && !isSmallScreen ? (
-    <FloatButton
-      aria-label="filesystem"
-      icon={<Icon icon="octicon--file-directory-open-fill-16" color="var(--color-primary)" />}
-      onClick={handleOpenFilePanel}
-    />
-  ) : null;
-};
-
 const Content = () => {
   const outletMountedRef = useRef<IOutletRef>(null);
   const mainRef = useRef<HTMLElement>(null);
-
-  const [visibleFeedback, setVisibleFeedback] = useState(false);
 
   const getSavedPosition = useScrollStore(mainRef);
 
@@ -335,27 +280,17 @@ const Content = () => {
     });
   }, []);
 
-  const handleFeedback = () => {
-    setVisibleFeedback(true);
-  };
-
   return (
     <main ref={mainRef} className={styles.main}>
       <Outlet ref={outletMountedRef} />
 
       <FloatButton.Group>
-        <FileSystemTrigger />
-
-        <FloatButton aria-label="feedback" icon={<CommentOutlined />} onClick={handleFeedback} />
-
         <FloatButton.BackTop
           aria-label="backtop"
           visibilityHeight={2000}
           target={() => mainRef.current!}
         />
       </FloatButton.Group>
-
-      <Feedback visible={visibleFeedback} onChange={(value) => setVisibleFeedback(!!value)} />
     </main>
   );
 };
