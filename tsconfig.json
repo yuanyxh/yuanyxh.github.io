@@ -29,7 +29,6 @@
       "@/store/*": ["src/store/*"],
       "@/hooks/*": ["src/hooks/*"],
       "@/markdowns/*": ["src/markdowns/*"],
-      "@/examples/*": ["src/examples/*"],
       "@/tools/*": ["src/tools/*"],
       "@/utils/*": ["src/utils/*"],
       "@/components/*": ["src/components/*"],

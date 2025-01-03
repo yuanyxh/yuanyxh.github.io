@@ -1,15 +1,7 @@
 import frontmatter from 'front-matter';
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync
-} from 'node:fs';
-import { basename, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import path from 'node:path';
-import { codeToHtml } from 'shiki';
 import { loadEnv } from 'vite';
 
 export interface Meta {
@@ -128,113 +120,6 @@ export async function parseRoutes(routes: ParserOptions[]) {
   for await (const route of routes) {
     result.push({ name: route.name, value: await parseRoute(route) });
   }
-
-  return result;
-}
-
-/** parse and build local file transform to route */
-export async function buildFiles(
-  dirs: string[],
-  parent: string,
-  root: string,
-  meta: Record<string, string>
-) {
-  let result = '';
-
-  for await (const name of dirs) {
-    const fullname = resolve(parent, name);
-
-    const isDirectory = lstatSync(fullname).isDirectory();
-
-    if (isDirectory) {
-      result += await buildFiles(readdirSync(fullname), fullname, root, meta);
-      continue;
-    }
-
-    let code = readFileSync(fullname, 'utf-8');
-
-    if (name === 'Index.tsx') {
-      code = code.replace(/\nexport const meta = {[\w\W]*?};\n/, '');
-    }
-
-    const html = await codeToHtml(code, {
-      lang: path.extname(fullname).slice(1),
-      theme: 'one-dark-pro'
-    });
-
-    const data = `export default function Default() {
-        return <div dangerouslySetInnerHTML={{ __html: \`${html}\` }}></div>
-      }`;
-
-    const newName = replaceFileExtension(name);
-
-    const paths = relative(root, parent).split(sep).filter(Boolean);
-    const folder = resolve(root, 'code', ...paths);
-
-    if (!existsSync(folder)) {
-      mkdirSync(folder, { recursive: true });
-    }
-
-    writeFileSync(resolve(folder, newName), data, 'utf-8');
-
-    let route = '';
-
-    if (newName === 'Index.tsx') {
-      route = 'index';
-    } else if (paths.length) {
-      route = paths.join('-') + '-' + newName + '.html';
-    } else {
-      route = newName + '.html';
-    }
-
-    result += `{
-        path: '${route}',
-        element: () => import('@/examples/${basename(root)}/code/${paths.length === 0 ? '' : paths.length > 1 ? paths.join('/') : paths[0] + '/'}${newName}'),
-        meta: ${JSON.stringify(meta)}
-      },
-      `;
-  }
-
-  return result;
-}
-
-/** build example transform to route page */
-export async function buildExample(path: string) {
-  const template = readFileSync(resolve('./src/coder/Wrapper.tsx'), 'utf-8');
-
-  const rootDirectory = resolve(path);
-  let result = '';
-
-  const codeDirectory = resolve(rootDirectory, `code`);
-  const value = template.replace('base64_coder/Index', `${basename(rootDirectory)}/Index`);
-
-  if (!existsSync(resolve(codeDirectory))) {
-    mkdirSync(codeDirectory, { recursive: true });
-  }
-
-  writeFileSync(resolve(codeDirectory, '__.tsx'), value, 'utf-8');
-
-  const indexContent = readFileSync(resolve(rootDirectory, 'Index.tsx'), 'utf-8');
-
-  let meta = {};
-  const match = indexContent.match(/(?<=export const meta = {)[\w\W]*?(?=};)/);
-
-  if (match) {
-    meta = new Function(`return {${match[0]}}`)();
-  }
-
-  result += `{
-        path: "${basename(rootDirectory)}",
-        element: () => import("@/examples/${basename(rootDirectory)}/code/__.tsx"),
-        meta: ${JSON.stringify(meta)},
-        children: [
-      `;
-
-  const children = readdirSync(rootDirectory).filter((p) => p !== 'code');
-
-  result += await buildFiles(children, rootDirectory, rootDirectory, meta);
-
-  result += ']},';
 
   return result;
 }

@@ -31,5 +31,3 @@ dist-ssr
 .analyze.html
 
 build
-
-src/examples/*/code/

@@ -1,4 +1,3 @@
-import { submit } from './submit';
 import type { ResolveRouteObject, RouteOptions } from './utils';
 import type { Meta } from './utils';
 import { resolve, resolveFullRoutes } from './utils';
@@ -102,7 +101,9 @@ async function vitePrerender(options: RouteOptions) {
 
   const { prerenderOutput, excludeOutPathRewrite } = prerenderConfig;
 
-  if (mode !== 'prod') return void 0;
+  if (mode !== 'prod') {
+    return void 0;
+  }
 
   const routes = await getRoutes.call(options);
 
@@ -110,12 +111,6 @@ async function vitePrerender(options: RouteOptions) {
   const allRoutes = detailsRoutes
     .filter((route) => (typeof route.meta !== 'undefined' ? !route.meta.draft : true))
     .map((route) => route.fullPath);
-
-  try {
-    await submit(allRoutes);
-  } catch (err) {
-    console.log('submit error: ', err);
-  }
 
   // prerender route：https://www.npmjs.com/package/vite-plugin-prerender
   return selfVitePrerender({

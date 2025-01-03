@@ -1,7 +1,4 @@
-import type { WebdavInfo } from '@/store';
-
 import { FileTypeError } from './error';
-import WebdavFile from '../WebdavFile';
 
 export type FileDataType = ArrayBuffer | Blob | string;
 
@@ -34,7 +31,7 @@ export async function getFileInfo(handle: DH | FH, key: string): Promise<FileInf
   return { name: key, type, icon: '', handle, ext };
 }
 
-export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
+export async function getChildren(directory: DH) {
   const children: FileInfo[] = [];
 
   for await (const [key, handle] of directory.entries()) {
@@ -43,7 +40,6 @@ export async function getChildren(directory: DH, webdavs: WebdavInfo[] = []) {
 
   return children
     .filter((child) => child.type === FileType.DIRECTORY)
-    .concat(webdavs.map((webdav) => new WebdavFile(webdav)))
     .sort((a, b) => a.name.localeCompare(b.name))
     .concat(
       children

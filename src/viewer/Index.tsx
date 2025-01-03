@@ -3,7 +3,6 @@ import { Typography } from 'antd';
 import { useAppStore } from '@/store';
 
 import mainWebp from '@/assets/images/main.webp';
-import tiga from '@/assets/images/tiga.png';
 
 import styles from './styles/Index.module.less';
 import { SLOGAN } from '@/main';
@@ -14,7 +13,7 @@ const Exhibit = () => {
   } = useAppStore();
 
   return (
-    <section className={styles.exhibit} style={{ backgroundImage: tiga }}>
+    <section className={styles.exhibit}>
       <div className={styles.slogan}>
         <Typography.Title
           style={{ marginTop: 20, fontWeight: 400 }}

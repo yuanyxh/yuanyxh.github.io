@@ -6,14 +6,7 @@ import PresetEnv from 'postcss-preset-env';
 import AutoPrefixer from 'autoprefixer';
 import { ViteEjsPlugin } from 'vite-plugin-ejs';
 import { visualizer } from 'rollup-plugin-visualizer';
-import {
-  buildExample,
-  getEnv,
-  parseRoutes,
-  replacePlaceRoute,
-  resolve,
-  root
-} from './helpers/utils';
+import { getEnv, parseRoutes, replacePlaceRoute, resolve, root } from './helpers/utils';
 import mdx from '@mdx-js/rollup';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import remarkFrontMatter from 'remark-frontmatter';
@@ -27,7 +20,6 @@ import viteRouteGenerator from './helpers/vite-route-generator';
 import type { RouteOptions } from './helpers/utils';
 import vitePrerender from './helpers/vite-prerender';
 import viteGenerateSitemap from './helpers/vite-generate-sitemap';
-// import basicSsl from '@vitejs/plugin-basic-ssl';
 
 import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import fast from 'fast-glob';
@@ -81,17 +73,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           output: resolve('./build/sitemap.xml')
         },
         prerenderConfig: {
-          excludeOutPathRewrite: [
-            '/',
-            '/articles',
-            '/examples',
-            '/books',
-            '/coder',
-            '/profile',
-            ...fast
-              .globSync(['./src/examples/*'], { onlyDirectories: true })
-              .map((f) => f.replace('./src/examples', '/coder'))
-          ],
+          excludeOutPathRewrite: ['/', '/articles', '/books', '/profile'],
           prerenderOutput: resolve('./build')
         },
         buildRouteConfig: {
@@ -119,13 +101,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
               importAlias(path) {
                 return path.replace('./src/markdowns', '@/markdowns').replace(/\\/g, '/');
               }
-            },
-            {
-              name: 'coder',
-              paths: fast.globSync(['./src/examples/*'], { onlyDirectories: true }),
-              parser(path) {
-                return buildExample(path);
-              }
             }
           ]
         }
@@ -134,7 +109,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       {
         name: 'vite-plugin-mdx-insert',
         enforce: 'pre',
-        transform(code, id, options) {
+        transform(code, id, _options) {
           if (id.includes('node_modules')) return;
 
           // insert toc component
@@ -190,8 +165,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         symbolId: 'icon-[dir]-[name]',
         svgoOptions: true
       })
-
-      // basicSsl()
     ],
     resolve: {
       alias: [
@@ -226,10 +199,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         {
           find: /@\/tools\//,
           replacement: `${resolve('src/tools')}/`
-        },
-        {
-          find: /@\/examples\//,
-          replacement: `${resolve('src/examples')}/`
         },
         {
           find: /@\/components\//,
@@ -283,7 +252,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           rewrite: (path) => path.replace(/\/api/, 'issues')
         }
       }
-      // https: {}
     },
     preview: {
       host: 'localhost',
