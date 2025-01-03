@@ -1,4 +1,4 @@
-import { createFilter, defineConfig, loadEnv } from 'vite';
+import { createFilter, defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import progress from 'vite-plugin-progress';
 import ESLintPlugin from '@nabla/vite-plugin-eslint';
