@@ -24,8 +24,6 @@ import { SMALL_SCREEN_WIDTH } from './enum';
 import { resetProgressBar } from './routes';
 import './App.less';
 
-interface IAppProps extends Required<ChildrenComponent> {}
-
 interface AppProvider {
   notification: NotificationInstance;
   message: MessageInstance;
@@ -41,7 +39,7 @@ const { useNotification } = notification;
 const { useMessage } = message;
 const { useModal } = Modal;
 
-const App: React.FC<IAppProps> = (props) => {
+const App: React.FC<Required<ChildrenComponent>> = (props) => {
   const [notificationApi, notificationContextHolder] = useNotification({
     maxCount: 1
   });

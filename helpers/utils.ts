@@ -147,7 +147,10 @@ export function resolveFullRoutes(
     }
 
     let fullPath = [...seps, route.path].join('/');
-    !fullPath.startsWith('/') && (fullPath = '/' + fullPath);
+
+    if (!fullPath.startsWith('/')) {
+      fullPath = '/' + fullPath;
+    }
 
     result.push({ ...route, fullPath });
 

@@ -40,7 +40,7 @@ export const requestFullScreen = async (ele?: HTMLElement) => {
 
       try {
         ele.requestFullscreen({ navigationUI: 'hide' });
-      } catch (err) {
+      } catch (_err) {
         fail();
       }
     });

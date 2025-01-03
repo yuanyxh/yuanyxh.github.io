@@ -83,7 +83,9 @@ class RouteTree {
     }
 
     if (result.length === expectedMatch) {
-      node[INDEX_PATH]?.value && result.push(node[INDEX_PATH]!.value);
+      if (node[INDEX_PATH]?.value) {
+        result.push(node[INDEX_PATH].value);
+      }
     } else {
       result[i] = {
         path: NOT_FOUND_PATH,

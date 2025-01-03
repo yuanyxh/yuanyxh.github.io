@@ -47,7 +47,10 @@ function getMetaTag(
       <meta property="article:author" content="${authorPage}" />
     `;
 
-    meta.imageUrl && (image = meta.imageUrl);
+    if (meta.imageUrl) {
+      image = meta.imageUrl;
+    }
+
     description = meta.description;
     title = `${meta.title} - ${appName}`;
     keywords = meta.keywords;

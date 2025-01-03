@@ -77,7 +77,7 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
     const cancelGlobalListener = addGlobalListener('mousedown', () => {
       setShowMenu(false);
 
-      onHide && onHide();
+      onHide?.();
     });
 
     return () => {
@@ -103,8 +103,10 @@ const ContextMenu: React.FC<Readonly<IContextMenuProps>> = (props) => {
             title={name}
             onClick={(e) => {
               onClick?.(e);
+
               sleep(35, () => setShowMenu(false));
-              onHide && onHide();
+
+              onHide?.();
             }}
             {...rest}
           >

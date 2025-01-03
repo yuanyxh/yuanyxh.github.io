@@ -36,7 +36,7 @@ const Link: React.FC<Readonly<ILinkProps>> = (props) => {
 
   const handleClick = useCallback<MouseEventHandler<HTMLAnchorElement>>(
     (e) => {
-      onClick && onClick(e);
+      onClick?.(e);
 
       if (target === '_blank' || excludeLinks.some(checkLink)) {
         if (to.startsWith('#')) {

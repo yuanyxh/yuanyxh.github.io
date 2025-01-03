@@ -27,7 +27,7 @@ export function setStorage(key: TKEYS, data: any) {
     window.localStorage.setItem(key, data);
 
     return true;
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }
@@ -43,7 +43,7 @@ export function removeStorage(key: TKEYS) {
     window.localStorage.removeItem(key);
 
     return true;
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }
@@ -64,7 +64,7 @@ export function getStorage<T>(key: TKEYS, fallback?: T): T | undefined {
 
   try {
     return merge(fallback, window.JSON.parse(value));
-  } catch (err) {
+  } catch (_err) {
     return fallback;
   }
 }

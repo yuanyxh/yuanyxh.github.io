@@ -123,7 +123,7 @@ class WebdavFileSystemHandle implements FileSystemHandle {
       ) {
         return Promise.resolve(true);
       }
-    } catch (err) {
+    } catch (_err) {
       return Promise.resolve(false);
     }
 
@@ -171,10 +171,8 @@ class WebdavFileSystemFileHandle extends WebdavFileSystemHandle implements FileS
   };
 
   createWritable = async (
-    options?: FileSystemCreateWritableOptions | undefined
+    _options?: FileSystemCreateWritableOptions | undefined
   ): Promise<FileSystemWritableFileStream> => {
-    options;
-
     const { webdav, fullPath } = this;
 
     return new WebdavFileSystemWritableFileStream(

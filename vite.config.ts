@@ -1,29 +1,29 @@
-import { createFilter, defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import progress from 'vite-plugin-progress';
-import ESLintPlugin from '@nabla/vite-plugin-eslint';
-import PresetEnv from 'postcss-preset-env';
-import AutoPrefixer from 'autoprefixer';
-import { ViteEjsPlugin } from 'vite-plugin-ejs';
-import { visualizer } from 'rollup-plugin-visualizer';
-import { getEnv, parseRoutes, replacePlaceRoute, resolve, root } from './helpers/utils';
-import mdx from '@mdx-js/rollup';
-import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
-import remarkFrontMatter from 'remark-frontmatter';
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
-import remarkGfm from 'remark-gfm';
-import remarkBraks from 'remark-breaks';
-import remarkEmoji from 'remark-emoji';
-import { remarkMdxToc } from 'remark-mdx-toc';
-import rehypePrism from '@mapbox/rehype-prism';
-import viteRouteGenerator from './helpers/vite-route-generator';
 import type { RouteOptions } from './helpers/utils';
-import vitePrerender from './helpers/vite-prerender';
+import { getEnv, parseRoutes, replacePlaceRoute, resolve, root } from './helpers/utils';
 import viteGenerateSitemap from './helpers/vite-generate-sitemap';
+import vitePrerender from './helpers/vite-prerender';
+import viteRouteGenerator from './helpers/vite-route-generator';
 
-import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
+import rehypePrism from '@mapbox/rehype-prism';
+import mdx from '@mdx-js/rollup';
+import ESLintPlugin from '@nabla/vite-plugin-eslint';
+import react from '@vitejs/plugin-react';
+import AutoPrefixer from 'autoprefixer';
 import fast from 'fast-glob';
 import { readFileSync } from 'fs';
+import PresetEnv from 'postcss-preset-env';
+import remarkBraks from 'remark-breaks';
+import remarkEmoji from 'remark-emoji';
+import remarkFrontMatter from 'remark-frontmatter';
+import remarkGfm from 'remark-gfm';
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
+import { remarkMdxToc } from 'remark-mdx-toc';
+import { visualizer } from 'rollup-plugin-visualizer';
+import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
+import { createFilter, defineConfig } from 'vite';
+import { ViteEjsPlugin } from 'vite-plugin-ejs';
+import progress from 'vite-plugin-progress';
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 
 const routesPath = resolve('src/routes.tsx');
 
@@ -129,7 +129,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         }
       },
 
-      // @ts-ignore this is normal, it's just a mismatch in the type definitions
+      // @ts-expect-error this is normal, it's just a mismatch in the type definitions
       {
         enforce: 'pre',
         ...mdx({
@@ -234,7 +234,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       outDir: 'build',
       sourcemap: isBuild === false,
       rollupOptions: {
-        // @ts-ignore this is normal, it's just a mismatch in the type definitions
+        // @ts-expect-error this is normal, it's just a mismatch in the type definitions
         plugins: isBuild ? [visualizer({ filename: '.analyze.html', open: false })] : [],
         output: {}
       },

@@ -129,7 +129,10 @@ export async function moveFile(origin: DH, target: DH, name: string, copy = true
   const file = await (await origin.getFileHandle(name)).getFile();
 
   const handle = await createFile(target, name, file);
-  copy === false && (await remove(origin, name));
+
+  if (!copy) {
+    await remove(origin, name);
+  }
 
   return handle;
 }
@@ -173,7 +176,10 @@ export async function move(origin: DH, target: DH, options?: { names?: string[];
         return moveFile(origin, target, name, copy);
       } else {
         const handle = await moveDirectory(origin, target, name, copy);
-        copy === false && (await remove(origin, name));
+
+        if (!copy) {
+          await remove(origin, name);
+        }
 
         return handle;
       }

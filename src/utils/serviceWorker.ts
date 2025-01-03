@@ -32,7 +32,7 @@ export async function clearCache() {
           });
 
           return true;
-        } catch (err) {
+        } catch (_err) {
           /** empty */
         }
       }

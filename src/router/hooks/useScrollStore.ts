@@ -86,7 +86,7 @@ export function useScrollStore(eleRef: RefObject<HTMLElement | null>) {
       elementRef.current = void 0;
 
       abortController.abort();
-      cancelBeforeEnter && cancelBeforeEnter();
+      cancelBeforeEnter?.();
     };
   }, [eleRef.current]);
 

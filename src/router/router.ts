@@ -102,7 +102,10 @@ function resolveFullPath(routes: RouteObject[], parent: string): ResolveRouteObj
     const _route = route as ResolveRouteObject;
 
     _route.fullPath = [...seps, route.path].join('/');
-    !_route.fullPath.startsWith('/') && (_route.fullPath = '/' + _route.fullPath);
+
+    if (!_route.fullPath.startsWith('/')) {
+      _route.fullPath = '/' + _route.fullPath;
+    }
 
     if (route.children?.length) {
       resolveFullPath(route.children, _route.fullPath);
@@ -248,7 +251,7 @@ class Router {
     addGlobalListener('hashchange', () => {
       try {
         window.document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
-      } catch (err) {
+      } catch (_err) {
         /* empty */
       }
     });
@@ -304,7 +307,9 @@ class Router {
 
       const method = options?.replace ? 'replace' : 'push';
 
-      !isSome && this.change(toState);
+      if (!isSome) {
+        this.change(toState);
+      }
 
       if (fromState?.path !== toState.path) {
         this.event.emit(EventKeys.BEFORE_ENTER, fromState, toState, {

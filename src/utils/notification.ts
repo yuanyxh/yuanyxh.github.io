@@ -62,21 +62,16 @@ export async function notify(options: NotifyOptions) {
       notice.close();
     });
 
-    onClose && notice.addEventListener('close', onClose);
+    if (onClose) {
+      notice.addEventListener('close', onClose);
+    }
 
     notice.addEventListener('show', function show() {
       notice.removeEventListener('show', show);
 
       resolve(true);
 
-      onShow && onShow();
-    });
-    notice.addEventListener('error', function error() {
-      notice.removeEventListener('error', error);
-
-      resolve(false);
-
-      onError && onError();
+      onShow?.();
     });
   });
 }

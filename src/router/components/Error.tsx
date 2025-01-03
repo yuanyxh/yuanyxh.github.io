@@ -21,7 +21,9 @@ const ErrorCom: React.FC<IErrorProps> = (props) => {
 
   useEffect(() => {
     // When rendering errors, we need to know that sending the error to the resource load processor
-    hasError && assetsLoadHandler.emitRenderError();
+    if (hasError) {
+      assetsLoadHandler.emitRenderError();
+    }
   }, []);
 
   const handleReload = () => {

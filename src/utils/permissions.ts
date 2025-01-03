@@ -3,8 +3,8 @@ type QueryPermissionName =
   | 'notifications'
   | 'persistent-storage'
   | 'push'
-  | 'screen-wake-lock'
-  | 'xr-spatial-tracking';
+  | 'screen-wake-lock';
+// | 'xr-spatial-tracking'
 
 /**
  *
@@ -31,7 +31,7 @@ export const hasPermission = async (name: QueryPermissionName) => {
     const result = await queryPermissions(name);
 
     return result && result === 'granted';
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 };

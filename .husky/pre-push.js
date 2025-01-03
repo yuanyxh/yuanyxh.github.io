@@ -1,5 +1,5 @@
-import simpleGit from 'simple-git';
 import childProcess from 'node:child_process';
+import simpleGit from 'simple-git';
 
 const getBranch = async () => {
   const git = simpleGit();

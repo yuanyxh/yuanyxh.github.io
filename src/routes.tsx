@@ -78,7 +78,7 @@ router.afterEnter((_from, to) => {
 export const resetProgressBar = () => {
   NProgress.done();
 
-  clear && clear();
+  clear?.();
   clear = null;
 };
 

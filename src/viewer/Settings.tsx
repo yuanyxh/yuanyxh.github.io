@@ -42,7 +42,10 @@ function ServiceWorkerCache() {
         .registerServiceWorker()
         .then((installed) => {
           setSpinning(false);
-          installed && setEnableServiceWorkerCache(enableServiceWorkerCache);
+
+          if (installed) {
+            setEnableServiceWorkerCache(enableServiceWorkerCache);
+          }
 
           const info = installed
             ? '已为您启用 service worker 缓存'
@@ -59,7 +62,10 @@ function ServiceWorkerCache() {
       .unregisterServiceWorker()
       .then((uninstalled) => {
         setSpinning(false);
-        uninstalled && setEnableServiceWorkerCache(enableServiceWorkerCache);
+
+        if (uninstalled) {
+          setEnableServiceWorkerCache(enableServiceWorkerCache);
+        }
 
         const info = uninstalled
           ? '已为您禁用 service worker 缓存'
