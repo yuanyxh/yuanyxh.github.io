@@ -41,6 +41,8 @@ jobs:
           cache-dependency-path: 'pnpm-lock.yaml'
       - name: set up pnpm
         run: npm install pnpm -g
+      - name: pnpm lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Install dependencies
         run: pnpm install
       - name: Build
