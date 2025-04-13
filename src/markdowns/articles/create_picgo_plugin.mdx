@@ -2,7 +2,7 @@
 title: 开发一个 PicGo 插件
 date: 2023-03-03 22:37:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/7ca9f9ebd0cbcd20.png
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7ca9f9ebd0cbcd20.webp
 description: 开发一个自定义图片上传的 PicGo 插件，支持任意图床的图片快速上传功能。
 keywords: 自定义 PicGo 图片上传插件，实现自己的图片上传逻辑
 ---
@@ -33,7 +33,7 @@ keywords: 自定义 PicGo 图片上传插件，实现自己的图片上传逻辑
 
 也可以使用 `npx webpack init` 命令快速生成符合条件的完整项目环境，其中 `package.json` 文件应添加以下字段
 
-<Image url='https://qkc148.bvimg.com/18470/6e244cb48c13e4f1.png' width={704} height={256} alt='package.json 字段图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6e244cb48c13e4f1.webp' width={704} height={256} alt='package.json 字段图片' />
 
 为让插件能够被 `PicGo` 识别，`name` 需要写成指定格式: `picgo-plugin-xxx`。
 
@@ -99,7 +99,7 @@ module.exports = (ctx) => {
 
 那么渲染出来的配置项就长这样
 
-<Image url='https://qkc148.bvimg.com/18470/35f03a074e74b180.png' width={800} height={450} alt='展示渲染结果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/35f03a074e74b180.webp' width={800} height={450} alt='展示渲染结果的图片' />
 
 通过配置项我们将部分数据交由用户输入，实现自定义上传配置的操作，但这样的数据是死数据，如果我们需要动态数据时要怎么办呢？
 
@@ -163,7 +163,7 @@ module.exports = (ctx) => {
 
 渲染后大概长下面这样
 
-<Image url='https://qkc148.bvimg.com/18470/1d2c51843e81e77a.png' width={800} height={450} alt='展示渲染结果的图片2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1d2c51843e81e77a.webp' width={800} height={450} alt='展示渲染结果的图片2' />
 
 通过 `guiMenu` 能够获取到用户选择的文件路径，然后使用 `fs` 模块读取用户脚本并使用 `PicGo` 实例的 `saveConfig` 方法即可保存用户脚本至 `PicGo` 配置文件里，获取 `PicGo` 配置可使用 `PicGo` 实例的 `getConfig` 方法。
 

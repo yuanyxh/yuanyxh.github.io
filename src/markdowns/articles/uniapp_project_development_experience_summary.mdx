@@ -2,7 +2,7 @@
 title: uniapp 项目开发经验总结
 date: 2024-01-07 23:08:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/3a6e04cb2d739750.jpg
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3a6e04cb2d739750.webp
 description: 总结 uniapp 多端项目三个月开发维护的经验，遇到并解决了什么困难，收获了什么。回首看，青州已过万重山。
 keywords: uniapp, summarize, ios, android, app
 ---
@@ -27,7 +27,7 @@ keywords: uniapp, summarize, ios, android, app
 
 目前 uniapp 插件市场有很多自定义相机可以使用，或者可以基于 uniapp 官方的 [live-pusher] 组件和 nvue 结合自定义自己的相机；这里我是写了个仿微信应用内相机的原生插件：
 
-<Image url='https://qkc148.bvimg.com/18470/a7b0db6a8f7131b6.gif' width={420} height={640} alt='展示自定义相机的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/a7b0db6a8f7131b6.webp' width={420} height={640} alt='展示自定义相机的图片' />
 
 主要使用了三个依赖库来完成拍照、编辑、裁切功能：
 
@@ -43,7 +43,7 @@ keywords: uniapp, summarize, ios, android, app
 
 项目是 C 端项目，有 C 到 C 的通讯需求，也接入了各大平台的推送通知功能；系统自带的通知在应用处于前台时是不会弹出提示的，而项目要尽量跟微信对齐，需要能够在应用内弹出通知，也就是这种效果：
 
-<Image url='https://qkc148.bvimg.com/18470/6c1a546c851e1a75.jpg' width={1080} height={2340} alt='展示微信应用内通知的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6c1a546c851e1a75.webp' width={1080} height={2340} alt='展示微信应用内通知的图片' />
 
 这里我对比了微信 Android 端和 iOS 端的应用内通知，区别如下：
 
@@ -57,7 +57,7 @@ keywords: uniapp, summarize, ios, android, app
 
 我尝试使用原生插件的方式来解决，参考了 [NotificationToast] 的实现方式，使用 Andorid 中的 `Toast` 类并加上一些黑科技来模拟系统通知，如下：
 
-<Image url='https://qkc148.bvimg.com/18470/932cf2370da9d520.gif' width={420} height={640} alt='展示自定义应用内通知的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/932cf2370da9d520.webp' width={420} height={640} alt='展示自定义应用内通知的图片' />
 
 因为只是一个 `Toast` 轻提示, 所以不需要通知权限，可以做到的功能大概如下（PS：不建议使用这种方式代替系统通知，当做应用内通知使用还是可以的）：
 
@@ -75,7 +75,7 @@ iOS 端，因为没有 iOS 的开发经验，所以不知道有什么方式可�
 
 这个问题在 [入职一个月，总结下 uniapp 多端项目遇到的一些问题与解决方案] 中提到过，iOS 侧滑返回是无法阻止的，如果我们在导航守卫中阻止用户离开，而用户使用了侧滑进行了强制返回，此时会出现这种情况：页面卡顿，一段时间后重新回到那个阻止离开的页面，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/b771ed59da0587f0.gif' width={272} height={480} alt='iOS 侧滑问题的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b771ed59da0587f0.webp' width={272} height={480} alt='iOS 侧滑问题的图片' />
 
 用户通过侧滑强制返回时，不能阻止，所以需要知道当前是否是侧滑；经过查找资料和测试，侧滑返回可以靠以下特征来标识：
 
@@ -224,11 +224,11 @@ export default sideSlip;
 
 不知道从什么版本开始，小米浏览器加了一个让人恼火的功能：左右滑屏手势。通过这个功能可以让左右滑动手势控制网页的前进后退，如下：
 
-<Image url='https://qkc148.bvimg.com/18470/1608a9246b7a0b42.gif' width={380} height={640} alt='小米滑屏手势的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1608a9246b7a0b42.webp' width={380} height={640} alt='小米滑屏手势的图片' />
 
 看起来很美好，但却与很多项目中的滑动手势冲突，比如 Element 中的滑块功能：
 
-<Image url='https://qkc148.bvimg.com/18470/d26017b2b2503862.gif' width={380} height={640} alt='小米滑屏手势导致 element 滑块无法使用的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d26017b2b2503862.webp' width={380} height={640} alt='小米滑屏手势导致 element 滑块无法使用的图片' />
 
 这时候一般就会想到阻止冒泡、阻止默认事件来禁用左右滑动手势了，但恼火的点就在于没有效果，由此可以猜测这个功能的实现没有在浏览器内核中或者没有适配我们熟知的那一套 js 事件体系。
 

@@ -2,7 +2,7 @@
 title: Boss 文章自动上传
 date: 2024-02-22 13:40:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/3a74af32b33652e5.jpg
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3a74af32b33652e5.webp
 description: 解析 Boss 直聘文章上传协议，实现文章自动批量发布上传，不必使用 Boss 难用的富文本编辑器。
 keywords: boss 直聘，文章自动上传，批量发布
 ---
@@ -17,9 +17,9 @@ keywords: boss 直聘，文章自动上传，批量发布
 
 想要实现自动发布文章，那肯定需要 boss 发布文章使用的接口，以及这个接口对应的一些参数，我们直接预发布一篇文章并观察浏览器 network 面板就能得到这些信息。
 
-<Image url='https://qkc148.bvimg.com/18470/71caa7ef10c87a8a.png' width={1366} height={458} alt='展示加密参数的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/71caa7ef10c87a8a.webp' width={1366} height={458} alt='展示加密参数的图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/fb3dda7b491e99f6.png' width={1366} height={458} alt='展示加密参数的图片2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/fb3dda7b491e99f6.webp' width={1366} height={458} alt='展示加密参数的图片2' />
 
 观察记录的请求信息，可以发现文章发布是一个 post 接口，需要携带一个查询参数 `_`，参数值是一个时间戳；同时需要一个 FormData，观察发现 FormData 包含 5 个数据：
 
@@ -37,21 +37,21 @@ keywords: boss 直聘，文章自动上传，批量发布
 
 在此之前，我们先将记录的文章发布请求保存，避免后续需要查看时频繁请求 boss 接口。
 
-<Image url='https://qkc148.bvimg.com/18470/d7bcc2aa7b30163e.png' width={1366} height={359} alt='如何在 chrome 中保存完整请求的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d7bcc2aa7b30163e.webp' width={1366} height={359} alt='如何在 chrome 中保存完整请求的图片' />
 
 ## 确认 encryptId 生成规则
 
 在浏览器中要确认一个请求参数是如何生成的，最好的方式就是 xhr/fetch 断点，并沿调用堆栈向前追溯，我们使用 sources 面板的 xhr/fetch breakpoints 功能，添加需要断点的请求 url：
 
-<Image url='https://qkc148.bvimg.com/18470/08a5c35e37e0e1cc.png' width={1366} height={361} alt='如何在 chrome 添加网络断点的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/08a5c35e37e0e1cc.webp' width={1366} height={361} alt='如何在 chrome 添加网络断点的图片' />
 
 然后再次发布文章，就会发现代码执行被断在了对应的 xhr/fetch 请求上面，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/fe4117bc5c6f559e.png' width={1366} height={387} alt='chrome 网络请求断点成功的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/fe4117bc5c6f559e.webp' width={1366} height={387} alt='chrome 网络请求断点成功的图片' />
 
 然后就可以沿着调用堆栈进行代码分析了，在这里发现 encryptId 来源于另一个接口：
 
-<Image url='https://qkc148.bvimg.com/18470/4a4d32a14b45488d.png' width={1366} height={408} alt='加密参数 encryptId 接口的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4a4d32a14b45488d.webp' width={1366} height={408} alt='加密参数 encryptId 接口的图片' />
 
 根据测试，这个接口的作用是保存草稿，在每次编辑器内容变化时就会触发，接口参数与发布文章的接口参数大致相同，只是 FormData 不需要 encryptId 这个参数。
 
@@ -59,15 +59,15 @@ keywords: boss 直聘，文章自动上传，批量发布
 
 既然是发布文章到 boss，那肯定需要以 boss 的文章格式来进行 markdown 转换，我们直接在 boss 上进行文章编辑，查看对应生成的 html 元素：
 
-<Image url='https://qkc148.bvimg.com/18470/66ff57e8ccd02c84.png' width={1366} height={554} alt='chrome 元素面板对应的元素树图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/66ff57e8ccd02c84.webp' width={1366} height={554} alt='chrome 元素面板对应的元素树图片' />
 
 这里可以发现 boss 使用的是 quill 这个开源的富文本编辑器，且并没有预定义类名，只是对标签预定义了对应的样式，我们使用 markdown-it 来将自己的 markdown 内容渲染为 html 字符串，并将字符串替换至 boss 查看样式：
 
-<Image url='https://qkc148.bvimg.com/18470/35af5d66cccd8e59.png' width={1212} height={679} alt='元素树中的 quill 元素图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/35af5d66cccd8e59.webp' width={1212} height={679} alt='元素树中的 quill 元素图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/f32fba25737fc204.png' width={1366} height={563} alt='生成 html 后替换到 boss 上的效果图' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f32fba25737fc204.webp' width={1366} height={563} alt='生成 html 后替换到 boss 上的效果图' />
 
-<Image url='https://qkc148.bvimg.com/18470/e9b8b84dc1d90b50.png' width={1366} height={559} alt='生成 html 后替换到 boss 上的效果图2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e9b8b84dc1d90b50.webp' width={1366} height={559} alt='生成 html 后替换到 boss 上的效果图2' />
 
 可以看到效果是还可以的，同时我们还可以使用 highlight.js 这个库来对代码块高亮，boss 网站已经加载了 highlight.js 所需要的类名，只需要对 markdown-it 进行如下配置即可：
 
@@ -98,15 +98,15 @@ const md = require("markdown-it")({
 
 这个比较简单，在请求信息的 headers 里拿到自己的 cookie 和 token，在请求时加上就行了：
 
-<Image url='https://qkc148.bvimg.com/18470/046fdbffad2557bc.png' width={1366} height={458} alt='chrome 网络请求头图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/046fdbffad2557bc.webp' width={1366} height={458} alt='chrome 网络请求头图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/ebb52dc6f5eaa55e.png' width={1366} height={458} alt='chrome 网络请求头图片2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/ebb52dc6f5eaa55e.webp' width={1366} height={458} alt='chrome 网络请求头图片2' />
 
 ## 图片转存
 
 到这里基本需要的参数都准备完成了，但如果就这样编写接口的话，你会发现返回的请求信息是
 
-<Image url='https://qkc148.bvimg.com/18470/01712ea7c10c35ab.png' width={986} height={216} alt='接口请求失败的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/01712ea7c10c35ab.webp' width={986} height={216} alt='接口请求失败的图片' />
 
 这是因为 markdown 里包含了三方图片链接，我们需要将这些图片上传至 boss 并将链接替换：
 

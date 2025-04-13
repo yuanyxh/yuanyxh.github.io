@@ -2,7 +2,7 @@
 title: 调试理解 NodeJS 模块机制
 date: 2024-08-24 10:47:40
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/4c7a25d3e0ca1b30.png
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4c7a25d3e0ca1b30.webp
 description: 通过断点调试，一步一步探索 NodeJS 的启动流程，并深入理解 NodeJS 中的模块机制，了解 CommonJS 的技术细节。
 keywords: nodejs, commonjs, 调试
 ---
@@ -59,11 +59,11 @@ npm init -y
 
 新建 `index.js` 文件，写点代码，并在首行代码处打上断点:
 
-<Image url={'https://qkc148.bvimg.com/18470/4ca656a51251b0e2.png'} width={3456} height={2160} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4ca656a51251b0e2.webp'} width={3456} height={2160} />
 
 新建 `/.vscode/launch.json` vscode 调试配置文件：
 
-<Image url={'https://qkc148.bvimg.com/18470/0420f7d475363919.png'} width={3456} height={2160} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/0420f7d475363919.webp'} width={3456} height={2160} />
 
 简单说下调试配置项：
 
@@ -75,13 +75,13 @@ npm init -y
 
 在 vscode 左侧调试面板中，选择我们的配置并运行调试，默认会跳过 node 的启动流程，直接断到我们编写的程序中：
 
-<Image url={'https://qkc148.bvimg.com/18470/956d2a44ef9fa2ab.png'} width={3456} height={2160} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/956d2a44ef9fa2ab.webp'} width={3456} height={2160} />
 
 但是可以看到左下角列出来经过的全部程序，我们直接在首先启动的程序文件中打上断点：
 
-<Image url={'https://qkc148.bvimg.com/18470/e668e18a279ecfde.png'} width={3456} height={2160} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e668e18a279ecfde.webp'} width={3456} height={2160} />
 
-<Image url={'https://qkc148.bvimg.com/18470/35212027faf4b756.png'} width={3528} height={2232} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/35212027faf4b756.webp'} width={3528} height={2232} />
 
 接下来就可以开始愉快的调试了。
 
@@ -404,7 +404,7 @@ Module.prototype._compile = function(content, filename, format) {
 
 当执行到 `ReflectApply` 函数内部时，会执行生成的包装函数，继续向下执行会发现断到了我们编写的模块内部：
 
-<Image url={'https://qkc148.bvimg.com/18470/d04ef745906d7148.png'} width={3456} height={2160} />
+<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d04ef745906d7148.webp'} width={3456} height={2160} />
 
 此时流程基本已经结束，可以看到核心的逻辑基本与 `Module` 类相关，下面我用 ts 给出 `Module` 类的主要定义（部分内容忽略）。
 

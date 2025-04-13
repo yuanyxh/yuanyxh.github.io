@@ -2,7 +2,7 @@
 title: 应用闪退分析与 uniapp 安卓原生插件开发
 date: 2023-11-28 22:40:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/3a6e04cb2d739750.jpg
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3a6e04cb2d739750.webp
 description: 记录一次 App 闪退分析的过程，了解不同机型对于后台进程回收的策略，并借助 uniapp 原生插件的能力解决相关 bug。
 keywords: uniapp, 闪退, 进程回收, android, 原生插件开发
 ---
@@ -23,25 +23,25 @@ keywords: uniapp, 闪退, 进程回收, android, 原生插件开发
 
 既然前端代码没有问题，那我们就得往低一层去调试分析了，使用离线打包配置，在 as 中运行项目到真机并开启 logcat：
 
-<Image url='https://qkc148.bvimg.com/18470/fbcb8b1839ebcc41.png' width={1366} height={728} alt='Android studio 的 logcat 图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/fbcb8b1839ebcc41.webp' width={1366} height={728} alt='Android studio 的 logcat 图片' />
 
 目前的日志有点多，包含了整个系统的日志输出，所以我们需要做个过滤：
 
-<Image url='https://qkc148.bvimg.com/18470/68142fb3405445ec.png' width={1366} height={728} alt='Android studio 的 logcat 过滤日志图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/68142fb3405445ec.webp' width={1366} height={728} alt='Android studio 的 logcat 过滤日志图片' />
 
 过滤包名为 `com.android.simple` 且等级为 `warn` 和 `error` 的日志输出。完整的过滤语法看官网文档 [使用 Logcat 查看日志] 。
 
 接下来我们需要在设备（真机、模拟器）上进行操作来复现闪退的行为，然后查找可疑的 crash 日志。
 
-<Image url='https://qkc148.bvimg.com/18470/b9a548df1c946bad.gif' width={1080} height={2340} alt='app 展示的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b9a548df1c946bad.webp' width={1080} height={2340} alt='app 展示的图片' />
 
 这样操作了几次，虽然会复现闪退行为，但并没有找到相关的 crash 日志，得到的信息只有：按下拍摄键后应用进程被结束。
 
-<Image url='https://qkc148.bvimg.com/18470/838664f464be5ba5.png' width={1366} height={728} alt='logcat 展示信息的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/838664f464be5ba5.webp' width={1366} height={728} alt='logcat 展示信息的图片' />
 
 到这里信息基本算是断了，但是没有 crash 日志，闪退的可能性降低了，那是不是系统回收了应用资源呢？我们搜索对应的机型 + 关键词：
 
-<Image url='https://qkc148.bvimg.com/18470/42e92f63155fcca3.png' width={1366} height={728} alt='chrome 搜索结果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/42e92f63155fcca3.webp' width={1366} height={728} alt='chrome 搜索结果的图片' />
 
 - [红米Note调用系统相机拍照后应用崩溃问题分析解决]
 - [如何保证android程序进程不到万不得已的情况下，不会被结束]
@@ -76,11 +76,11 @@ keywords: uniapp, 闪退, 进程回收, android, 原生插件开发
 
 前台
 
-<Image url='https://qkc148.bvimg.com/18470/413a08249ae5752d.png' width={1045} height={580} alt='app 前台对应的 oom_adj 图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/413a08249ae5752d.webp' width={1045} height={580} alt='app 前台对应的 oom_adj 图片' />
 
 后台
 
-<Image url='https://qkc148.bvimg.com/18470/2f6c122f1441d7b8.png' width={1045} height={580} alt='app 后台对应的 oom_adj 图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2f6c122f1441d7b8.webp' width={1045} height={580} alt='app 后台对应的 oom_adj 图片' />
 
 可以发现什么也没做的话（如果开通了厂商提供的通知服务，如 MiPush，会开启一个专属的通知进程，可以提升应用的后台优先级，但是测试发现红米 Note11T Pro Android13 里这个通知进程也很容易被 kill）应用进入后台时的优先级是很低的，调用拍摄又是个消耗大量内存的行为，也就不奇怪会出现应用被回收资源的问题了。
 
@@ -98,79 +98,79 @@ keywords: uniapp, 闪退, 进程回收, android, 原生插件开发
 
 我们先新建一个 module：
 
-<Image url='https://qkc148.bvimg.com/18470/d7a095efa0aea2c5.png' width={1366} height={728} alt='Android studio 新建模块的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d7a095efa0aea2c5.webp' width={1366} height={728} alt='Android studio 新建模块的图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/d31de5eba43dbdf7.png' width={818} height={526} alt='Android studio 新建模块的图片2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d31de5eba43dbdf7.webp' width={818} height={526} alt='Android studio 新建模块的图片2' />
 
-<Image url='https://qkc148.bvimg.com/18470/6597dcbfee698d99.png' width={818} height={526} alt='Android studio 新建模块的图片3' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6597dcbfee698d99.webp' width={818} height={526} alt='Android studio 新建模块的图片3' />
 
 可能会出现报错，我们直接 cv uniapp Android SDK 中 `richalert` 的 `.gradle` 配置并点击 `Try Again`：
 
-<Image url='https://qkc148.bvimg.com/18470/28a0f9f0d40a9134.png' width={1366} height={728} alt='配置 cv 的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/28a0f9f0d40a9134.webp' width={1366} height={728} alt='配置 cv 的图片' />
 
 如果出现错误 `package name not found`，我们直接点击进入对应的文件：
 
-<Image url='https://qkc148.bvimg.com/18470/99dd1e09687a59ae.png' width={1366} height={728} alt='进入对应配置的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/99dd1e09687a59ae.webp' width={1366} height={728} alt='进入对应配置的图片' />
 
 添加自己的包名并再次尝试：
 
-<Image url='https://qkc148.bvimg.com/18470/ab110a1b3f4a898e.png' width={1366} height={728} alt='添加模块包名的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/ab110a1b3f4a898e.webp' width={1366} height={728} alt='添加模块包名的图片' />
 
 删除这两个文件：
 
-<Image url='https://qkc148.bvimg.com/18470/58958d21727c0d16.png' width={1366} height={728} alt='删除多余文件的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/58958d21727c0d16.webp' width={1366} height={728} alt='删除多余文件的图片' />
 
 新建一个 uniapp module 类供其调用：
 
-<Image url='https://qkc148.bvimg.com/18470/863abb6f2799ee74.png' width={1366} height={728} alt='新建 uniapp 模块的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/863abb6f2799ee74.webp' width={1366} height={728} alt='新建 uniapp 模块的图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/c49c985f73c23e87.png' width={332} height={158} alt='新建 uniapp 模块2的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/c49c985f73c23e87.webp' width={332} height={158} alt='新建 uniapp 模块2的图片' />
 
 根据文档，这个需要和 uniapp 打交道的类需要继承 `UniModule`:
 
-<Image url='https://qkc148.bvimg.com/18470/10a98f2b8bde970f.png' width={1366} height={728} alt='编写继承类的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/10a98f2b8bde970f.webp' width={1366} height={728} alt='编写继承类的图片' />
 
 我们可以定义在前端代码中调用的方法，这个方法需要加上 `@UniJSMethod(uiThread = boolean)` 注解，`uiThread` 标识是否运行在 ui 线程：
 
-<Image url='https://qkc148.bvimg.com/18470/20b1297267f2ad3a.png' width={1366} height={728} alt='添加标识的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/20b1297267f2ad3a.webp' width={1366} height={728} alt='添加标识的图片' />
 
 然后需要在 uniapp 的配置中配置这个类，并在主模块的 `.gradle` 配置中添加依赖，然后编译：
 
-<Image url='https://qkc148.bvimg.com/18470/52fe698c8e25cd4b.png' width={1366} height={728} alt='添加配置的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/52fe698c8e25cd4b.webp' width={1366} height={728} alt='添加配置的图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/4c6e8e64238f12df.png' width={1366} height={728} alt='编译的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4c6e8e64238f12df.webp' width={1366} height={728} alt='编译的图片' />
 
 现在可以试试是否可以调用：
 
-<Image url='https://qkc148.bvimg.com/18470/ccb3cb266ecd0190.png' width={1132} height={408} alt='uniapp 编写调用代码的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/ccb3cb266ecd0190.webp' width={1132} height={408} alt='uniapp 编写调用代码的图片' />
 
-<Image url='https://qkc148.bvimg.com/18470/1516bfa68ccca8bd.png' width={1366} height={728} alt='uniapp 编写调用代码的图片2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1516bfa68ccca8bd.webp' width={1366} height={728} alt='uniapp 编写调用代码的图片2' />
 
 ### 保活功能实现
 
 新建一个类并继承自 `Service`:
 
-<Image url='https://qkc148.bvimg.com/18470/7e36314fe89a40e0.png' width={1366} height={728} alt='新建保活类的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7e36314fe89a40e0.webp' width={1366} height={728} alt='新建保活类的图片' />
 
 在这个类中创建一个前台服务：
 
-<Image url='https://qkc148.bvimg.com/18470/d4d98ac04f9688c5.png' width={844} height={688} alt='完善保活类的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d4d98ac04f9688c5.webp' width={844} height={688} alt='完善保活类的图片' />
 
 在 `AndroidManifest.json` 中注册服务并添加前台服务权限：
 
-<Image url='https://qkc148.bvimg.com/18470/ada4719a9340b94f.png' width={1366} height={728} alt='添加权限的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/ada4719a9340b94f.webp' width={1366} height={728} alt='添加权限的图片' />
 
 修改之前的 `startForeground` 方法，开启一个服务：
 
-<Image url='https://qkc148.bvimg.com/18470/376141bc8fdc1c30.png' width={1366} height={728} alt='添加开启服务的代码图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/376141bc8fdc1c30.webp' width={1366} height={728} alt='添加开启服务的代码图片' />
 
 得到的效果如下：
 
-<Image url='https://qkc148.bvimg.com/18470/c4bc6468fd9138aa.gif' width={1080} height={2340} alt='展示保活效果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/c4bc6468fd9138aa.webp' width={1080} height={2340} alt='展示保活效果的图片' />
 
 查看应用后台时的 oom_adj 值确实变小了，也没有再次测到拍照闪退的问题，现在可以肯定是系统回收资源导致的了：
 
-<Image url='https://qkc148.bvimg.com/18470/acd8e6913b5a76f5.png' width={1136} height={563} alt='展示保活后的 oom_adj 值的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/acd8e6913b5a76f5.webp' width={1136} height={563} alt='展示保活后的 oom_adj 值的图片' />
 
 可以使用手机的开发者选项，开启后台进程限制，选择最多不超过两个后台进程，然后开启你的应用和两个额外的应用，在这三个应用间切换，你会发现被杀死的总是另外两个应用，你的应用是一直存活的。
 

@@ -2,7 +2,7 @@
 title: 利用 FileSystem API 实现一个 web 端的残缺版文件管理器
 date: 2023-08-19 17:15:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/9230f3c07bdc6557.jpg
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9230f3c07bdc6557.webp
 description: 通过实现一个简易的 web 文件管理器来了解 FileSystem 文件系统 API，知晓 web 文件处理的方式。
 keywords: web, FileSystem API, history, add, remove, edit, query
 ---
@@ -13,7 +13,7 @@ keywords: web, FileSystem API, history, add, remove, edit, query
 
 这是这个文件系统的简单页面：
 
-<Image url='https://qkc148.bvimg.com/18470/e4b425a9c688d018.png' width={1366} height={619} alt='web 文件管理系统的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e4b425a9c688d018.webp' width={1366} height={619} alt='web 文件管理系统的图片' />
 
 以下内容是这个文件管理系统的具体实现和实现过程中的思考。
 
@@ -29,7 +29,7 @@ const openDirectory = async () => {
 
 需要注意的是，这个方法必须通过用户交互触发，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/d0e4a28d514f1d3d.gif' width={1364} height={728} alt='调用方法打开文件选择器的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d0e4a28d514f1d3d.webp' width={1364} height={728} alt='调用方法打开文件选择器的图片' />
 
 ## 当前目录与目录列表
 
@@ -58,7 +58,7 @@ const getDirectoryList = async () => {
 
 因为迭代器返回的文件顺序可能是乱序的，和我们想要的先目录后文件的常规顺序不一致，所以我们可以通过 `kind` 属性进行分类，等迭代器消耗完后再连接为一个顺序可预测的列表，完成的功能如下：
 
-<Image url='https://qkc148.bvimg.com/18470/12b897bb35f978a8.gif' width={1364} height={728} alt='渲染当前目录的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/12b897bb35f978a8.webp' width={1364} height={728} alt='渲染当前目录的图片' />
 
 我们在双击的时候判断双击目标是不是一个目录，如果是则将当前目录设置为双击目标来更新文件列表。
 
@@ -115,7 +115,7 @@ class FileSystemHistory {
 
 在这个 `history` 实例中维护了两个栈，当我们进入某个下级目录时，往 `stack` 中添加一条记录；当我们返回某个上级目录时，`stack` 弹出一条记录，并将这个记录压入 `forwardStack` 栈中。通过 `history` 实例我们可以实现简单的前进后退功能，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/92a9e2ca77961d76.gif' width={1364} height={728} alt='跳转历史的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/92a9e2ca77961d76.webp' width={1364} height={728} alt='跳转历史的图片' />
 
 这里可以注意到地址栏右侧的输入框在每次目录变更时都会变化，显示当前目录的路径，这是通过 [FileSystemDirectoryHandle] 实例的 `resolve` 方法实现的，该方法返回指定 [FileSystemHandle] 实例相对于当前实例的路径数组。
 
@@ -278,19 +278,19 @@ class Rectangle {
 
 得到的效果如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/b522832e0da8867e.gif' width={1364} height={728} alt='多选效果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b522832e0da8867e.webp' width={1364} height={728} alt='多选效果的图片' />
 
 我在实现框选功能时碰到了两个坑点需要注意：
 
 我在一开始设置当前的结束偏移是通过获取 `event.offsetX` 和 `event.offsetY` 的值来完成的，这两个值是鼠标相对于 `event.target` 内填充边的偏移，当我移入某个条目时，`event.target` 被设置为这个条目元素，此时拿到的偏移值就不对了，得到的效果如下：
 
-<Image url='https://qkc148.bvimg.com/18470/09fbc1cdaed9176d.gif' width={1364} height={728} alt='bug 展示的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/09fbc1cdaed9176d.webp' width={1364} height={728} alt='bug 展示的图片' />
 
 解决办法是不通过鼠标的绝对坐标去设置当前结束偏移，而是通过相对偏移去不断累加来改变，`event.movementY` 和 `event.movementY` 就是相对于上一次 `mousemove` 事件时鼠标位置的偏移量。
 
 第二个坑点还是关于鼠标偏移的，不过是开始框选时记录的开始坐标，现象是当文件列表过长出现滚动条时，如果我们往上滚动一段距离然后开始框选，会发现框选的坐标与预定的坐标偏离了一段距离，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/d538114172c41a26.gif' width={1364} height={728} alt='bug 展示的图片 2' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d538114172c41a26.webp' width={1364} height={728} alt='bug 展示的图片 2' />
 
 `bug` 的原因是记录开始偏移时没有加上元素滚上去的高度，导致计算的偏移出现了偏差，解决也很简单，我们只需要给开始偏移加上 `event.target.scrollTop` 的高度就 ok 了。
 
@@ -314,7 +314,7 @@ const remove = async () => {
 
 效果如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/71d29d793480321f.gif' width={1364} height={728} alt='展示删除效果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/71d29d793480321f.webp' width={1364} height={728} alt='展示删除效果的图片' />
 
 ## 剪切板
 
@@ -440,7 +440,7 @@ const create = (handle, { name, type }) => {
 
 通过上述的代码完成复制剪切操作，如下图：
 
-<Image url='https://qkc148.bvimg.com/18470/14e0ab07929ca6fb.gif' width={1364} height={728} alt='展示移动效果的图片' />
+<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/14e0ab07929ca6fb.webp' width={1364} height={728} alt='展示移动效果的图片' />
 
 ## 案例
 

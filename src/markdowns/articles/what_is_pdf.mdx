@@ -2,7 +2,7 @@
 title: 解锁 PDF 文件：使用 JavaScript 和 Canvas 渲染 PDF 内容
 date: 2023-05-21 21:26:00
 author: yuanyxh
-imageUrl: https://qkc148.bvimg.com/18470/59816849ca089366.jpg
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/59816849ca089366.webp
 description: 从解析一个 PDF 开始，探索 JS 中处理二进制数据的方式，展望未来 Web 应用程序的形式。
 keywords: pdf, binrary, file system, xref, trailer, pdf parse
 ---
@@ -54,7 +54,7 @@ Xref 是 PDF 中存储对象偏移的区域，通过它我们能够快速的访�
 
 Xref 的表现形式如下：
 
-<Image url="https://qkc148.bvimg.com/18470/95f1b88a15e8c323.png" width={921} height={606} alt='xref 展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/95f1b88a15e8c323.webp" width={921} height={606} alt='xref 展示的图片' />
 
 xref 关键字标示着交叉引用表的开始，下一行的 `0 39`，0 表示对象开始的索引，39 表示对象的个数，在表中第一个条目表示特殊条目，不指向任何对象。
 
@@ -64,13 +64,13 @@ Trailer 位于文档尾部，其中的数据描述了如何读取当前文档，
 
 一个简单的 Trailer 如下：
 
-<Image url="https://qkc148.bvimg.com/18470/03a07edbadaa86f0.png" width={1341} height={606} alt='Trailer 展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/03a07edbadaa86f0.webp" width={1341} height={606} alt='Trailer 展示的图片' />
 
 trailer 的数据存储在字典 `<<  >>` 里，其中必须存在 `Size` 和 `Root` 属性，Size 标识着当前文档的对象个数，Root 是一个间接引用，指向了当前文档的文档目录，通过文档目录能够获取到页面信息，进而找到需要解析的页面。
 
 在 trailer 的后面，通常跟着 startxref 的数据，这里存放了交叉引用表的位置偏移。
 
-<Image url="https://qkc148.bvimg.com/18470/4b0c74fa6036826b.png" width={1341} height={606} alt='startxref 展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4b0c74fa6036826b.webp" width={1341} height={606} alt='startxref 展示的图片' />
 
 ## PDF 数据类型
 
@@ -133,7 +133,7 @@ const getBufferView = (file: File) => {
 
 这里我随便选择了一个 PDF 文档，打印出来的数据如下：
 
-<Image url="https://qkc148.bvimg.com/18470/86f5b2a69e33d735.png" width={1366} height={475} alt='chrome 字节打印展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/86f5b2a69e33d735.webp" width={1366} height={475} alt='chrome 字节打印展示的图片' />
 
 图片中，25 是一个 16 进制数值（两个 16 进制所能表示的最大值是 255，也就是一字节），转换为 10 进制为 37，在 ASCII 码表中对应的字符就是 `%`。
 
@@ -533,7 +533,7 @@ class PDFParser {
 
 这里我们以 [trailer](#Trailer) 中的图片为例，它所解析出来的数据如下：
 
-<Image url="https://qkc148.bvimg.com/18470/534beb7e907301f6.png" width={1366} height={307} alt='trailer 对象展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/534beb7e907301f6.webp" width={1366} height={307} alt='trailer 对象展示的图片' />
 
 截图中，`Root` 对象的 `type` 属性是自定义的，表明这个对象是一个间接引用，`serial` 引用的对象编号，通常也可以看作是在交叉引用表中的索引，`version` 则是引用对象的版本号。
 
@@ -570,7 +570,7 @@ getPdfXref(stream: Uint8Array) {
 
 使用上述代码对于 [Xref](#Xref-交叉引用表) 解析出来的数据如下：
 
-<Image url="https://qkc148.bvimg.com/18470/32bbff9fd2f5fd12.png" width={1366} height={475} alt='Xref 对象展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/32bbff9fd2f5fd12.webp" width={1366} height={475} alt='Xref 对象展示的图片' />
 
 现在，我们已经能够通过对象编号与交叉引用表获取到指定对象的字节偏移了，在上文中，`Root` 文档对象的字节偏移可以通过 `xref[Root.serial]` 来获取。
 
@@ -578,13 +578,13 @@ getPdfXref(stream: Uint8Array) {
 
 在 trailer 中，Root 指向了文档目录，文档目录的基本格式如下：
 
-<Image url="https://qkc148.bvimg.com/18470/29869cc5c4aecb20.png" width={1341} height={606} alt='文档目录展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/29869cc5c4aecb20.webp" width={1341} height={606} alt='文档目录展示的图片' />
 
 其中，`Type` 和 `Pages` 是必须的，Type 必须是 Catalog，表示这是一个文档目录；而 Pages 引用了 PDF 中页面树的根节点对象。
 
 Pages 根节点对象的基本格式如下：
 
-<Image url="https://qkc148.bvimg.com/18470/6aead18de095133b.png" width={1341} height={606} alt='Pages 展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6aead18de095133b.webp" width={1341} height={606} alt='Pages 展示的图片' />
 
 这里我们只需要关注 `Kids` 属性所对应的数据，它是一个数组，数组中的每个间接引用就是一个页面，接下来我们可以通过页面对象的内容使用 Canvas 来绘制 PDF 文档了。
 
@@ -592,7 +592,7 @@ Pages 根节点对象的基本格式如下：
 
 这里我们以上文中的第一个页面为例，讲解如何解析页面内容并绘制到 canvas 中。该页面的对象编号为 6，它的基本信息如下：
 
-<Image url="https://qkc148.bvimg.com/18470/e4f6a1b07d5a002f.png" width={1341} height={606} alt='page 基本信息展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e4f6a1b07d5a002f.webp" width={1341} height={606} alt='page 基本信息展示的图片' />
 
 对于一个页面对象来说，它必须存在以下属性：
 
@@ -605,13 +605,13 @@ Pages 根节点对象的基本格式如下：
 
 上述页面的内容被存放在对象 7 中，它的基本信息如下：
 
-<Image url="https://qkc148.bvimg.com/18470/e4dd349250c0e963.png" width={1341} height={606} alt='对象 7 基本信息展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e4dd349250c0e963.webp" width={1341} height={606} alt='对象 7 基本信息展示的图片' />
 
 `Filter` 指示数据使用了什么压缩算法，`Length` 则表示压缩后数据的字节长度，在字典信息后，跟随着 `stream` 关键字，表示流数据的开始，`endstream` 则标识着流数据的结束。
 
 对于压缩算法，个人不是很了解，所以这里使用了第三方类库 [pako] 来对流数据进行解压缩，上图中的流数据被解压后是可读的绘图指令，如下图：
 
-<Image url="https://qkc148.bvimg.com/18470/e6c51064da8cf25d.png" width={1110} height={618} alt='解压后展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e6c51064da8cf25d.webp" width={1110} height={618} alt='解压后展示的图片' />
 
 ### 绘制文档
 
@@ -619,7 +619,7 @@ Pages 根节点对象的基本格式如下：
 
 对于 PDF 中的绘图指令来说，它是后置位的，也就是说操作数在前，操作符在后，我们可以通过一个栈来维护其中的数据，以下图为例：
 
-<Image url="https://qkc148.bvimg.com/18470/e4ff342ba1e9d0d7.png" width={946} height={601} alt='绘图指令展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/e4ff342ba1e9d0d7.webp" width={946} height={601} alt='绘图指令展示的图片' />
 
 前面 6 个数值为操作数，cm 则是一个表示转换矩阵的操作符，当我们读取时，将数值依次压入栈中，当读取到 cm 指令时将栈中的数据依次出栈并作为指令的参数。
 
@@ -631,15 +631,15 @@ PDF 的 `Do` 操作符允许在当前位置输出一个外部对象，通常是�
 
 PDF 中，通常不会直接存储页面上的文本，而是转换为 `Unicode` 编码，并将其与另一个 `Unicode` 编码值相映射，在展示文本时，找到对应的字体对象，通过 `ToUnicode` 引用找到映射对象，解压其中的流数据就能找到实际的文字内容，如下图：
 
-<Image url="https://qkc148.bvimg.com/18470/62cbcdf5d7218dc2.png" width={946} height={601} alt='文本映射展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/62cbcdf5d7218dc2.webp" width={946} height={601} alt='文本映射展示的图片' />
 
-<Image url="https://qkc148.bvimg.com/18470/9b17bc81bf0c3f2c.png" width={1341} height={606} alt='文本映射展示的图片2' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9b17bc81bf0c3f2c.webp" width={1341} height={606} alt='文本映射展示的图片2' />
 
-<Image url="https://qkc148.bvimg.com/18470/a77d7139e241f7ef.png" width={1341} height={606} alt='文本映射展示的图片3' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/a77d7139e241f7ef.webp" width={1341} height={606} alt='文本映射展示的图片3' />
 
 解压图中 obj 13 的流数据后会得到类似下图的数据：
 
-<Image url="https://qkc148.bvimg.com/18470/6e9e76ea5bcab5b3.png" width={946} height={601} alt='文本流展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6e9e76ea5bcab5b3.webp" width={946} height={601} alt='文本流展示的图片' />
 
 左侧的 16 进制字符串是在绘制指令中使用，右侧的 16 进制字符串才是真正的 Unicode 码值，可以通过 `String.fromCodePoint` 转换为文字内容。
 
@@ -648,7 +648,7 @@ PDF 中，通常不会直接存储页面上的文本，而是转换为 `Unicode`
 
 个人写了一个简单的 [PDF 解析示例]，因为对于绘图相关知识不是很懂，解析出来的位置，偏移还有转换等还有毛病，同时因为只是参照一两个 PDF 文件进行代码编写的，所以会有解析失败的情况，以下是个人简历解析出来的样式：
 
-<Image url="https://qkc148.bvimg.com/18470/89e4b3727ab2f321.png" width={1366} height={625} alt='绘制 pdf 效果展示的图片' />
+<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/89e4b3727ab2f321.webp" width={1366} height={625} alt='绘制 pdf 效果展示的图片' />
 
 可能是矩阵转换的原因，图片角度是有问题的，在绘制文本时，矩阵的缩放系数是很小的，导致无法看到文本，这里还能看到是因为做了处理。
 
