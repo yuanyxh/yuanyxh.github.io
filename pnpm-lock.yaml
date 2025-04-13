@@ -6,10 +6,10 @@ settings:
 
 patchedDependencies:
   hypermd@0.3.11:
-    hash: kstbikrr4fcr5lanh5drtvauuu
+    hash: 575a295b08eac54b7a37088a04baa7ee5d8b986b454f5458d23ce216878ab04f
     path: patches/hypermd@0.3.11.patch
   vite-plugin-prerender@1.0.8:
-    hash: wzxg63f5ojygzuhh2kfcpwgc4y
+    hash: 00274abe344ab8adf4f3e94778de2628162533e75cbe6aba99fb0aeaeb7f8b85
     path: patches/vite-plugin-prerender@1.0.8.patch
 
 importers:
@@ -30,7 +30,7 @@ importers:
         version: 2.5.1
       hypermd:
         specifier: ^0.3.11
-        version: 0.3.11(patch_hash=kstbikrr4fcr5lanh5drtvauuu)(codemirror@5.65.18)
+        version: 0.3.11(patch_hash=575a295b08eac54b7a37088a04baa7ee5d8b986b454f5458d23ce216878ab04f)(codemirror@5.65.18)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -208,7 +208,7 @@ importers:
         version: 1.7.0(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0))
       vite-plugin-prerender:
         specifier: ^1.0.8
-        version: 1.0.8(patch_hash=wzxg63f5ojygzuhh2kfcpwgc4y)(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0))
+        version: 1.0.8(patch_hash=00274abe344ab8adf4f3e94778de2628162533e75cbe6aba99fb0aeaeb7f8b85)(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0))
       vite-plugin-progress:
         specifier: ^0.0.7
         version: 0.0.7(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0))
@@ -10193,7 +10193,7 @@ snapshots:
 
   husky@9.1.7: {}
 
-  hypermd@0.3.11(patch_hash=kstbikrr4fcr5lanh5drtvauuu)(codemirror@5.65.18):
+  hypermd@0.3.11(patch_hash=575a295b08eac54b7a37088a04baa7ee5d8b986b454f5458d23ce216878ab04f)(codemirror@5.65.18):
     dependencies:
       codemirror: 5.65.18
     optionalDependencies:
@@ -13539,7 +13539,7 @@ snapshots:
       ejs: 3.1.10
       vite: 5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0)
 
-  vite-plugin-prerender@1.0.8(patch_hash=wzxg63f5ojygzuhh2kfcpwgc4y)(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0)):
+  vite-plugin-prerender@1.0.8(patch_hash=00274abe344ab8adf4f3e94778de2628162533e75cbe6aba99fb0aeaeb7f8b85)(vite@5.4.11(@types/node@20.17.11)(less@4.2.1)(terser@5.37.0)):
     dependencies:
       '@prerenderer/prerenderer': 0.7.2(debug@4.4.0)
       '@prerenderer/renderer-puppeteer': 0.2.0

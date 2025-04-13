@@ -45,6 +45,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
       - name: Install dependencies
         run: pnpm install
+      - name: install puppeteer
+        run: node ./node_modules/.pnpm/puppeteer@1.20.0/node_modules/puppeteer/install.js
       - name: Build
         run: pnpm run build
       - name: Setup Pages
