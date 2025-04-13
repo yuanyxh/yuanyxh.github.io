@@ -92,6 +92,10 @@
     "patchedDependencies": {
       "vite-plugin-prerender@1.0.8": "patches/vite-plugin-prerender@1.0.8.patch",
       "hypermd@0.3.11": "patches/hypermd@0.3.11.patch"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "puppeteer"
+    ]
   }
 }
