@@ -224,6 +224,8 @@ export const useMDXComponents = (): MDXComponents => {
     code(props) {
       const { className, children, ...rest } = props;
 
+      rest.translate = 'no';
+
       if (!className) {
         return (
           <code className={styles.inline} {...rest}>
