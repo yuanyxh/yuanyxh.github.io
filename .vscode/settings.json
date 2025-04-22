@@ -1,11 +1,51 @@
 {
+  "workbench.startupEditor": "none",
+  "workbench.settings.editor": "ui",
+  "workbench.list.smoothScrolling": true,
+
+  "editor.smoothScrolling": true,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "always"
   },
+  "editor.acceptSuggestionOnEnter": "smart",
+  "editor.suggestSelection": "recentlyUsedByPrefix",
+  // 文本宽度超出视口宽度时换行
+  "editor.wordWrap": "on",
+  // 双击字符串时，在匹配到的字符处位置不会中断，继续向后选中字符串
+  "editor.wordSeparators": "`~!@%^&*()=+[{]}\\|;:'\",.<>/?（），。；：",
+  "editor.detectIndentation": false,
+
+  "explorer.copyRelativePathSeparator": "/",
+  // 目录中相关文件以可视组合在一起
   "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": true,
   "explorer.fileNesting.patterns": {
     "*.ts": "$(capture).test.ts, $(capture).test.tsx",
     "*.tsx": "$(capture).test.ts, $(capture).test.tsx"
-  }
+  },
+
+  // 配置某种扩展名可与某种语言类型关联
+  "files.associations": {},
+
+  // 类型提示
+  "javascript.suggest.autoImports": true,
+  "javascript.inlayHints.variableTypes.enabled": true,
+  "javascript.inlayHints.functionLikeReturnTypes.enabled": true,
+  "javascript.inlayHints.parameterNames.enabled": "all",
+  "javascript.inlayHints.parameterTypes.enabled": true,
+  "javascript.inlayHints.propertyDeclarationTypes.enabled": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.inlayHints.variableTypes.suppressWhenTypeMatchesName": true,
+  "javascript.inlayHints.parameterNames.suppressWhenArgumentMatchesName": true,
+
+  // 报告 JS 和 TS 错误时，以本地语言展示
+  "typescript.locale": "zh-CN",
+  "typescript.inlayHints.enumMemberValues.enabled": true,
+  "typescript.preferences.preferTypeOnlyAutoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.suggest.autoImports": true,
 }
