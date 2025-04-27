@@ -23,11 +23,11 @@ keywords: uniapp, summarize, ios, android, h5
 
 Android
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/a91e750a3e749afd.webp' width={1080} height={1118} alt='Android 展示 emoji 的图片' />
+![Android 展示 emoji 的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/a91e750a3e749afd.webp)
 
 IOS
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7c0bb10a14c53d63.webp' width={750} height={721} alt='iOS 展示 emoji 的图片' />
+![iOS 展示 emoji 的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7c0bb10a14c53d63.webp)
 
 可以发现 IOS 中 emoji 实在是太小了，与字体大小不匹配，造成的视觉落差比较大。
 
@@ -547,7 +547,7 @@ export default Vue.extend({
 }
 ```
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/5ad854c2d983a0ec.webp' width={1366} height={521} alt='在 pc 上的布局图片' />
+![在 pc 上的布局图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/5ad854c2d983a0ec.webp)
 
 会出现上图中的问题，此时正确的写法应该是加上 uniapp 官方提供的上下左右边距：
 
@@ -561,13 +561,13 @@ export default Vue.extend({
 }
 ```
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6fab4c889ad83d01.webp' width={1366} height={528} alt='修复 pc 上的布局问题图片' />
+![修复 pc 上的布局问题图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6fab4c889ad83d01.webp)
 
 ## ios H5 阻尼滚动
 
 项目用到滚动的地方基本都是用 scroll-view（虽然性能不好，但当时好像也是为了解决 ios 微信 H5 的一个 bug 才使用的，可以说是填了一个坑又来一个坑），在 scroll-view 滚动时可能会触发页面的滚动，因为 ios 是自带有阻尼回弹效果的，当页面滚动到边界时触发阻尼效果，此时 scroll-view 的滚动会失效，出现页面无法滑动的假象，如下图：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/756781ca9cc5bef5.webp' width={750} height={1334} alt='iOS 阻尼回弹图片' />
+![iOS 阻尼回弹图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/756781ca9cc5bef5.webp)
 
 可以看到触发了页面的滚动，而 scroll-view 的滚动无法触发，导致出现滑不动的情况，需要等待几秒后才能继续滑动。
 
@@ -577,7 +577,7 @@ export default Vue.extend({
 
 这其实是正常的现象，因为 ios H5 会在输入框聚焦软键盘弹出时给底部添加一块空白区域来让页面上推，防止有区域被软键盘遮挡，如下图：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/19ed420928e13979.webp' width={750} height={971} alt='iOS 底部空白问题的图片' />
+![iOS 底部空白问题的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/19ed420928e13979.webp)
 
 虽然是正常现象，奈何老板有命，不得不从。
 

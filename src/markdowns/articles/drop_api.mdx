@@ -51,7 +51,7 @@ document.addEventListener('drop', (e) => e.preventDefault());
 
 它们在 chrome 浏览器的表现如下图：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2dc314add944c03d.webp' width={245} height={111} alt='style' />
+![style](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2dc314add944c03d.webp)
 
 除了样式的改变外，不同的 `dropEffect` 还会导致不同的行为，比如在放置元素的 `dragover` 事件中，将 `dropEffect` 设置为 `none`，那么此时是不会触发该放置元素的 `drop` 事件的。
 
@@ -86,15 +86,15 @@ document.addEventListener('drop', (e) => e.preventDefault());
 
 需要注意的是，`items` 属性中可能不只包含了我们想要的数据，比如我们创建一个放置容器，在这个放置容器中侦听 `drop` 事件，代码如下：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/365e55e996d74833.webp' width={413} height={260} alt='20230411135956' />
+![20230411135956](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/365e55e996d74833.webp)
 
 然后我们从一个网页中拖拽一张图片到这个放置容器中，chrome 输出如下：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f00f24ce32b2df16.webp' width={1366} height={346} alt='20230411141515' />
+![20230411141515](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f00f24ce32b2df16.webp)
 
 firefox 输出如下：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/31dca340a32c6dcd.webp' width={1366} height={346} alt='20230411141555' />
+![20230411141555](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/31dca340a32c6dcd.webp)
 
 从输出中可以发现除了图片外还包含了很多额外的数据，这些数据可能是网站域名信息、图像对应的 html 字符串等等，而且在 firefox 中是无法直接获取到文件数据的。
 
@@ -146,7 +146,7 @@ firefox 输出如下：
 
 ### 文件拖拽上传
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1693fabe581344ca.webp' width={1364} height={768} alt='uploadfile' />
+![uploadfile](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1693fabe581344ca.webp)
 
 这个案例完成了简单的文件拖拽和图片拖拽上传的功能，根据前文的描述我们知道在 Web 中的文件 firefox 是获取不到的，所以这个案例只能处理从系统中拖拽的文件。
 
@@ -156,7 +156,7 @@ firefox 输出如下：
 
 ### 可视化编辑
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4b2a16c4b2737a68.webp' width={1364} height={768} alt='visuble' />
+![visuble](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4b2a16c4b2737a68.webp)
 
 一个简单的可视化编辑案例，不了解低代码的相关知识，不过应该也有用到拖拽 Api。
 

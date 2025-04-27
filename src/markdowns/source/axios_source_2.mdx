@@ -193,7 +193,7 @@ if (!synchronousRequestInterceptors) {
 
 代码将请求的过渡函数 `dispatchRequest` 存入了一个数组 `chain`，并将请求拦截的数组添加至 `chain` 的前面，响应拦截的数组添加至 `chain` 的后面，随后创建了一个 `Promise`，不断的链式调用，最终它们会以下图的顺序被执行：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f2c436db9d475ae8.webp' width={558} height={601} alt='展示请求拦截的演示图片' />
+![展示请求拦截的演示图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f2c436db9d475ae8.webp)
 
 #### 同步执行请求拦截
 

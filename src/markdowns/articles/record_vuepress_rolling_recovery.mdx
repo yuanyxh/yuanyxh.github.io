@@ -17,37 +17,37 @@ vuepress 具体的滚动行为是这样的：一个新的页面默认滚动位�
 
 我把这个问题发到了一些编程群，诞生了以下讨论（内容较长，可以跳过不看）：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/21c7c4f6b8407973.webp' width={712} height={14356} alt='讨论图 1' />
+![讨论图 1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/21c7c4f6b8407973.webp)
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/53e20556118ae5c0.webp' width={1024} height={10006} alt='讨论图 2' />
+![讨论图 2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/53e20556118ae5c0.webp)
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/359c388d57519b81.webp' width={1080} height={5846} alt='讨论图 3' />
+![讨论图 3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/359c388d57519b81.webp)
 
 讨论后得出的结果是 vuepress 将滚动位置保存在了 `history` 对象的 `state` 属性中，因为历史记录在刷新后是不会变的，所以才可以实现保存数据的功能，而不同的页签历史记录是不同的，也就可以解释为什么新开页签的页面不会有滚动恢复。
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/c7cc7b4132ab682e.webp' width={1366} height={386} alt='控制台打印滚动位置' />
+![控制台打印滚动位置](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/c7cc7b4132ab682e.webp)
 
 ## 溯源
 
 有了线索我们就可以有针对性的去查找，我下载了 vuepress 的源码，针对路由部分进行搜索，找到了以下代码：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/86be23928e48ad40.webp' width={492} height={415} alt='vuepress 有关路由的代码' />
+![vuepress 有关路由的代码](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/86be23928e48ad40.webp)
 
 可以看到这种行为其实是 vue-router 提供的（不看文档的坏处），vue-router 提供了 [scroll-behavior] 的滚动恢复行为，我们再看 vue-router 的源码。
 
 我们在 vue-router 找到 `pushWithRedirect` 函数，这个函数是 vue-router 中 `push` 和 `replace` 实际调用的函数：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/07210775f147e664.webp' width={479} height={99} alt='vue-router pushWithRedirect 函数签名的图片' />
+![vue-router pushWithRedirect 函数签名的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/07210775f147e664.webp)
 
 `pushWithRedirect` 又调用了 `handleScroll`，在这里获取了保存的滚动位置：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7174051e9000aa10.webp' width={630} height={435} alt='保存滚动位置代码的图片' />
+![保存滚动位置代码的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7174051e9000aa10.webp)
 
 vue-router 会通过一个 `Map` 保存滚动位置，每个滚动位置的 `key` 都是对应页面的 `path`，当某个页面的滚动位置不在 `Map` 中时会去 `history.state.scroll` 中取。
 
 有获取就有保存，vue-router 不是在滚动发生时实时保存滚动位置的，而是在离开当前页面时进行保存，`pushWithRedirect` 里还调用了 `finalizeNavigation` 方法：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/346d1245a59cf92f.webp' width={776} height={586} alt='finalizeNavigation 方法代码的图片' />
+![finalizeNavigation 方法代码的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/346d1245a59cf92f.webp)
 
 `routerHistory` 的初始化比较复杂，只需要知道这里他是 `history` 的副本就 ok 了，就是通过 h5 的 `pushState` 和 `replaceState` API 实现的。另外除了 `pushWithRedirect` 添加历史时会记录滚动位置，`history.popstate` 和 `window.beforeunload` 事件中都有对应的逻辑。
 

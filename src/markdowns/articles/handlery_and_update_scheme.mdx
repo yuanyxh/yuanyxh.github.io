@@ -44,7 +44,7 @@ keywords: service worker, 升级检测, 错误侦听, 资源加载, 页面重载
 
 控制台输出：
 
-<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b84487b8ba4593c7.webp'} width={1366} height={310} />
+![image](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b84487b8ba4593c7.webp)
 
 **注意：** 必须以捕获模式侦听，否则不起作用，另外无法捕获动态导入导致的错误：
 
@@ -72,7 +72,7 @@ keywords: service worker, 升级检测, 错误侦听, 资源加载, 页面重载
 
 控制台输出：
 
-<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/0f3009f6da94fd06.webp'} width={1366} height={310} />
+![image](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/0f3009f6da94fd06.webp)
 
 可以看到并没有捕获到动态导入的错误，也就无法捕获到主流前端框架路由懒加载时出现的错误，针对动态导入，我们可以使用 [PerformanceObserver]。
 
@@ -118,11 +118,11 @@ observer.observe({ entryTypes: ["resource"] });
 </html>
 ```
 
-<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/57f3e9e63cc296c2.webp'} width={1366} height={458} />
+![image](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/57f3e9e63cc296c2.webp)
 
 可以通过 `responseStatus` 状态码判断是否加载成功：
 
-<Image url={'https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9a7c6b2b05418668.webp'} width={1366} height={458} />
+![image](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9a7c6b2b05418668.webp)
 
 当然它也可以侦测到资源加载失败，兼容性也还不错，不需要侦测运行时错误的话可以完全替代 `window.onerror`。
 

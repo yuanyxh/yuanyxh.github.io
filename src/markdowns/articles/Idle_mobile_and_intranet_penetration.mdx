@@ -22,9 +22,9 @@ keywords: 闲置手机, 内网穿透, caddy, rclone, 坚果云, webdav, frp
 
 首先将仓库源更换为国内速度更客观的 USTC，输入 `termux-change-repo` 后出现下图界面：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6a51e165ea2323d3.webp' width={1080} height={2340} alt='termux 换源的图片' />
+![termux 换源的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6a51e165ea2323d3.webp)
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3f819cf6139f5991.webp' width={1080} height={2340} alt='termux 换源的图片2' />
+![termux 换源的图片2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3f819cf6139f5991.webp)
 
 空格选择，回车确认。
 
@@ -37,11 +37,11 @@ pkg upgarde
 
 开启存储权限，输入 `termux-setup-storage` 并同意权限申请，这一步是为了访问外部存储并将部分公用文件夹映射到 termux 的私有目录，所以不要手动开启 termux 的存储权限：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/bdc46520a9034ede.webp' width={1080} height={2340} alt='termux 开启存储的图片' />
+![termux 开启存储的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/bdc46520a9034ede.webp)
 
 开启后通过 ls 命令列举根目录的文件夹会出现 storage：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f0c58604a680b3bb.webp' width={1080} height={2340} alt='termux 开启存储后的文件列表图片' />
+![termux 开启存储后的文件列表图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/f0c58604a680b3bb.webp)
 
 安装 vim：
 
@@ -57,7 +57,7 @@ pkg install vim
 
 我们下载机器 CPU 对应的版本，这里我下载 linux_arm64：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d948fc5a4917a17f.webp' width={748} height={573} alt='github frp 列表的图片' />
+![github frp 列表的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/d948fc5a4917a17f.webp)
 
 右键复制链接，在服务器中通过 `wget` 命令下载：
 
@@ -67,7 +67,7 @@ wget https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_
 
 在闲置手机中，我们先将文件下载到 `/storage/emulated/0/Download/` 目录下，此时 `termux` 内的 `storage/downloads` 下也会出现对应的文件：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/732c559fdfdb03b2.webp' width={1080} height={2340} alt='文件列表的图片' />
+![文件列表的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/732c559fdfdb03b2.webp)
 
 通过 `mv` 命令移动到私有目录：
 
@@ -75,7 +75,7 @@ wget https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_
 mv ~/storage/downloads/frp_0.54.0_linux_arm64.tar.gz ~/frp
 ```
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1e0dc5d0df86d525.webp' width={1080} height={2340} alt='文件列表的图片2' />
+![文件列表的图片2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1e0dc5d0df86d525.webp)
 
 两端对压缩文件进行解压：
 
@@ -143,7 +143,7 @@ nohup ./frpc -c ./frpc.toml &
 
 下载 CPU 对应的二进制可执行文件：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7cc83a2bbae02ef4.webp' width={1350} height={696} alt='github caddy 的列表图片' />
+![github caddy 的列表图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/7cc83a2bbae02ef4.webp)
 
 将二进制文件移动到 termux 的私有目录中，创建需要等下用的密码：
 
@@ -151,7 +151,7 @@ nohup ./frpc -c ./frpc.toml &
 ./caddy hash-password --plaintext yourpassword
 ```
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6f12fc1d63c1b75c.webp' width={1080} height={2340} alt='创建 caddy 密码的图片' />
+![创建 caddy 密码的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6f12fc1d63c1b75c.webp)
 
 使用 `touch` 命令在同级目录创建 caddy 配置文件：
 
@@ -244,7 +244,7 @@ sv-enable caddy
 
 下载需要的可执行文件：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4639e981345f005f.webp' width={1366} height={607} alt='github rclone 的图片' />
+![github rclone 的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4639e981345f005f.webp)
 
 运行：
 
@@ -338,7 +338,7 @@ remotePort = 9833      # 服务器侦听的端口，防火墙需放行
 
 将电脑锁屏（win + L），在另一台客户端中使用远程桌面连接
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/70ba551fbacd8b77.webp' width={473} height={605} alt='远程连接面板的图片' />
+![远程连接面板的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/70ba551fbacd8b77.webp)
 
 注意：电脑不能进入休眠状态。
 

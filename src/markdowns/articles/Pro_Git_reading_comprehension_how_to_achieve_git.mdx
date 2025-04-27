@@ -20,7 +20,7 @@ Git 是一个分布式版本管理系统，与集中式版本管理系统不同�
 
 Git 只关注数据整体的变化，而不是文件内容的具体差异：将变化的文件作快照后，记录在一个微型的文件系统中。每次提交更新时，Git 计算所有文件的指纹信息，存储文件快照，将文件对应的指纹作为引用指向文件快照。如果文件没有变化，Git 不会再次保存，只是链接到对应的文件快照。
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b10acca5ec70f4f0.webp" width={500} height={222} alt='git 工作示例的图片' />
+![git 工作示例的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b10acca5ec70f4f0.webp)
 
 Git 在每次更新提交时，对每个文件进行校验计算，这意味着不会出现文件被修改但 Git 毫无所知的情况，最大程度的保证了文件的完整性。
 
@@ -39,23 +39,23 @@ Git 中文件只有三种状态：
 
 Git 通过 `HEAD` 文件保存当前的分支，查看 `.git/HEAD` 中的内容：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/883c1606755f79f4.webp" width={381} height={162} alt='head 的图片' />
+![head 的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/883c1606755f79f4.webp)
 
 这表明当前分支是 `.git/refs/heads/master`，查看对应的文件内容：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/27e0c900cd4722b5.webp" width={412} height={127} alt='分支指向的图片' />
+![分支指向的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/27e0c900cd4722b5.webp)
 
 这是一个 40 位的指纹信息，引用到具体的文件；Git 以 40 位指纹的前两位作为目录名，剩余的 38 位作为文件名存储文件快照，这些文件都存放在 `.git/objects` 中：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2e6e083b2edfe102.webp" width={699} height={398} alt='指纹信息的图片' />
+![指纹信息的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2e6e083b2edfe102.webp)
 
 Git 使用 zlib 的 `Deflate` 算法压缩内容，需要解压才能看到有意义的文件内容，使用 nodejs 解压上面的 `1d/7f00bcdea10b04ceab0d243d181f09a971bcd0` 文件：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b0df9d2a149ca14b.webp" width={796} height={294} alt='压缩信息解压的代码图片' />
+![压缩信息解压的代码图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/b0df9d2a149ca14b.webp)
 
 得到的内容如下：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/07f08684c2cc3d3c.webp" width={438} height={100} alt='压缩信息解压后的图片' />
+![压缩信息解压后的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/07f08684c2cc3d3c.webp)
 
 Git 将他表示为一个 commit 对象，为了直观的感受，以 js 对象表示：
 
@@ -92,7 +92,7 @@ Git 在每次提交更新时都会创建一个新的的 commit 对象，包含�
 
 这里我们继续查看上述 commit 对象中 tree 所指向的内容：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/776bfa9f90cb333f.webp" width={411} height={68} alt='tree 信息的图片' />
+![tree 信息的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/776bfa9f90cb333f.webp)
 
 这是一个 tree 对象，最后的乱码其实是 `new.txt` 的文件指纹，无法被转化为有效的 `utf-8` 编码，以 js 对象表示是这样的：
 
@@ -136,7 +136,7 @@ Git 在每次提交更新时都会创建一个新的的 commit 对象，包含�
 
 我们继续解压 `.git/objects/56/b6510f1d6b862ca30ce2e7c05b48760ba28fd7`，查看它的内容：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6c2fabd0668fb9e4.webp" width={354} height={35} alt='blob 信息的图片' />
+![blob 信息的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/6c2fabd0668fb9e4.webp)
 
 以 js 对象表示为：
 
@@ -153,11 +153,11 @@ Git 在每次提交更新时都会创建一个新的的 commit 对象，包含�
 
 注意，上述全部示例中，字节长度和后面的内容看起来是紧连在一起的：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9714e8176a1ce2c8.webp" width={437} height={83} alt='blob 展示信息的图片' />
+![blob 展示信息的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9714e8176a1ce2c8.webp)
 
 但其实中间间隔了一个不可见字符 `\x00`：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/151adb38028f6a4d.webp" width={826} height={462} alt='不可见字符的图片' />
+![不可见字符的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/151adb38028f6a4d.webp)
 
 最后是分支，通过上面的内容我们知道了分支只是一个文件引用了一个 commit 对象，假设我们通过 `git checkout -b test` 新建一个 test 分支，Git 会新建一个 `.git/refs/heads/test` 文件，并写入一个 commit 对象，然后 `master` 和 `test` 分支可以同时提交更新互不打扰，只需要在需要的时候合并两个分支的代码就可以了，这都得益于 Git 的机制（内容寻址文件系统）。
 
@@ -165,19 +165,19 @@ Git 在每次提交更新时都会创建一个新的的 commit 对象，包含�
 
 分支：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2221866ba2c431b5.webp" width={445} height={310} alt='分支展示的图片' />
+![分支展示的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/2221866ba2c431b5.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/fce2a9a0da20f2c2.webp" width={392} height={310} alt='分支展示的图片2' />
+![分支展示的图片2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/fce2a9a0da20f2c2.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4cc64f4f3f73bcb5.webp" width={500} height={287} alt='分支展示的图片3' />
+![分支展示的图片3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/4cc64f4f3f73bcb5.webp)
 
 commit 对象：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/77f61e9c7379af83.webp" width={500} height={338} alt='commit 展示的图片' />
+![commit 展示的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/77f61e9c7379af83.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/174c1b8cf2be4e51.webp" width={500} height={223} alt='commit 展示的图片2' />
+![commit 展示的图片2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/174c1b8cf2be4e51.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9ac0c83c065057f7.webp" width={500} height={251} alt='commit 展示的图片3' />
+![commit 展示的图片3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9ac0c83c065057f7.webp)
 
 ## Git 服务器
 
@@ -245,7 +245,7 @@ zlib.deflate(store, (err, result) => {
 
 这样我们就手动构建了一个 blob 对象，可以通过类似的方式构建 commit 和 tree 对象，它们之间的关系如下图：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/5470b6dfd363e21d.webp" width={500} height={339} alt='关系展示的图片3' />
+![关系展示的图片3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/5470b6dfd363e21d.webp)
 
 当然最后会有一个 commit 对象指向 root tree，以此可以构建完整的工作区内容。
 
@@ -267,11 +267,11 @@ Git 通过查找命名及尺寸相近的文件，只打包保存文件不同版�
 
 Git 在 `push` 时或手动执行 `git gc` 命令时会进行打包操作，我们执行 `git gc` 后，会发现 `.git/` 目录下的大部分对象文件都不见了，而多出了下面几个文件：
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1ad946da5c379cbf.webp" width={699} height={379} alt='多出来的文件的图片' />
+![多出来的文件的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/1ad946da5c379cbf.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3cc9c37a033dc7a7.webp" width={699} height={386} alt='多出来的文件的图片2' />
+![多出来的文件的图片2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/3cc9c37a033dc7a7.webp)
 
-<Image url="https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/55fb84a618a643e0.webp" width={699} height={385} alt='多出来的文件的图片3' />
+![多出来的文件的图片3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/55fb84a618a643e0.webp)
 
 其中，`.git/packed-refs` 保存了所有分支及对应的 commit 引用；`.git/objects/info/packs` 保存了所有 `.pack` 文件的引用；`.git/objects/pack/pack-*.[idx|pack]` 就是压缩后的 `.pack` 文件和对应的索引文件。
 

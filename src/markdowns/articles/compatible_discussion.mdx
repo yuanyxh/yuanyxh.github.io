@@ -34,7 +34,7 @@ keywords: 思考项目兼容性，现代浏览器如何向下兼容
 
 为此，我们可以使用 [babel] 的 `babel-loader` 和 `babel-plugin-transform-es3-*` 来实现语法的兼容处理，即使是 ie8：
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9aff0231bc3ead45.webp' width={1366} height={619} alt='展示 bable 编译语法的图片' />
+![展示 bable 编译语法的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/9aff0231bc3ead45.webp)
 
 ## API 兼容
 
@@ -118,7 +118,7 @@ window._addEventListener = function _addEventListener(element, type, fn) {
 
 以一个弹窗为例子，你认为一个弹窗是直接渲染出现带来的体验好呢，还是淡入、淡出并伴随着上至下的位移出现体验好呢？这个问题的答案很明显，对于大部分用户而言，直接渲染出现带来的印象太突兀，但加入动画后这种感觉就会很大的减少，这就是动画带来的用户体验增强。
 
-<Image url='https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/cc5731672913ddaf.webp' width={1364} height={728} alt='展示弹窗动画的图片' />
+![展示弹窗动画的图片](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/cc5731672913ddaf.webp)
 
 那么现在如果我们需要兼容 ie8，意味着我们必须放弃 CSS3 中的过渡和动画吗？
 

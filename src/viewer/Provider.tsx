@@ -7,10 +7,9 @@ import { Link, useLocation } from '@/router';
 
 import { copy, error, success } from '@/utils';
 
-import { Icon, Image as InnerImage } from '@/components';
+import { Icon, Image } from '@/components';
 
 import styles from './styles/Provider.module.less';
-import { SMALL_SCREEN_WIDTH } from '@/enum';
 import '@/assets/styles/prism-one-dark.css';
 
 import type { MDXComponents } from 'mdx/types';
@@ -24,16 +23,6 @@ interface Toc {
 
 interface Attributes {
   id?: string;
-}
-
-interface ImageProps
-  extends Omit<
-    React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>,
-    'src' | 'width' | 'height'
-  > {
-  url: string;
-  width?: number;
-  height?: number;
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -65,7 +54,7 @@ const SubTitle = (
         'aria-hidden': true,
         onClick: handleCopyAnchor
       },
-      '#'
+      '#'.repeat(window.parseInt(tag.slice(1)))
     )
   );
 };
@@ -109,72 +98,6 @@ const Toc = ({ toc }: { toc: Toc[] }) => {
   );
 };
 
-const calcArticleWrapperSize = () => {
-  let containerWidth = 916;
-
-  switch (true) {
-    case window.innerWidth <= SMALL_SCREEN_WIDTH:
-      containerWidth = window.innerWidth - 40;
-      break;
-    case window.innerWidth <= 1366:
-      containerWidth = SMALL_SCREEN_WIDTH;
-      break;
-    default:
-      break;
-  }
-
-  return { containerWidth };
-};
-
-/** Calculate the image size under the current container size */
-function calcImageSize({
-  width,
-  height,
-  containerWidth
-}: {
-  width: number;
-  height: number;
-  containerWidth: number;
-}) {
-  containerWidth = containerWidth > 648 ? 648 : containerWidth;
-
-  if ([width, height, containerWidth].includes(0)) {
-    return { width: 0, height: 0 };
-  }
-
-  if (width > containerWidth) {
-    height *= containerWidth / width;
-    width = containerWidth;
-  }
-
-  return { width, height };
-}
-
-const Image = (props: ImageProps) => {
-  const { url, width = 0, height = 0, ...rest } = props;
-
-  // TIPS: use static width values, don't use dynamic values
-  const { containerWidth } = calcArticleWrapperSize();
-
-  const size = calcImageSize({
-    width,
-    height,
-    containerWidth
-  });
-
-  return (
-    // @ts-expect-error img in here
-    <InnerImage
-      className={styles.image}
-      src={url}
-      preview={{ mask: null }}
-      width={size.width}
-      height={size.height}
-      {...rest}
-    />
-  );
-};
-
 export const useMDXComponents = (): MDXComponents => {
   return {
     wrapper(props) {
@@ -187,8 +110,16 @@ export const useMDXComponents = (): MDXComponents => {
         </header>
       );
     },
-    Image(props: ImageProps) {
-      return <Image {...props} />;
+    img(props) {
+      return (
+        <Image
+          className={styles.image}
+          src={props.src}
+          preview={{ mask: null }}
+          width={props.width}
+          height={props.height}
+        />
+      );
     },
     Toc(props) {
       return <Toc {...props} />;

@@ -8,6 +8,9 @@ code {
   --border-color: #ddd;
   --link-color: var(--color-primary);
   --text-size-base: 15px;
+  --margin-base: 24px;
+  --margin-bottom-block: 45px;
+  --shadow-base: 0 0 #0000, 0 0 #0000, 7px 7px 15px 0 rgb(0 0 0 / 30%);
 
   position: relative;
   max-width: 916px;
@@ -25,70 +28,39 @@ code {
   h4,
   h5,
   h6 {
+    margin-top: 1.2em;
+    margin-bottom: var(--margin-base);
     color: #252933;
   }
 
   h1 {
-    font-size: 34px;
+    font-size: 38px;
     line-height: 1.6em;
   }
 
   h2 {
-    margin-bottom: 22px;
-    font-size: 28px;
+    font-size: 32px;
     line-height: 1.5em;
   }
 
   h3 {
-    margin-bottom: 20px;
-    font-size: 24px;
+    font-size: 26px;
     line-height: 1.4em;
   }
 
   h4 {
-    margin-bottom: 18px;
     font-size: 20px;
     line-height: 1.3em;
   }
 
   h5 {
-    margin-bottom: 16px;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.2em;
   }
 
   h6 {
-    margin-bottom: 14px;
     font-size: 12px;
     line-height: 1.1em;
-  }
-
-  ul,
-  p,
-  pre {
-    + section {
-      margin-top: 40px;
-    }
-
-    + h2 {
-      margin-top: 40px;
-    }
-
-    + h3 {
-      margin-top: 43px;
-    }
-
-    + h4 {
-      margin-top: 46px;
-    }
-
-    + h5 {
-      margin-top: 49px;
-    }
-
-    + h6 {
-      margin-top: 52px;
-    }
   }
 
   a {
@@ -105,42 +77,8 @@ code {
     visibility: hidden;
   }
 
-  li {
-    line-height: 1.8;
-
-    a {
-      font-size: 18px;
-    }
-  }
-
   a:hover {
     text-decoration: underline solid var(--link-color);
-  }
-
-  .toc {
-    position: absolute;
-    right: -260px;
-
-    a {
-      text-decoration: none;
-    }
-
-    :global(.ant-anchor-wrapper) {
-      width: 220px;
-      max-height: calc(100vh - var(--navbar-height) - 120px) !important;
-      overflow: auto;
-
-      &::-webkit-scrollbar {
-        width: 2px;
-        height: 4px;
-      }
-
-      @supports not selector(::-webkit-scrollbar) {
-        & {
-          scrollbar-width: thin;
-        }
-      }
-    }
   }
 
   h2:hover a,
@@ -151,89 +89,18 @@ code {
     visibility: visible;
   }
 
+  .toc a:hover {
+    text-decoration: none;
+  }
+
   p {
-    margin-bottom: 28px;
+    margin: var(--margin-base) 0;
     font-weight: 500;
-    line-height: 1.5em;
+    line-height: 1.6em;
   }
 
-  ul,
-  ol,
-  dl {
-    padding-left: 1.2em;
-    margin-bottom: 20px;
-    list-style: initial;
-  }
-
-  ol {
-    list-style: decimal;
-  }
-
-  li > ul,
-  li > ol,
-  li > dl {
-    margin-bottom: 6px;
-  }
-
-  p + p {
-    margin-top: -10px;
-  }
-
-  pre {
-    position: relative;
-    margin-bottom: 25px;
-    border-radius: var(--border-radius-base);
-    box-shadow:
-      0 0 #0000,
-      0 0 #0000,
-      7px 7px 15px 0 #000;
-
-    + p {
-      margin-top: 40px;
-    }
-
-    .copy {
-      position: absolute;
-      top: 6px;
-      right: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 10px;
-      cursor: pointer;
-      visibility: hidden;
-      background-color: #1b1b1f;
-      border: 1px solid #2e2e32;
-      border-radius: var(--border-radius-base);
-      opacity: 0;
-      transition:
-        opacity 0.3s ease-in-out,
-        visiblity 0.3s ease-in-out;
-
-      &:hover {
-        background-color: black;
-      }
-    }
-
-    + ul {
-      margin-top: 40px;
-    }
-  }
-
-  pre + pre {
-    margin-top: 30px;
-  }
-
-  pre:hover {
-    .copy {
-      visibility: visible;
-      opacity: 1;
-    }
-  }
-
-  pre::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+  li {
+    line-height: 1.8em;
   }
 
   .image {
@@ -241,49 +108,81 @@ code {
     text-align: center;
     cursor: zoom-in;
     border-radius: var(--border-radius-base);
-    box-shadow:
-      0 0 #0000,
-      0 0 #0000,
-      7px 7px 15px 0 rgb(0 0 0 / 30%);
+    box-shadow: var(--shadow-base);
+  }
 
-    + ul,
-    + h2,
-    + h3,
-    + h4,
-    + h5,
-    + h6 {
-      margin-top: 30px;
+  :where(li, blockquote) > p {
+    margin: 15px 0;
+  }
+
+  p:has(> .image) {
+    margin-bottom: var(--margin-bottom-block);
+  }
+
+  ul,
+  ol,
+  dl {
+    padding-left: 1.2em;
+    list-style: initial;
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+  pre {
+    position: relative;
+    margin: var(--margin-base) 0 var(--margin-bottom-block) !important;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
     }
+  }
+
+  pre .copy {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    visibility: hidden;
+    background-color: #1b1b1f;
+    border: 1px solid #2e2e32;
+    border-radius: var(--border-radius-base);
+    opacity: 0;
+    transition:
+      opacity 0.3s ease-in-out,
+      visiblity 0.3s ease-in-out;
+
+    &:hover {
+      background-color: black;
+    }
+  }
+
+  pre:hover .copy {
+    visibility: visible;
+    opacity: 1;
   }
 
   blockquote {
     padding: 1rem;
     padding-right: 0.5rem;
-    margin: 25px 0;
     background-color: var(--color-primary-light);
     border-left: 0.2rem solid var(--color-primary);
 
-    > p {
-      margin-bottom: 0;
-      line-height: 1.7em;
+    + blockquote {
+      margin-top: var(--margin-base);
     }
-  }
-
-  pre + .image {
-    margin-top: 30px;
-  }
-
-  .image + .image {
-    margin-top: 30px;
-  }
-
-  .image + p {
-    margin-top: 30px;
   }
 
   table {
     max-width: 100%;
-    margin-bottom: 30px;
     overflow: auto;
     font-size: 14px;
     text-align: left;
@@ -327,16 +226,38 @@ code {
     }
   }
 
-  code {
-    &.inline {
-      padding: 1px 4px;
-      background-color: rgb(0 0 0 / 6%);
-    }
+  // inline code
+  code.inline {
+    padding: 1px 4px;
+    background-color: rgb(0 0 0 / 6%);
   }
 
+  // code block comment color
   :global(.token.comment) {
     font-style: normal;
     color: #6a9955 !important;
+  }
+}
+
+.article .toc {
+  position: absolute;
+  right: -260px;
+
+  :global(.ant-anchor-wrapper) {
+    width: 220px;
+    max-height: calc(100vh - var(--navbar-height) - 120px) !important;
+    overflow: auto;
+
+    &::-webkit-scrollbar {
+      width: 2px;
+      height: 4px;
+    }
+
+    @supports not selector(::-webkit-scrollbar) {
+      & {
+        scrollbar-width: thin;
+      }
+    }
   }
 }
 
@@ -368,12 +289,10 @@ code {
     }
   }
 
-  code {
-    &.inline {
-      padding: 1px 4px;
-      background-color: inherit;
-      border: 1px solid rgb(255 255 255 / 20%);
-    }
+  code.inline {
+    padding: 1px 4px;
+    background-color: inherit;
+    border: 1px solid rgb(255 255 255 / 20%);
   }
 }
 
