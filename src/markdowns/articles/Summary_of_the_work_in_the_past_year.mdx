@@ -1,0 +1,346 @@
+---
+title: 过去一年的工作总结
+date: 2025-04-27 10:51:30
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/Summary_of_the_work_in_the_past_year_logo.webp
+description: 总结过去一年的项目经历、工作需求，学到了什么新的东西；包含后台开发、Web components 封装、PDA 开发、打印机对接等。
+keywords: annual work summary, work
+---
+
+## 前言
+
+总结过去一年的项目经历、工作需求，学到了什么新的东西；包含后台开发、Web components 封装、PDA 开发、打印机对接等。
+
+公司是做国际物流的，在我入职前已包含：
+
+- 国内 ERP 系统：桌面版 ERP 系统，包含公司大部分业务流程，是主要的系统。
+
+- 国内 Web 客户下单系统：开放给客户使用的下单系统
+
+- 国际版系统：独立于国内系统，负责国外业务，包含接口服务与 Web 服务，Web 服务包含三端（Admin、Seller（销售端）、My（客户端））
+
+- Android PDA 项目：与国际版系统对接，用于手持 PDA 扫码入库、出库等操作。
+
+- PHP 官网项目
+
+以上部分项目是我维护更新过的，国内与国际版系统数据不在同库/同表中，依靠开放接口进行对接。
+
+## 国内 Web 新客户下单系统
+
+已有 Web 客户下单系统，使用 Web forms 开发，前后端不分离；因为 UI 与现代风格不兼容、交互不友好，故此需要开发一个新的客户下单系统。
+
+新客户下单系统基于 [vue-element-plus-admin] 二次开发，封装了常用的 axios、store、directive、router、permission 等。与一般的后台架构基本一致，共开发三个月（基本功能完成）。
+
+后端使用 Java 开发，提供接口，并与数据库交互。
+
+一些问题：
+
+- 多个项目间的数据可能在不同库/不同表，之间会有交互，由于没有文档，两个字段含义一样的，在数据库中被定义为不同的字段名称；在实际开发中造成困惑，传递错误参数。
+
+- 登录封装了图片验证码，存在逻辑上的错误，他的流程如下：
+
+  1. 每隔三十秒获取一张图片验证码，或点击立即切换一张图片验证码
+  2. 输入账号密码，填写图片验证码登录
+  3. 后端验证账号密码与验证码
+
+  问题：验证码没有映射关系，不能确定当前提交验证码的用户是请求验证码的用户，比如用户 A 请求了 `abcd` 的验证码，但被用户 B 使用；同时验证码在三十秒时间内可重复使用，没有在使用后进行清理操作。
+
+## 国际版系统
+
+国际版系统，使用 Web forms 开发，前后端不分离；主要进行开发和维护。
+
+主要进行了 Web components 的封装，保证风格一致，交互友好；同时进行少量多次的小重构，一步步替换页面中的旧有结构，保证项目的正常运行。
+
+> 组件化的好处：一处修改，处处应用，同时创造了组件类的开发范式，只需要记住这个开发范式，很容易开发出一些无复杂结构的页面，有利于不同开发人员的交接。
+
+开始维护国际版项目时，使用了 `Root element` + `React mount` 的模式，在 HTML 中的元素上挂载 React 应用，这是为了分离前后端，希望以此获取良好的架构与开发体验；但实际体验下来只是增加了心智负担，旧模块与新模块的不兼容会导致一些问题，比如旧模块与 React 模块的相同依赖，但依赖版本不同导致内部的配置冲突。
+
+仅从今时今日看，依托于旧架构，进行不断的优化封装是较好的方式，比如上面说的使用 Web components 封装结构、友好交互；使用 [knockoutjs] 实现类 React/Vue 的状态驱动视图。
+
+当然，封装的前提是有完整的文档可供后续开发人员参考。
+
+一些问题：
+
+- 依赖管理混乱，Admin 端使用 `script` 全局引用，My/Seller 端使用 `RequireJS` 引用；部分依赖在多个位置保存，部分依赖通过动态生成
+
+- 依赖缓存不可控，因为依赖管理混乱，很难针对不变依赖进行强缓存控制，可变依赖进行弱缓存控制。如果全局强缓存，则可变依赖经常不更新，全局弱缓存则页面加载时间过长
+
+- 一些功能实现时不关注整体逻辑与架构，常常会在与其他关联模块交互时出现问题，然后进行修补
+
+- 状态可变，在业务流程中，订单状态应该是不可变的（货物出库、入库、派送、收件等），但实际对于状态的态度较儿戏，可能有多个修改状态的入口
+
+- 数据验证，后端接口大部分时候只进行存储，不进行数据的校验
+
+## Android PDA 项目
+
+适配 Urovo（优博讯）手持 PDA 终端设备的 Android PDA App，与国际版系统相关，主要用于海外仓库扫码使用，比如扫码商品二维码以进行入库、出库、收件等操作；系统需要与国际版系统模块进行同步的更新维护。
+
+项目使用 Java + Kotlin 开发，使用 Java SDK 1.8，适配 Android 5.0（旧设备） 和 Android 11（新设备）。
+
+初期完全重构了 Android 首页结构，使用常见的底部 Tabs 划分模块入口；添加了 App 自动检测更新，避免手动使用 App 包分发的方式；同时添加了部分基础组件，比如手写签名、图片选择/图片拍摄等组件。
+
+一些问题：
+
+- 已有的项目只包含几个简单 Activity，没有为后续扩展考虑，所以将旧代码推倒进行了完全的重写
+
+- Urovo 提供了扫码 SDK，此 SDK 内部的所有方法仅抛出异常，初期没有 Urovo 手持终端设备的情况下使用自己的手机调试，无法运行，造成疑惑；后续使用 Urovo 设备后正常运行。
+
+  经过调试，弄明白了扫码 SDK 仅提供数据类型，以保证编译器编译通过，实际的 SDK 代码在 Urovo 定制过的 Android 系统 framework 中。
+
+## Android 标签打印机项目
+
+最近开发的一个全新项目，需要开发一个与 Zebra 斑马打印机无线连接并打印的 Android App，用于国内仓库就地扫码打印。
+
+使用较新的 Jetpack Compose 开发，应该算是 MVVM/状态驱动视图的模式，与 React 较为接近，可以有不错的开发体验。
+
+项目主要费时的点在于了解 Zebra 标签打印机的对接方式，无经验的情况下查找文档、查找可用 SDK、了解打印机基本配置项、封装 SDK 以方便连接与打印、测试连接可靠性等大概花费了 4 天；Zebra 官网文档虽然进行了大部分汉化，但仍有部分文档、资源不在汉化文档内，需要专门去英文版下载。
+
+项目兼容了 Android 5.0 与最新的 Android 15，版本跨度较大，所以需要处理较多的权限、API 差异。
+
+获取标签的方式是扫码得到订单号，调用接口以获取 PDF，再发送给斑马打印机打印；这里使用的请求库是 [retrofit2]，使用便捷，文档也比较简单明了。
+
+最后是一个功能优化项，扫码依然是使用 Urovo 手持终端，但采购专用设备可能会导致不必要的成本，因为 App 的功能比较简单，只是扫码打印标签，一个普通的 Android 手机理论上也能实现，大概花了两天时间，基于 [CameraX] 和 [Google-MlKit#barcode-scanning] 封装了一个后台扫码功能：
+
+```kt
+import android.Manifest
+import androidx.activity.ComponentActivity
+import androidx.annotation.OptIn
+import androidx.annotation.RequiresPermission
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import com.fuxin.fxlabel.utils.Logger
+import com.google.android.gms.tasks.TaskExecutors
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.ZoomSuggestionOptions
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.atomic.AtomicBoolean
+
+class BackgroundScanManager(
+    private val activity: ComponentActivity
+) : DefaultLifecycleObserver {
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var cameraSelector: CameraSelector? = null
+    private var camera: Camera? = null
+    private var analysisUseCase: ImageAnalysis? = null
+
+    // 扫码中
+    private val isScanning = AtomicBoolean(false)
+    // 识别扫码图像中
+    private val isProcessing = AtomicBoolean(false)
+
+    // 扫码结果的回调
+    private var onScanListener: ((results: List<Barcode>) -> Unit)? = null
+
+    private val scopedExecutor = ScopedExecutor(TaskExecutors.MAIN_THREAD)
+
+    // 条码识别实例
+    private val scanner = BarcodeScanning.getClient(
+        BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(
+                Barcode.FORMAT_CODE_128,
+                Barcode.FORMAT_QR_CODE,
+                Barcode.FORMAT_CODE_39,
+                Barcode.FORMAT_PDF417,
+                Barcode.FORMAT_UPC_A,
+                Barcode.FORMAT_UPC_E,
+                Barcode.FORMAT_EAN_13,
+                Barcode.FORMAT_EAN_8
+            )
+            .setZoomSuggestionOptions(
+                ZoomSuggestionOptions
+                    .Builder(
+                        object : ZoomSuggestionOptions.ZoomCallback {
+                            override fun setZoom(zoom: Float): Boolean {
+                                camera?.cameraControl?.setZoomRatio(zoom)
+                                return true
+                            }
+                        }
+                    )
+                    .build()
+            )
+            .build()
+    )
+
+
+    init {
+        // 绑定 Activity 的生命周期
+        activity.lifecycle.addObserver(this)
+
+        // 选择后置摄像头
+        cameraSelector =
+            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+
+        // 获取摄像头实例
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(activity)
+        cameraProviderFuture.addListener(
+            {
+                runInSafeScope {
+                    cameraProvider = cameraProviderFuture.get()
+                }
+            },
+            ContextCompat.getMainExecutor(activity)
+        )
+    }
+
+    // 页面暂停时，停止扫码
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
+
+        stop()
+    }
+
+    // 页面销毁时，释放资源
+    override fun onDestroy(owner: LifecycleOwner) {
+        super.onDestroy(owner)
+
+        scopedExecutor.shutdown()
+        stop()
+    }
+
+    private fun <T> runInSafeScope(callback: () -> T): T? {
+        try {
+            return callback()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Logger.debugException(e.message)
+
+            isScanning.set(false)
+            isProcessing.set(false)
+        }
+
+        return null
+    }
+
+    // 处理图像帧
+    @OptIn(ExperimentalGetImage::class)
+    private fun processFrame(imageProxy: ImageProxy) {
+        if (isScanning.get() && !isProcessing.get()) {
+            isProcessing.set(true)
+
+            scanner.process(
+                InputImage.fromMediaImage(
+                    imageProxy.image!!,
+                    imageProxy.imageInfo.rotationDegrees
+                )
+            )
+                .addOnSuccessListener(scopedExecutor) { barcodes ->
+                    if (barcodes.isNotEmpty()) {
+                        onScanListener?.invoke(barcodes)
+                    }
+                }
+                .addOnFailureListener(scopedExecutor) {
+                    it.printStackTrace()
+                    Logger.debugException(it.message)
+                }
+                .addOnCompleteListener(scopedExecutor) {
+                    isProcessing.set(false)
+                    imageProxy.close()
+                }
+        }
+
+    }
+
+    fun setOnScanListener(scanListener: ((results: List<Barcode>) -> Unit)?): BackgroundScanManager {
+        onScanListener = scanListener
+
+        return this
+    }
+
+    // 调用摄像头，开始条码扫描
+    @RequiresPermission(Manifest.permission.CAMERA)
+    fun start() {
+        runInSafeScope {
+            if (isScanning.get() || isProcessing.get()) {
+                return@runInSafeScope
+            }
+            isScanning.set(true)
+
+            if (cameraProvider == null || cameraSelector == null) {
+                return@runInSafeScope
+            }
+
+            cameraProvider?.unbindAll()
+            if (analysisUseCase != null) {
+                cameraProvider?.unbind(analysisUseCase)
+            }
+
+            analysisUseCase = ImageAnalysis.Builder().build()
+            analysisUseCase?.setAnalyzer(ContextCompat.getMainExecutor(activity)) { imageProxy ->
+                processFrame(imageProxy)
+            }
+
+            camera = cameraProvider?.bindToLifecycle(activity, cameraSelector!!, analysisUseCase)
+        }
+    }
+
+    // 关闭摄像头，停止图像扫描
+    fun stop() {
+        runInSafeScope {
+            cameraProvider?.unbindAll()
+            if (analysisUseCase != null) {
+                cameraProvider?.unbind(analysisUseCase)
+            }
+
+            isScanning.set(false)
+            isProcessing.set(false)
+        }
+    }
+}
+```
+
+```kt
+import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicBoolean
+
+class ScopedExecutor(private val executor: Executor) : Executor {
+    private val shutdown = AtomicBoolean()
+
+    override fun execute(command: Runnable) {
+        if (shutdown.get()) {
+            return
+        }
+
+        executor.execute(
+            Runnable {
+                if (shutdown.get()) {
+                    return@Runnable
+                }
+                command.run()
+            }
+        )
+    }
+
+    fun shutdown() {
+        shutdown.set(true)
+    }
+}
+```
+
+拦截手机的音量下键，阻止默认行为，然后调用封装的扫码 SDK 可以达到类 PDA 的效果，但仍有一些不足：
+
+- 普通的 Android 手机摄像头通常在背面，而 PDA 通常在头部侧面，这个位置用于扫码更符合手势习惯
+- PDA 通常有聚焦的红外线，可以清楚的看到聚焦位置，普通手机没有
+- PDA 经过高度优化，扫码速度与识别精度更高
+
+此封装未经过大量测试，不同的 Android 系统/版本之间可能有细微差异；但不断优化还是能替代 PDA 进行一些简单的扫码需求的。
+
+## 后话
+
+一年多的时间来看，这算是一个养老型的公司，从遗留代码的痕迹、现有开发人员的随意、领导的不甚在意可以看出。算是比较自由，但对于我来说比较难受，毕竟还算是有一点要求，希望能做好，“让代码比你来时更好一些”。
+
+实际情况是需求不断，但做完没有大量测试（开发人员和领导测一遍流程）、没有大规模实际使用，基本是无人问津的状态，甚至开发过程中后端忽视原定需求，每个小功能点就需要添加一个接口。
+
+[vue-element-plus-admin]: https://gitee.com/kailong110120130/vue-element-plus-admin
+[knockoutjs]: https://knockoutjs.com/
+[retrofit2]: https://square.github.io/retrofit/
+[CameraX]: https://developer.android.com/media/camera/camerax?hl=zh-cn
+[Google-MlKit#barcode-scanning]: https://developers.google.com/ml-kit/vision/barcode-scanning?hl=zh-cn

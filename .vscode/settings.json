@@ -15,6 +15,7 @@
   // 双击字符串时，在匹配到的字符处位置不会中断，继续向后选中字符串
   "editor.wordSeparators": "`~!@%^&*()=+[{]}\\|;:'\",.<>/?（），。；：",
   "editor.detectIndentation": false,
+  "editor.unicodeHighlight.ambiguousCharacters": false,
 
   "explorer.copyRelativePathSeparator": "/",
   // 目录中相关文件以可视组合在一起
