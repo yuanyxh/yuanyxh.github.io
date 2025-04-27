@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 
 import { parse } from 'qs';
 
+import type { RouteState } from '../router';
 import { RouterContext } from '../shared/context';
 
 /**
@@ -23,7 +24,7 @@ export function useLocation() {
   return (
     state || {
       path: window.location.pathname as string,
-      query: parse(window.location.search.slice(1)),
+      query: parse(window.location.search.slice(1)) as RouteState['query'],
       hash: window.location.hash,
       state: window.history.state
     }

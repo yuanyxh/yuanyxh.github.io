@@ -4,10 +4,8 @@ import { useLocation } from '@/router';
 
 import { useHistory } from '..';
 
-type To = string;
-
 interface ILinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
-  to: To;
+  to: string;
   replace?: boolean;
   activeClass?: string;
 }

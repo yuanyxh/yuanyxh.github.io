@@ -1,4 +1,3 @@
-import type { ParsedQs } from 'qs';
 import { parse, stringify } from 'qs';
 import { cloneDeep, isEqual } from 'lodash-es';
 
@@ -49,8 +48,8 @@ interface ResolveRouteObject extends RouteObject {
 interface RouteState {
   path: string;
   hash: string;
-  query: Record<string, string | string[] | ParsedQs | ParsedQs[] | undefined>;
   state: any;
+  query?: Record<string, string | string[] | undefined>;
   meta?: Meta;
 }
 
@@ -81,7 +80,7 @@ const EventKeys = {
 function getState(): RouteState {
   return {
     path: window.location.pathname as string,
-    query: parse(window.location.search.slice(1)),
+    query: parse(window.location.search.slice(1)) as RouteState['query'],
     hash: window.location.hash,
     state: null
   };
@@ -158,15 +157,17 @@ async function resolveComponents(
 ) {
   const awaits = matchs.map(fetch);
 
-  const safeMatchs: ResolveRouteObject[] = cloneDeep(matchs).map((safeMatch) => {
-    return {
-      ...safeMatch,
-      module:
-        safeMatch.module && safeMatch.module.status === 'fulfilled'
-          ? safeMatch.module
-          : { status: 'pending' }
-    };
-  });
+  const safeMatchs: ResolveRouteObject[] = cloneDeep(matchs).map(
+    (safeMatch: ResolveRouteObject) => {
+      return {
+        ...safeMatch,
+        module:
+          safeMatch.module && safeMatch.module.status === 'fulfilled'
+            ? safeMatch.module
+            : { status: 'pending' }
+      };
+    }
+  );
 
   return Promise.all(
     awaits.map((p, i) => {
