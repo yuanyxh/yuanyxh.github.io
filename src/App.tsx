@@ -54,7 +54,7 @@ const App: React.FC<Required<ChildrenComponent>> = (props) => {
 
   const appProvider = useRef<AppProvider>(APP_PROVIDER);
 
-  const serviceWorkerRef = useRef<ServiceWorkerManager>();
+  const serviceWorkerRef = useRef<ServiceWorkerManager>(null);
 
   const {
     settings: { colorScheme, enableServiceWorkerCache },

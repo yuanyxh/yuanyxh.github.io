@@ -65,7 +65,7 @@ const Outlet = memo(
     const initialedRef = useRef(false);
     const [route, setRoute] = useState<ResolveRouteObject>();
 
-    const mountedRef = useRef<() => any>();
+    const mountedRef = useRef<() => any>(null);
 
     useImperativeHandle(
       ref,

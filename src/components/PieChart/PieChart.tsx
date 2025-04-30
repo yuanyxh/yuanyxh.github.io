@@ -16,7 +16,7 @@ const PieChart: React.FC<Readonly<IPieChartProps>> = (props) => {
   const { radius, data } = props;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const ctxRef = useRef<CanvasRenderingContext2D | null>();
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
     if (!ctxRef.current) {

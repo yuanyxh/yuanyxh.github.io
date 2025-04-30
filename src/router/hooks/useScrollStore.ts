@@ -22,14 +22,14 @@ const map: { [key: string]: SavedScolllPosition } = {};
  */
 export function useScrollStore(eleRef: RefObject<HTMLElement | null>) {
   const routerContext = useContext(RouterContext);
-  const elementRef = useRef<Element>();
-  const formLocation = useRef<string>();
-  const toLocation = useRef<string>();
+  const elementRef = useRef<Element>(null);
+  const formLocation = useRef<string>(null);
+  const toLocation = useRef<string>(null);
 
   useLayoutEffect(() => {
     const abortController = new AbortController();
 
-    elementRef.current = eleRef.current || void 0;
+    elementRef.current = eleRef.current || null;
 
     const cancelBeforeEnter = routerContext?.beforeEnter((from, to, { type, changeHistory }) => {
       formLocation.current = from.path;
@@ -83,7 +83,7 @@ export function useScrollStore(eleRef: RefObject<HTMLElement | null>) {
     );
 
     return () => {
-      elementRef.current = void 0;
+      elementRef.current = null;
 
       abortController.abort();
       cancelBeforeEnter?.();

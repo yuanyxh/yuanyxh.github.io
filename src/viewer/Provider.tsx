@@ -59,28 +59,29 @@ const SubTitle = (
   );
 };
 
+function map(item: Toc, base: string) {
+  const result: AnchorLinkItemProps = {
+    key: Math.random().toString(16) + item.value,
+    href: `${base}#${item.value}`,
+    title: item.value
+  };
+
+  return result;
+}
+const generateToc = (node: Toc, leave: number, base: string) => {
+  const result = map(node, base);
+  if (node.children?.length && leave > 0) {
+    result.children = node.children.map((child) => generateToc(child, leave - 1, base));
+  }
+  return result;
+};
+
 const Toc = ({ toc }: { toc: Toc[] }) => {
   const location = useLocation();
 
-  // generate two -layer menu
+  // generate three -layer menu
   const anchors = useMemo(() => {
-    function map(item: Toc) {
-      const result: AnchorLinkItemProps = {
-        key: Math.random().toString(16) + item.value,
-        href: `${location.path}#${item.value}`,
-        title: item.value
-      };
-
-      return result;
-    }
-
-    return toc.map(function (item) {
-      const result = map(item);
-      if (item.children?.length) {
-        result.children = item.children.map(map);
-      }
-      return result;
-    });
+    return toc.map((item) => generateToc(item, 3, location.path));
   }, []);
 
   return (
