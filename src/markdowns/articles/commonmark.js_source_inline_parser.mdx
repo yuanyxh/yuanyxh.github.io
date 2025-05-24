@@ -1,0 +1,1119 @@
+---
+title: commonmark.js 源码阅读(二) - Inline Parser
+date: 2025-05-10 07:47:00
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/commonmark.js_source_parser_logo.webp
+description: 深入解读 commonmark.js 库中关于块解析部分的代码，理解解析流程，结合 CommonMark 规范，理解内联解析器的工作原理，解析顺序与规则等。
+keywords: commonmark.js, JavaScript, Parser, 源码解读, Markdown 解析
+---
+
+请先阅读 [commonmark.js 源码阅读(一) - Block Parser](./articles/commonmark.js_source_block_parser.html)。
+
+## 内联结构解析入口
+
+继续阅读 commonmark.js 源码中有关内联解析的部分，在上一部分中，`Parser.parse` 方法最后调用了 `Parser.processInlines` 方法：
+
+```js
+// blocks.js
+// The main parsing function.  Returns a parsed document AST.
+var parse = function(input) {
+  // ...
+
+  this.processInlines(this.doc);
+
+  return this.doc;
+};
+```
+
+`Parser.processInlines` 方法承上启下，调用内联解析器 `InlineParser` 进行后续的内联解析，它的实现如下：
+
+```js
+// blocks.js
+// Walk through a block & children recursively, parsing string content
+// into inline content where appropriate.
+var processInlines = function(block) {
+    var node, event, t;
+    var walker = block.walker();
+    this.inlineParser.refmap = this.refmap;
+    this.inlineParser.options = this.options;
+    while ((event = walker.next())) {
+        node = event.node;
+        t = node.type;
+        if (!event.entering && (t === "paragraph" || t === "heading")) {
+            this.inlineParser.parse(node);
+        }
+    }
+};
+```
+
+主要逻辑：
+
+1. 从 `block` 开始（通常是 `Document`）,获取 `walker` 节点迭代器
+2. 将链接引用定义 `refmap` 和 `options` 传递给 `InlineParser` 类实例
+3. 迭代内部所有节点
+4. 在 [CommonMark 规范] 中，只有 `paragraph` 和 `heading` 可以包含内联结构，所以对这两种节点调用 `InlineParser.parse` 进行内联解析
+
+接下来，我们就走入内联解析器的世界，看看它是如何工作的。
+
+## 内联解析器
+
+`InlineParser` 类是 commonmark.js 库中用于解析内联结构的核心类。它负责将块级内容转换为内联内容，并处理各种内联元素，如链接、强调、内联代码等。
+
+`InlineParser.parse` 方法是内联解析的入口点：
+
+```js
+var parseInlines = function (block) {
+    this.subject = trim(block._string_content);
+     
+    // ...
+
+    while (this.parseInline(block)) {}
+    block._string_content = null; // allow raw string to be garbage collected
+    this.processEmphasis(null);
+
+    function trim(str) {
+        var start = 0;
+        for (; start < str.length; start++) {
+            if (!isSpace(str.charCodeAt(start))) {
+                break;
+            }
+        }
+        var end = str.length - 1;
+        for (; end >= start; end--) {
+            if (!isSpace(str.charCodeAt(end))) {
+                break;
+            }
+        }
+        return str.slice(start, end + 1);
+
+        function isSpace(c) {
+            // U+0020 = space, U+0009 = tab, U+000A = LF, U+000D = CR
+            return c === 0x20 || c === 9 || c === 0xa || c === 0xd;
+        }
+    }
+};
+```
+
+- `trim` 自定义方法用于去除字符串两端的空白字符，包括空格、制表符、换行符、回车符
+
+  > 不使用 `String.prototype.trim`，因为它会去除所有 Unicode 空白字符
+  > 
+  > CommonMark 规范规定，[Paragraph][paragraph] 和 [ATX heading][heading] 需要去除首尾两段的空格或制表符，同时也不可能包含首尾的换行符、回车符
+
+- `parseInline` 用于解析内联节点
+
+- `processEmphasis` 用于处理内联内容中的强调、强烈强调
+
+在块解析篇章中，我们通过 ***解析顺序*** 进行了块解析源码的解读，而内联解析的源码我们需要采用 ***分组*** 的方式，将相关的部分划分为一组，抽取分组中 ***主要的代码逻辑*** 进行解读（我们忽略不在 CommonMark 规范中的分组，比如单引号、双引号是 commonmark.js 提供的功能）。
+
+所有的分组都可以在 `InlineParser.parseInline` 方法中看到痕迹：
+
+```js
+var parseInline = function (block) {
+    var res = false;
+    var c = this.peek();
+    if (c === -1) {
+        return false;
+    }
+
+    switch (c) {
+        case C_NEWLINE:
+            res = this.parseNewline(block);
+            break;
+        case C_BACKSLASH:
+            res = this.parseBackslash(block);
+            break;
+        case C_BACKTICK:
+            res = this.parseBackticks(block);
+            break;
+        case C_ASTERISK:
+        case C_UNDERSCORE:
+            res = this.handleDelim(c, block);
+            break;
+        case C_OPEN_BRACKET:
+            res = this.parseOpenBracket(block);
+            break;
+        case C_BANG:
+            res = this.parseBang(block);
+            break;
+        case C_CLOSE_BRACKET:
+            res = this.parseCloseBracket(block);
+            break;
+        case C_LESSTHAN:
+            res = this.parseAutolink(block) || this.parseHtmlTag(block);
+            break;
+        case C_AMPERSAND:
+            res = this.parseEntity(block);
+            break;
+        default:
+            res = this.parseString(block);
+            break;
+    }
+    if (!res) {
+        this.pos += 1;
+        block.appendChild(text(fromCodePoint(c)));
+    }
+
+    return true;
+};
+```
+
+`peek` 方法获取当前位置字符的码点，根据具体的字符码点调用不同的处理程序。部分单字符码点作为独立的一组，比如 `\` 字符可转义 Markdown 标点；还有部分分组包含多个字符码点，比如链接包含 `[` 和 `]` 字符。
+
+需要注意的是，这里对于 case 分支的排列顺序可反应出他们的优先级与规则，比如 `\` 因为可改变 Markdown 标点的含义，所以它的优先级必然高出一个档次。
+
+## 解析组
+
+### NewLine
+
+这是 `parseInline` **switch** 块中的第一个 `case` 分支，当遇到 `\n` 字符时，通过 `parseNewline` 方法处理新行：
+
+```js
+// Parse a newline.  If it was preceded by two spaces, return a hard
+// line break; otherwise a soft line break.
+var parseNewline = function (block) {
+    this.pos += 1; // assume we're at a \n
+    // check previous node for trailing spaces
+    var lastc = block._lastChild;
+
+    if (
+        lastc &&
+        lastc.type === "text" &&
+        lastc._literal[lastc._literal.length - 1] === " "
+    ) {
+        // 最后两个字符都是空格则是硬换行
+        var hardbreak = lastc._literal[lastc._literal.length - 2] === " ";
+        lastc._literal = lastc._literal.replace(reFinalSpace, "");
+        block.appendChild(new Node(hardbreak ? "linebreak" : "softbreak"));
+    } else {
+        // 软换行
+        block.appendChild(new Node("softbreak"));
+    }
+    this.match(reInitialSpace); // gobble leading spaces in next line
+    return true;
+};
+```
+
+这里主要判断当前行的最后两个字符是否是空格，规范定义，如果行结尾包含两个或以上空格，则表示[硬换行][hard-line-breaks]，否则是[软换行][soft-line-breaks]。
+
+> 强调、强烈强调等支持跨越多行，同时支持内部的软换行与硬换行
+
+`reInitialSpace` 是一个正则，规则为 `/^ */`，用于匹配任意个空格字符；再来看看 `match` 方法：
+
+```js
+// If re matches at current position in the subject, advance
+// position in subject and return the match; otherwise return null.
+var match = function (re) {
+    var m = re.exec(this.subject.slice(this.pos));
+    if (m === null) {
+        return null;
+    } else {
+        this.pos += m.index + m[0].length;
+        return m[0];
+    }
+};
+```
+
+`match` 方法接受一个正则，跳过匹配字符串长度并返回匹配的字符串，如果没有匹配则返回 null。`this.match(reInitialSpace)` 用于跳过行开头的空格。
+
+### Backslash
+
+这是第二个 `case` 分支，每当遇到 `\` 符号时，调用 `parseBackslash` 处理：
+
+```js
+// Parse a backslash-escaped special character, adding either the escaped
+// character, a hard line break (if the backslash is followed by a newline),
+// or a literal backslash to the block's children.  Assumes current character
+// is a backslash.
+var parseBackslash = function (block) {
+    var subj = this.subject;
+    var node;
+    this.pos += 1;
+    if (this.peek() === C_NEWLINE) {
+        this.pos += 1;
+        node = new Node("linebreak");
+        block.appendChild(node);
+    } else if (reEscapable.test(subj.charAt(this.pos))) {
+        block.appendChild(text(subj.charAt(this.pos)));
+        this.pos += 1;
+    } else {
+        block.appendChild(text("\\"));
+    }
+
+    return true;
+};
+```
+
+这段代码中，体现了硬换行符的另一个表现形式：行结尾前是一个 `\` 字符，比如：
+
+```markdown
+hard\
+line
+```
+
+转化为：
+
+```html
+<p>hard<br />line</p>
+```
+
+如果这不是一个硬换行，则检查 `\` 字符后面是否是一个可被转义的 ACSII 标点字符，这通过 `reEscapable` 正则判断：
+
+```js
+/^[!\"#$%&'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]/
+```
+
+最后，如果都不是，则将 `\` 作为纯文本字符添加。
+
+### Backticks
+
+第三个 `case` 检查 `` ` `` 字符，然后调用 `parseBackticks` 方法处理：
+
+```js
+// Attempt to parse backticks, adding either a backtick code span or a
+// literal sequence of backticks.
+var parseBackticks = function (block) {
+    var ticks = this.match(reTicksHere);
+    if (ticks === null) {
+        return false;
+    }
+
+    var afterOpenTicks = this.pos;
+    var matched;
+    var node;
+    var contents;
+
+    while ((matched = this.match(reTicks)) !== null) {
+        if (matched === ticks) {
+            node = new Node("code");
+
+            contents = this.subject
+                .slice(afterOpenTicks, this.pos - ticks.length)
+                .replace(/\n/gm, " ");
+
+            if (
+                contents.length > 0 &&
+                contents.match(/[^ ]/) !== null &&
+                contents[0] == " " &&
+                contents[contents.length - 1] == " "
+            ) {
+                node._literal = contents.slice(1, contents.length - 1);
+            } else {
+                node._literal = contents;
+            }
+            block.appendChild(node);
+            return true;
+        }
+    }
+
+    // If we got here, we didn't match a closing backtick sequence.
+    this.pos = afterOpenTicks;
+    block.appendChild(text(ticks));
+    return true;
+};
+```
+
+`reTicksHere` 规则为 `` /^`+/ ``，用于匹配开始的反引号，`reTicks` 规则为 `` /`+/ ``，用于匹配后续的反引号。
+
+这里在匹配到开始的反引号后，向后查找相同长度的结束反引号；如果没找到，则将开始反引号作为文本添加；如果找到了，表示这是一个内联代码，规范定义，内联代码需要将内部的所有行尾符替换为空格，且如果首尾都包含空格，则去除首尾各一个空格，剩余的作为内联代码的内容。
+
+这里我们需要注意，在遇到开始的反引号时，直接查找结尾的反引号，而忽略其他所有具有 Markdown 含义的标记，比如：
+
+```markdown
+`code *content`*
+```
+
+这是一个内联代码，不包含强调。这说明内联代码的优先级较高，这是可以理解的，毕竟内联代码通常只包含文本，这样可以降低解析的复杂度。
+
+### Emphasis
+
+第四个 `case` 分支检查 `*` 和 `_` 字符，这与强调、强烈强调相关，同时比较复杂，我们需要先查看规范中给出的内联解析步骤：
+
+> 到目前为止，内联解析中最棘手的部分是处理强调、强烈强调、链接和图像。这使用以下算法完成：
+> 
+> 当我们解析内联时，我们遇到了
+> 
+> - 连续的 `*` 或 `_` 字符
+> - 一个 `[` 或 `![`
+> 
+> 我们插入一个以这些符号作为文字内容的文本节点，并将指向该文本节点的指针添加到 **分隔符堆栈** 中。
+> 
+> 分隔符堆栈是一个双向链表。每个元素包含一个指向文本节点的指针，以及以下信息：
+> 
+> - 分隔符的类型（`[`，`![`，`*`，`_`）
+> - 分隔符的数量
+> - 分隔符是否处于 **active** 状态（所有分隔符初始都处于活动状态）
+> - 分隔符是否是潜在的 **opener**、潜在的 **closer**，或两者兼而有之（这取决于分隔符前后的字符类型）。
+> 
+> 当我们命中一个 `]` 字符时，我们调用 *查找链接或图片* 程序。
+> 
+> 当我们到达输入末尾时，我们调用 *强调处理* 程序。
+
+我们明确几点信息：
+
+- 内联解析时，维护一个分割符堆栈（commonmark.js 将分割符堆栈分为 `delimiters`（强调、强烈强调相关）和 `brackets`（图片、链接相关））
+
+- 分割符堆栈包含分割符，分割符在遇到 `*`、`_`、`[` 和 `![` 时创建
+
+- 当遇到字符 `]` 时，我们会尝试查找链接或图片
+
+- 当到达字符串末尾时，我们会处理强调、强烈强调（同时，在处理完链接后，我们也会调用 *强调处理* 程序尝试匹配链接内容中的强调、强烈强调）
+
+这样我们就知道了 `handleDelim` 是用于处理强调、强烈强调相关的分割符的：
+
+```js
+// Handle a delimiter marker for emphasis or a quote.
+var handleDelim = function (cc, block) {
+    var res = this.scanDelims(cc);
+    if (!res) {
+        return false;
+    }
+
+    var numdelims = res.numdelims;
+    var startpos = this.pos;
+
+    this.pos += numdelims;
+    var contents = this.subject.slice(startpos, this.pos);
+    var node = text(contents);
+    block.appendChild(node);
+
+    // Add entry to stack for this opener
+
+    if (res.can_open || res.can_close) {
+        this.delimiters = {
+            cc: cc,
+            numdelims: numdelims,
+            origdelims: numdelims,
+            node: node,
+            previous: this.delimiters,
+            next: null,
+            can_open: res.can_open,
+            can_close: res.can_close,
+        };
+        if (this.delimiters.previous !== null) {
+            this.delimiters.previous.next = this.delimiters;
+        }
+    }
+
+    return true;
+};
+```
+
+这段代码比较好理解，扫码当前位置的 `*` 或 `_` 字符串，尝试创建分割符并添加到分割符堆栈中，分割符包含类型、长度、对应的文本节点、是否是潜在的 `opener`（can_open）、是否是潜在的 `closer`（can_close）。
+
+这里的重点在 `scanDelims` 方法：
+
+```js
+// Scan a sequence of characters with code cc, and return information about
+// the number of delimiters and whether they are positioned such that
+// they can open and/or close emphasis or strong emphasis.  A utility
+// function for strong/emph parsing.
+var scanDelims = function (cc) {
+    var numdelims = 0;
+    var char_before, char_after, cc_after;
+    var startpos = this.pos;
+    var left_flanking, right_flanking, can_open, can_close;
+    var after_is_whitespace,
+        after_is_punctuation,
+        before_is_whitespace,
+        before_is_punctuation;
+
+    while (this.peek() === cc) {
+        numdelims++;
+        this.pos++;
+    }
+
+    if (numdelims === 0) {
+        return null;
+    }
+
+    char_before = previousChar(this.subject, startpos);
+
+    cc_after = this.peek();
+    if (cc_after === -1) {
+        char_after = "\n";
+    } else {
+        char_after = fromCodePoint(cc_after);
+    }
+
+    after_is_whitespace = reUnicodeWhitespaceChar.test(char_after);
+    after_is_punctuation = rePunctuation.test(char_after);
+    before_is_whitespace = reUnicodeWhitespaceChar.test(char_before);
+    before_is_punctuation = rePunctuation.test(char_before);
+
+    left_flanking =
+        !after_is_whitespace &&
+        (!after_is_punctuation ||
+            before_is_whitespace ||
+            before_is_punctuation);
+    right_flanking =
+        !before_is_whitespace &&
+        (!before_is_punctuation || after_is_whitespace || after_is_punctuation);
+
+    if (cc === C_UNDERSCORE) {
+        can_open = left_flanking && (!right_flanking || before_is_punctuation);
+        can_close = right_flanking && (!left_flanking || after_is_punctuation);
+    } else {
+        can_open = left_flanking;
+        can_close = right_flanking;
+    }
+
+    this.pos = startpos;
+    return { numdelims: numdelims, can_open: can_open, can_close: can_close };
+
+    function previousChar(str, pos) {
+        if (pos === 0) {
+            return "\n";
+        }
+        var previous_cc = str.charCodeAt(pos - 1);
+        // not low surrogate (BMP)
+        if ((previous_cc & 0xfc00) !== 0xdc00) {
+            return str.charAt(pos - 1);
+        }
+        // returns NaN if out of range
+        var two_previous_cc = str.charCodeAt(pos - 2);
+        // NaN & 0xfc00 = 0
+        // checks if 2 previous char is high surrogate
+        if ((two_previous_cc & 0xfc00) !== 0xd800) {
+            return previous_char;
+        }
+        return str.slice(pos - 2, pos);
+    }
+};
+```
+
+逻辑顺序如下：
+
+1. 找到后续所有相同的分割符字符，称为定界符
+
+2. 找到定界符前后字符，注意如果前后没有字符，则视为换行符，这里还检查了代理对
+
+3. 通过正则获取前后字符类型，然后根据前后字符类型判断是否属于[左侧分割符][left-flanking-delimiter-run]或[右侧分割符][right-flanking-delimiter-run]
+
+4. 最后，根据 [强调、强烈强调规则][can-open-emphasis]，判断当前分割符是否是潜在的 **opener**、**closer**
+
+就这样，一直到文本末尾时，我们调用 `processEmphasis`：
+
+```js
+var processEmphasis = function (stack_bottom) {
+    var opener, closer, old_closer;
+    var opener_inl, closer_inl;
+    var tempstack;
+    var use_delims;
+    var tmp, next;
+    var opener_found;
+    var openers_bottom = [];
+    var openers_bottom_index;
+    var odd_match = false;
+
+    for (var i = 0; i < 14; i++) {
+        openers_bottom[i] = stack_bottom;
+    }
+
+    // find first closer above stack_bottom:
+    closer = this.delimiters;
+    while (closer !== null && closer.previous !== stack_bottom) {
+        closer = closer.previous;
+    }
+    // move forward, looking for closers, and handling each
+    while (closer !== null) {
+        var closercc = closer.cc;
+
+
+        if (!closer.can_close) {
+            closer = closer.next;
+        } else {
+            // found emphasis closer. now look back for first matching opener:
+            opener = closer.previous;
+            opener_found = false;
+            switch (closercc) {
+                case C_UNDERSCORE:
+                    openers_bottom_index =
+                        2 + (closer.can_open ? 3 : 0) + (closer.origdelims % 3);
+                    break;
+                case C_ASTERISK:
+                    openers_bottom_index =
+                        8 + (closer.can_open ? 3 : 0) + (closer.origdelims % 3);
+                    break;
+            }
+            while (
+                opener !== null &&
+                opener !== stack_bottom &&
+                opener !== openers_bottom[openers_bottom_index]
+            ) {
+                odd_match =
+                    (closer.can_open || opener.can_close) &&
+                    closer.origdelims % 3 !== 0 &&
+                    (opener.origdelims + closer.origdelims) % 3 === 0;
+                if (opener.cc === closer.cc && opener.can_open && !odd_match) {
+                    opener_found = true;
+                    break;
+                }
+                opener = opener.previous;
+            }
+            old_closer = closer;
+
+            if (!opener_found) {
+                closer = closer.next;
+            } else {
+                // calculate actual number of delimiters used from closer
+                use_delims =
+                    closer.numdelims >= 2 && opener.numdelims >= 2 ? 2 : 1;
+
+                opener_inl = opener.node;
+                closer_inl = closer.node;
+
+                // remove used delimiters from stack elts and inlines
+                opener.numdelims -= use_delims;
+                closer.numdelims -= use_delims;
+                opener_inl._literal = opener_inl._literal.slice(
+                    0,
+                    opener_inl._literal.length - use_delims
+                );
+                closer_inl._literal = closer_inl._literal.slice(
+                    0,
+                    closer_inl._literal.length - use_delims
+                );
+
+                // build contents for new emph element
+                var emph = new Node(use_delims === 1 ? "emph" : "strong");
+
+                tmp = opener_inl._next;
+                while (tmp && tmp !== closer_inl) {
+                    next = tmp._next;
+                    tmp.unlink();
+                    emph.appendChild(tmp);
+                    tmp = next;
+                }
+
+                opener_inl.insertAfter(emph);
+
+                // remove elts between opener and closer in delimiters stack
+                removeDelimitersBetween(opener, closer);
+
+                // if opener has 0 delims, remove it and the inline
+                if (opener.numdelims === 0) {
+                    opener_inl.unlink();
+                    this.removeDelimiter(opener);
+                }
+
+                if (closer.numdelims === 0) {
+                    closer_inl.unlink();
+                    tempstack = closer.next;
+                    this.removeDelimiter(closer);
+                    closer = tempstack;
+                }
+            }
+
+            if (!opener_found) {
+                // Set lower bound for future searches for openers:
+                openers_bottom[openers_bottom_index] = old_closer.previous;
+                if (!old_closer.can_open) {
+                    // We can remove a closer that can't be an opener,
+                    // once we've seen there's no matching opener:
+                    this.removeDelimiter(old_closer);
+                }
+            }
+        }
+    }
+
+    // remove all delimiters
+    while (this.delimiters !== null && this.delimiters !== stack_bottom) {
+        this.removeDelimiter(this.delimiters);
+    }
+};
+```
+
+我们先明确 `stack_bottom` 是我们在访问分割符堆栈时的分割线，我们最多只能访问到 `stack_bottom` 上面的一个分割符。
+
+然后是 `openers_bottom`，这是一个数组，维护了不同分割符组合的下界，所有元素初始为 `stack_bottom`，这同样起到分割符作用，分割符最深只能访问到 `openers_bottom` 中相同组合类型的分割符的上一个分割符。
+
+> 什么是分割符组合？以 `*` 类型的分割符举例，分割符长度（`*` 的数量）模以 3，可能产生 0、1、2 的结果，而分割符分为 `opener`、`closer` 两种类型，这意味着 `*` 类型的分割符包含 2x3 种组合；同理，`_` 类型分割符也包含 2x3 种组合。
+
+每次处理当前 **closer** 分割符时，如果没有找到对应的 **opener** 分割符，则将此 **closer** 分割符设置为相同组合的下界，这样，当下次处理相同组合的 **closer** 时，我们就不必处理下界之下的分割符，因为我们已经知道那下面没有我们需要的东西。
+
+现在我们再来解释下 `processEmphasis` 函数的代码：
+
+1. 初始化 `openers_bottom`
+
+2. 找到 `stack_bottom` 上方的第一个分割符
+
+3. 向上查找第一个潜在的 `closer`（文本位置偏后，且可作为 closer 的分割符）
+
+4. 从 `closer` 下方的第一个分割符开始，向下查找类型相同的 `opener`（文本位置偏前，且可作为 opener 的分割符）；找到时、遇到 `stack_bottom` 或 `openers_bottom[openers_bottom_index]` 时停止
+
+5. 找到时，消耗相同数量的符号，如果 `opener`、`closer` 都包含 2 个或以上的 `*`、`_` 符号，则是强烈强调，否则是强调。
+
+6. 将 `openers`、`closer` 中间的内容添加到新的强调、强烈强调中
+
+7. 删除 `openers`、`closer` 中间的所有分割符
+
+   ```js
+   var removeDelimitersBetween = function (bottom, top) {
+     if (bottom.next !== top) {
+       bottom.next = top;
+       top.previous = bottom;
+     }
+   };
+   ```
+
+8. 如果 `opener`、`closer` 为空，从分割符堆栈中删除它，当 `closer` 被删除时，从 `closer` 的下一个分割符循环此步骤，直到没有更多的分割符
+
+9. 如果没有找到对应的 `closer`，将此 `closer` 设置为相同组合的下界；如果此 `closer` 不是潜在的 `opener`（一个分割符可以是潜在的 `closer`，也可以是潜在的 `openers`），从分割符堆栈删除它，因为它不会再被访问。
+
+10. 最后，删除 `stack_bottom` 之上的其他所有分割符
+
+[强调、强烈强调规则][can-open-emphasis] 以及以 3 为倍数的规则都有其意义，这些规则对解析以下类似或其更复杂的 Markdown 时有帮助：
+
+```markdown
+***text*
+```
+
+解析为：
+
+```html
+<p>**<em>text</em></p>
+```
+
+此外，对于 `_` 类型的强调而言，它的规则更为严格，这是为了防止意外将强调内部的单词连接下划线错误解析为强调:
+
+```markdown
+_hello_world_
+```
+
+解析为：
+
+```html
+<p><em>hello_world</em></p>
+```
+
+### Link/Image
+
+接下来，是 `[` 的分支，这与链接有关：
+
+```js
+// Add open bracket to delimiter stack and add a text node to block's children.
+var parseOpenBracket = function (block) {
+    var startpos = this.pos;
+    this.pos += 1;
+
+    var node = text("[");
+    block.appendChild(node);
+
+    // Add entry to stack for this opener
+    this.addBracket(node, startpos, false);
+    return true;
+};
+```
+
+`addBracket` 向与链接、图片相关的分割符堆栈中添加分割符：
+
+```js
+var addBracket = function (node, index, image) {
+    if (this.brackets !== null) {
+        this.brackets.bracketAfter = true;
+    }
+    this.brackets = {
+        node: node,
+        previous: this.brackets,
+        previousDelimiter: this.delimiters,
+        index: index,
+        image: image,
+        active: true,
+    };
+};
+```
+
+下一个是 `!` 分支，调用 `parseBang`：
+
+```js
+// IF next character is [, and ! delimiter to delimiter stack and
+// add a text node to block's children.  Otherwise just add a text node.
+var parseBang = function (block) {
+    var startpos = this.pos;
+    this.pos += 1;
+
+    if (this.peek() === C_OPEN_BRACKET) {
+        this.pos += 1;
+
+        var node = text("![");
+        block.appendChild(node);
+
+        // Add entry to stack for this opener
+        this.addBracket(node, startpos + 1, true);
+    } else {
+        block.appendChild(text("!"));
+    }
+    return true;
+};
+```
+
+首先检查下一个字符是否是 `[`，如果是，则添加一个分割符，这与图片有关；如果不是，则将 `!` 作为纯文本添加。
+
+再下一个，是触发 ***查找链接或图片*** 程序的 `]` 符号（遇到 `]` 字符时，是检查图片、链接是否存在的最好时机，在此阶段，可以检索 [完整链接][full]、[折叠链接][collapsed]、[快捷链接][shortcut] 以及类似结构的图片）。
+
+先是几个判断，如果不存在有效的 `[`、`![` 分割符，则返回：
+
+```js
+// Try to match close bracket against an opening in the delimiter
+// stack.  Add either a link or image, or a plain [ character,
+// to block's children.  If there is a matching delimiter,
+// remove it from the delimiter stack.
+
+var parseCloseBracket = function (block) {
+    var startpos;
+    var is_image;
+    var dest;
+    var title;
+    var matched = false;
+    var reflabel;
+    var opener;
+
+    this.pos += 1;
+    startpos = this.pos;
+
+    // get last [ or ![
+    opener = this.brackets;
+
+    if (opener === null) {
+        // no matched opener, just return a literal
+        block.appendChild(text("]"));
+        return true;
+    }
+
+    if (!opener.active) {
+        // no matched opener, just return a literal
+        block.appendChild(text("]"));
+        this.removeBracket();
+        return true;
+    }
+
+    // ...
+};
+```
+
+然后，我们判断 `]` 后面的字符是否是一个 `(` 符号，后续的 `(` 符号表明这可能是一个完整链接、图片：
+
+```js
+var parseCloseBracket = function (block) {
+    // ...
+
+    // If we got here, open is a potential opener
+    is_image = opener.image;
+
+    // Check to see if we have a link/image
+
+    var savepos = this.pos;
+
+    // Inline link?
+    if (this.peek() === C_OPEN_PAREN) {
+        this.pos++;
+        if (
+            this.spnl() &&
+            (dest = this.parseLinkDestination()) !== null &&
+            this.spnl() &&
+            // make sure there's a space before the title:
+            ((reWhitespaceChar.test(this.subject.charAt(this.pos - 1)) &&
+                (title = this.parseLinkTitle())) ||
+                true) &&
+            this.spnl() &&
+            this.peek() === C_CLOSE_PAREN
+        ) {
+            this.pos += 1;
+            matched = true;
+        } else {
+            this.pos = savepos;
+        }
+    }
+
+    // ...
+};
+```
+
+先看看 `spnl` 辅助方法：
+
+```js
+// Parse zero or more space characters, including at most one newline
+var spnl = function () {
+    this.match(reSpnl);
+    return true;
+};
+```
+
+`reSpnl` 规则是 `/^ *(?:\n *)?/`，这里用于跳过任意个空格，换行符后跟任意空格是可选的。
+
+`parseLinkDestination` 方法用于解析目标地址，`parseLinkTitle` 用于解析目标标题，这里不进行讲解。
+
+这段代码匹配是内联的完整链接或图片，即如下内容：
+
+```markdown
+[blog](https://yuanyxh.com "yuanyxh.com")
+---
+[blog](https://yuanyxh.com)
+---
+![image](https://example.com/pig.png "a pig")
+---
+![image](https://example.com/pig.png)
+```
+
+再来看看下一段：
+
+```js
+var parseCloseBracket = function (block) {
+    // ...
+
+    if (!matched) {
+        // Next, see if there's a link label
+        var beforelabel = this.pos;
+        var n = this.parseLinkLabel();
+        if (n > 2) {
+            reflabel = this.subject.slice(beforelabel, beforelabel + n);
+        } else if (!opener.bracketAfter) {
+            // Empty or missing second label means to use the first label as the reference.
+            // The reference must not contain a bracket. If we know there's a bracket, we don't even bother checking it.
+            reflabel = this.subject.slice(opener.index, startpos);
+        }
+        if (n === 0) {
+            // If shortcut reference link, rewind before spaces we skipped.
+            this.pos = savepos;
+        }
+
+        if (reflabel) {
+            // lookup rawlabel in refmap
+            // 查找链接标签
+            var link = this.refmap[normalizeReference(reflabel)];
+            if (link) {
+                dest = link.destination;
+                title = link.title;
+                matched = true;
+            }
+        }
+    }
+
+    // ...
+};
+```
+
+这段代码解析链接、图片的 label，首先调用 `parseLinkLabel` 判断当前 `]` 字符后是否包含有效的 label 内容，比如：
+
+```markdown
+[yuanyxh][blog]
+
+[blog]: https://yuanyxh.com
+```
+
+`[blog]` 就是有效的 label；如果不存在，继续判断当前 opener `[` 分割符之后是否有另一个 `[` 分割符，如果没有，则表示这是一个折叠链接、图片的 label；折叠链接、图片与快捷链接、图片的地址和标题在链接引用定义中，所以我们通过 label 查询链接引用定义中的信息。
+
+> CommonMark 规范规定，label 内部不能包含未转义的 `[`、`]` 字符，所以如果一个 opener `[` 后有另一个 `[` 分割符，则这个 opener 无法形成一个图片、链接。
+
+最后一端代码：
+
+```js
+var parseCloseBracket = function (block) {
+    // ...
+
+    if (matched) {
+        var node = new Node(is_image ? "image" : "link");
+        node._destination = dest;
+        node._title = title || "";
+
+        var tmp, next;
+        tmp = opener.node._next;
+
+        while (tmp) {
+            next = tmp._next;
+            tmp.unlink();
+            node.appendChild(tmp);
+            tmp = next;
+        }
+        block.appendChild(node);
+
+        this.processEmphasis(opener.previousDelimiter);
+
+        this.removeBracket();
+        opener.node.unlink();
+
+        // We remove this bracket and processEmphasis will remove later delimiters.
+        // Now, for a link, we also deactivate earlier link openers.
+        // (no links in links)
+
+        if (!is_image) {
+            opener = this.brackets;
+            while (opener !== null) {
+                if (!opener.image) {
+                    opener.active = false; // deactivate this opener
+                }
+                opener = opener.previous;
+            }
+        }
+
+        return true;
+    } else {
+        // no match
+
+        this.removeBracket(); // remove this opener from stack
+        this.pos = startpos;
+        block.appendChild(text("]"));
+        return true;
+    }
+};
+```
+
+这段代码包含两个分支：
+
+1. 匹配到链接、图片，将 opener 后的内容作为链接、图片的子节点，随后处理强调、强烈强调，之后删除这个 opener 分割符，如果是链接，我们还需要将之前的所有 `[`、`![` 分割符设为非活动的，这是为了保证嵌套链接、图片只有最内层的定义生效。
+
+2. 没有匹配，删除这个 opener 分割符，将当前的 `]` 作为纯文本添加
+
+### HTML/AutoLink
+
+当遇到 `<` 字符时，包含两种可能，[自动链接][Autolinks]与[内联 HTML][Inline HTML]；`parseAutolink` 解析 `<...>` 之间的内容，`parseHtmlTag` 解析内联 HTML。
+
+### Entity
+
+当遇到 `&` 符号时，可能是一个[实体引用或实体数字][entity]，`parseEntity` 尝试解析它。
+
+当不能匹配上述任意字符时，作为普通文本添加。
+
+## 解析链接引用定义
+
+在块解析篇章中，我们忽略了链接引用定义的实现 `parseReference`，现在回过头来看看它：
+
+```js
+// Attempt to parse a link reference, modifying refmap.
+var parseReference = function (s, refmap) {
+    this.subject = s;
+    this.pos = 0;
+    var rawlabel;
+    var dest;
+    var title;
+    var matchChars;
+    var startpos = this.pos;
+
+    // label:
+    matchChars = this.parseLinkLabel();
+    if (matchChars === 0) {
+        return 0;
+    } else {
+        rawlabel = this.subject.slice(0, matchChars);
+    }
+
+    // colon:
+    if (this.peek() === C_COLON) {
+        this.pos++;
+    } else {
+        this.pos = startpos;
+        return 0;
+    }
+
+    //  link url
+    this.spnl();
+
+    dest = this.parseLinkDestination();
+    if (dest === null) {
+        this.pos = startpos;
+        return 0;
+    }
+
+    var beforetitle = this.pos;
+    this.spnl();
+    if (this.pos !== beforetitle) {
+        title = this.parseLinkTitle();
+    }
+    if (title === null) {
+        // rewind before spaces
+        this.pos = beforetitle;
+    }
+
+    // make sure we're at line end:
+    var atLineEnd = true;
+    if (this.match(reSpaceAtEndOfLine) === null) {
+        if (title === null) {
+            atLineEnd = false;
+        } else {
+            // the potential title we found is not at the line end,
+            // but it could still be a legal link reference if we
+            // discard the title
+            title = null;
+            // rewind before spaces
+            this.pos = beforetitle;
+            // and instead check if the link URL is at the line end
+            atLineEnd = this.match(reSpaceAtEndOfLine) !== null;
+        }
+    }
+
+    if (!atLineEnd) {
+        this.pos = startpos;
+        return 0;
+    }
+
+    var normlabel = normalizeReference(rawlabel);
+    if (normlabel === "") {
+        // label must contain non-whitespace characters
+        this.pos = startpos;
+        return 0;
+    }
+
+    if (!refmap[normlabel]) {
+        refmap[normlabel] = {
+            destination: dest,
+            title: title === null ? "" : title,
+        };
+    }
+    return this.pos - startpos;
+};
+```
+
+很明显的三部分，首先匹配 label，label 后必须包含一个冒号 `:`，紧跟着是链接地址，然后是可选的链接标题。
+
+这里还调用了 `normalizeReference` 标准化 label 字符串：
+
+```js
+// normalize a reference in reference link (remove []s, trim,
+// collapse internal space, unicode case fold.
+// See commonmark/commonmark.js#168.
+var normalizeReference = function (string) {
+    return string
+        .slice(1, string.length - 1)
+        .trim()
+        .replace(/[ \t\r\n]+/g, " ")
+        .toLowerCase()
+        .toUpperCase();
+};
+```
+
+根据规范定义，label 需要去除左右的 `[]`，以及去除前后空格、制表符和行尾，并将连续的内部空格、制表符和行尾折叠为单个空格，剩余的 label 内容还需要执行 Unicode 大小写折叠操作，这可以通过 `.toLowerCase().toUpperCase()` 完成。
+
+> ```markdown
+> [SS]
+> 
+> [ẞ]: https://yuanyxh.com
+> ```
+> 
+> 由于 `[ẞ]` 大小写折叠后表示为 `[SS]`，所以上述 Markdown 是一个有效链接，同时 label 匹配是不区分大小写的。
+
+另外，如果有多个 label 相同的链接引用定义，使用第一个。
+
+## 总结
+
+Markdown 的内容解析并不那么简单，从 [CommonMark 规范] 中可以看出，其中隐藏了大量解析细节。比如各个块的解析优先级、是否可以中断段落、嵌套块的解析、块缩进的解释，还有内联元素中，各个 Markdown 内联标记的优先级、嵌套内联等等内容；如果没有类似 [commonmark.js] 符合规范的实现，我们很难理解 CommonMark 规范中隐藏的大量细节。
+
+CommonMark 规范中的部分定义也为扩展 CommonMark 提供了便利，比如分割符堆栈、强调与强烈强调的规则，可以想见，我们很容易基于这些规则定义其他的元素，比如包含在 `~~...~~` 中的内容作为删除线。
+
+-end
+
+[CommonMark 规范]: https://spec.commonmark.org/0.31.2/
+[commonmark.js]: https://github.com/commonmark/commonmark.js/
+[paragraph]: https://spec.commonmark.org/0.31.2/#paragraph
+[heading]: https://spec.commonmark.org/0.31.2/#atx-headings
+[hard-line-breaks]: https://spec.commonmark.org/0.31.2/#hard-line-breaks
+[soft-line-breaks]: https://spec.commonmark.org/0.31.2/#soft-line-breaks
+[left-flanking-delimiter-run]: https://spec.commonmark.org/0.31.2/#left-flanking-delimiter-run
+[right-flanking-delimiter-run]: https://spec.commonmark.org/0.31.2/#right-flanking-delimiter-run
+[can-open-emphasis]: https://spec.commonmark.org/0.31.2/#can-open-emphasis
+[full]: https://spec.commonmark.org/0.31.2/#full-reference-link
+[collapsed]: https://spec.commonmark.org/0.31.2/#collapsed-reference-link
+[shortcut]: https://spec.commonmark.org/0.31.2/#shortcut-reference-link
+[Autolinks]: https://spec.commonmark.org/0.31.2/#autolinks
+[Inline HTML]: https://spec.commonmark.org/0.31.2/#raw-html
+[entity]: https://spec.commonmark.org/0.31.2/#entity-and-numeric-character-references
