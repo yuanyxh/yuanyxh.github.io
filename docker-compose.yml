@@ -1,9 +1,9 @@
 version: '3.9'
 
 services:
-  blog:
+  blog:v1.0:
     build: ./Dockerfile
+  blog:
     image: blog:v1.0
-    container_name: blog-container
     ports:
       - '3000:80'
