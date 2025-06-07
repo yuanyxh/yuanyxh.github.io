@@ -7,3 +7,5 @@ services:
     image: blog:v1.0
     ports:
       - '3000:80'
+    additional_contexts:
+      blog:v1.0: service:blog:v1.0
