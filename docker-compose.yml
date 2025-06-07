@@ -1,13 +1,9 @@
 version: '3.9'
 
 services:
-  blog-build:
-    image: blog:v1.0
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile
   blog:
     image: blog:v1.0
+    build: ./Dockerfile
+    container_name: blog-container
     ports:
       - '3000:80'
