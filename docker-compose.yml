@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  blog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blog:v1.0
+    ports:
+      - '3000:80'
