@@ -3,6 +3,7 @@ version: '3.9'
 services:
   blog-build:
     image: blog:v1.0
+    pull_policy: build
     build:
       context: .
       dockerfile: Dockerfile
