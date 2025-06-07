@@ -5,6 +5,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: blog:v1.0
     ports:
       - '3000:80'
