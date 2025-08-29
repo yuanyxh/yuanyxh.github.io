@@ -1,0 +1,1132 @@
+---
+title: React Native 初体验
+date: 2025-08-27 22:54:00
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/react_native_first_experience-logo.png
+description: 首次使用 React Native 开发跨端应用，从项目选型、初始化，到开发中的设计架构、坑点，以及 iOS 应用的审核上架等一一讲解。
+keywords: React Native, Android, iOS
+---
+
+## 前言
+
+最近公司需要移植一个应用到 iOS 端，本来想要尝试 uniapp 的新架构 uniapp-x 的，折腾两天放弃了，选择了 React Native。
+
+原因：
+
+1. HbuilderX 中的 uniapp-x 模版过于臃肿，夹杂很多不需要的东西（可能是我选错了模版）
+2. 文档不清晰
+3. 生态还未发展
+
+当然我本身也更喜欢 React 函数式组件的写法，RN 的生态也足够好。
+
+## 初始化项目
+
+使用 [expo] 框架来快速搭建一个基本的项目，参考他的 [快速开始][expo-start] 文档即可；这里推荐使用开发构建模式（Bare Workflow 裸工作流），EXPO Go 模式可能会有一些问题，而且很多开源的 RN 原生模块不支持 Expo Go 模式。
+
+> Bare Workflow: Expo 暴露 iOS & Android 原生代码，支持深度自定义。
+
+一些注意事项、问题：
+
+- 使用了带有 import.meta 的包时报错 https://github.com/expo/expo/issues/30323
+
+  解决方案：在项目根目录下新建 `metro.config.js` 文件，写入以下代码：
+
+  ```js
+  const { getDefaultConfig } = require('expo/metro-config');
+  const {
+    wrapWithReanimatedMetroConfig
+  } = require('react-native-reanimated/metro-config');
+
+  const config = getDefaultConfig(__dirname);
+
+  // 解决 web import.meta 问题，issue: https://github.com/expo/expo/issues/30323
+  config.resolver.unstable_conditionNames = [
+    'browser',
+    'require',
+    'react-native'
+  ];
+
+  module.exports = wrapWithReanimatedMetroConfig(config);
+  ```
+
+  [metro] 是 Expo 使用的编译打包器。
+
+- 进行了任何会影响原生代码（iOS、Android 目录）的变动，需要重新运行 `npm run prebuild` 来重新生成原生代码，比如修改了 `app.json`、添加了原生依赖。
+
+- 如果清理了一些原生依赖或会被包含到原生代码中的资源，需要运行 `npm run prebuild --clean` 来重新生成一个干净的 iOS、Android 文件夹，`npm run prebuild` 是增量的，不会去除未使用的依赖代码、资源。
+
+  > **注意：开发过程中可能会经常直接修改原生代码，运行 `npm run prebuild --clean` 后这些变动会被删除，注意经常使用 Git 提交代码，方便还原**。
+
+- 如果你使用 pnpm，由于 pnpm 软链接的原因，Expo 可能找不到一些依赖 https://github.com/expo/eas-cli/issues/2789, 你需要添加以下内容到 `.npmrc` 文件里：
+
+  ```text
+  public-hoist-pattern[]=*expo-modules-autolinking
+  public-hoist-pattern[]=*expo-modules-core
+  public-hoist-pattern[]=*babel-preset-expo
+  ```
+
+## 架构与各项功能的实现
+
+### 网络请求
+
+由于 RN 在底层实现了 [fetch] API，所以 axios 在 RN 中是可用的，可以像往常一样使用：
+
+```ts
+import axios from 'axios';
+
+const http = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_BASE_API_URL, // RN & Expo 支持环境变量
+  timeout: 30 * 1000
+});
+
+
+http.interceptors.request.use(
+  (req) => req,
+  (error) => Promise.reject(error)
+);
+
+http.interceptors.response.use(
+  (response: AxiosResponse<BaseResponse>) => response.data
+);
+
+export default http;
+```
+
+如果 iOS 与 Android 需要支持 http 请求，需要执行额外设置：
+
+- iOS
+  
+  ```json
+  // app.json
+  {
+    "expo": {
+      "ios": {
+        "infoPlist": {
+          "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true }
+        }
+      }
+    }
+  }    
+  ```
+
+- Android
+
+  新建 `android/app/src/main/res/xml/network_security_config.xml` 文件，写入以下内容：
+
+  ```xml
+  <?xml version="1.0" encoding="utf-8"?>
+  <network-security-config>
+      <base-config cleartextTrafficPermitted="true" />
+  </network-security-config>
+  ```
+
+  在 `AndroidManifest.xml` 的 `application` 块中写入内容 `android:networkSecurityConfig="@xml/network_security_config"`。
+  
+### 组件库
+
+目前项目使用的 [React Native UI][rneui]，一开始是看他最近一年还有维护，但后续发现该项目在找接任者，且部分组件本身还有一些 bug，后续可能需要替换。
+
+目前发现的一些 bug：
+
+- BottomSheet 在 iOS 上的高度问题，具体表现为首次弹出时不会添加安全区域的 Padding，而后续弹出时却添加了，会导致我们的 UI 异常，目前通过封装解决：
+
+  ```tsx
+  import type { BottomSheetProps } from '@rneui/themed';
+  import { BottomSheet } from '@rneui/themed';
+  import { useCallback, useMemo, useRef, useState } from 'react';
+  import type { LayoutChangeEvent } from 'react-native';
+  import { Pressable, StyleSheet, View } from 'react-native';
+  import {
+    useSafeAreaFrame,
+    useSafeAreaInsets
+  } from 'react-native-safe-area-context';
+
+  export interface FixBottomSheetProps extends BottomSheetProps {
+    children?: React.ReactNode;
+  }
+
+  const FIXED_PROPS = {
+    statusBarTranslucent: true,
+    transparent: true,
+    hardwareAccelerated: true
+  };
+
+  export function FixBottomSheet(props: FixBottomSheetProps) {
+    const {
+      isVisible = false,
+      children,
+      modalProps = {},
+      onBackdropPress,
+      ...rest
+    } = props;
+
+    const rect = useSafeAreaFrame();
+    const insets = useSafeAreaInsets();
+
+    /** 修复底部导航栏遮挡问题 */
+    const [areaHeight, setAreaHeight] = useState(
+      rect.height + insets.top + insets.bottom
+    );
+
+    const onBackdropPressRef = useRef(onBackdropPress);
+
+    onBackdropPressRef.current = onBackdropPress;
+
+    const scrollViewProps = useMemo(
+      () => ({
+        style: styles.full,
+        contentContainerStyle: styles.full,
+        // 禁用橡皮筋效果
+        bounces: false,
+        onLayout(event: LayoutChangeEvent) {
+          setAreaHeight(
+            event.nativeEvent.layout.height + insets.top + insets.bottom
+          );
+        }
+      }),
+      [insets.bottom, insets.top]
+    );
+
+    const handleOnBackdropPress = useCallback(() => {
+      onBackdropPressRef.current?.();
+    }, []);
+
+    return (
+      <BottomSheet
+        {...rest}
+        isVisible={isVisible}
+        onBackdropPress={handleOnBackdropPress}
+        scrollViewProps={scrollViewProps as any}
+        modalProps={{
+          ...modalProps,
+          ...FIXED_PROPS
+        }}
+      >
+        {/* fix ios top */}
+        <View
+          style={{
+            height: Math.max(0, areaHeight - rect.height - insets.bottom)
+          }}
+        ></View>
+        
+        <Pressable style={styles.container} onPress={handleOnBackdropPress}>
+          <Pressable pointerEvents={'box-none'}>{children}</Pressable>
+        </Pressable>
+
+        {/* fix ios bottom */}
+        <View
+          style={{ height: Math.max(0, areaHeight - rect.height - insets.top) }}
+        ></View>
+      </BottomSheet>
+    );
+  }
+
+  const styles = StyleSheet.create({
+    full: {
+      width: '100%',
+      height: '100%'
+    },
+    container: {
+      flex: 1,
+      justifyContent: 'flex-end'
+    }
+  });
+  ```
+
+  > 关于 Model：BottomSheet 是基于 RN 的 Model 组件封装的，Model 内的视图不在 Root View 之内，所以一些 Provider 会失效，需要在 Model 内部在包含一个 Provider。
+  > 
+  > 此外，由于 iOS 平台的策略，不允许同时弹出两个 Model，在弹出第二个时，需要将第一个关闭。
+
+- Tab & TabView 在快速滑动时会偶现滚出屏外，暂无解决方案，可能需要替换组件。
+
+项目里复杂 UI 较少，没有深度使用 React Native UI，目前来说够用，也支持深色模式。
+
+### 状态管理
+
+状态管理使用 zustand 即可，如果需要持久化，他也支持自定义 storage 的实现，示例：
+
+```ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { omit } from 'lodash-es';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+async function setItem<T = string>(key: StorageKeys, value: T) {
+  let transfered = '';
+  try {
+    if (typeof value !== 'string') {
+      transfered = JSON.stringify(value);
+    }
+
+    await AsyncStorage.setItem(key, transfered);
+  } catch (_err) {
+    console.error('storage-setItem', _err);
+  }
+}
+
+async function getItem<T = string>(key: StorageKeys): Promise<T | null> {
+  let value: string | null = null;
+
+  try {
+    value = await AsyncStorage.getItem(key);
+
+    return value === null ? value : JSON.parse(value);
+  } catch (_err) {
+    console.error('storage-getItem', _err);
+
+    return value as T | null;
+  }
+}
+
+function removeItem(key: StorageKeys) {
+  try {
+    return AsyncStorage.removeItem(key);
+  } catch (_err) {
+    console.error('storage-removeItem', _err);
+  }
+}
+
+const storage = {
+  getItem: getItem,
+  setItem: setItem,
+  removeItem: removeItem
+};
+
+// ---------
+
+interface StoreLoginState {
+  userNo: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+interface StoreLoginAction {
+  setLogin(body: StoreLoginState): void;
+  reset(): void;
+}
+
+export const useLogin = create<StoreLoginState & StoreLoginAction>()(
+  persist(
+    (set) => ({
+      userNo: '',
+      password: '',
+      rememberMe: true,
+      setLogin: (body) => {
+        set((state) => ({ ...state, ...body }));
+      },
+      reset: () => {
+        set({ userNo: '', password: '', rememberMe: true });
+      }
+    }),
+    {
+      name: 'login',
+      storage: stroage,
+      partialize(state) {
+        return omit(state, ['setLogin', 'reset']);
+      }
+    }
+  )
+);
+```
+
+### 字体
+
+在二次封装 TextInput 组件时，发现 placeholder 的文本始终无法居中对齐，后来发现是默认字体的原因，于是使用了阿里巴巴普惠体替换了默认字体。
+
+使用 [expo-font] 加载字体即可，这里建议文件名以下划线分割，否则 iOS 端可能不生效，具体可看 https://docs.expo.dev/versions/latest/sdk/font/
+
+### 全局 Provider
+
+项目中，难免会需要封装一些全局组件 & Provider 的时候，方便使用，只需要在根组件包裹自己的 Provider 即可：
+
+```tsx
+import type { OverlayProps } from '@rneui/themed';
+import {
+  createContext,
+  memo,
+  useContext,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import { FreezeComp } from '../base/FreezeComp';
+
+interface AlertProviderProps {
+  children?: React.ReactNode;
+}
+
+export interface AlertBoxOptions {
+  title: string;
+  type: StatusType;
+  message: string;
+  cancelText?: string;
+  confirmText?: string;
+  showCancel?: boolean;
+  confirm?(): void;
+  cancel?(): void;
+}
+
+type AlertBoxProps = {
+  options?: AlertBoxOptions;
+  reset(value?: undefined | never): void;
+} & Omit<OverlayProps, 'children' | 'isVisible'>;
+
+type AlertBoxObject = {
+  alertBox(options: AlertBoxOptions): void;
+};
+
+const AlertProvierContext = createContext<AlertBoxObject>({} as AlertBoxObject);
+
+export const AlertProvider = memo(function AlertProvider(
+  props: AlertProviderProps
+) {
+  const { children } = props;
+
+  const [options, setOptions] = useState<AlertBoxOptions>();
+
+  const visibleRef = useRef(!!options);
+
+  if (!!options && !visibleRef.current) {
+    visibleRef.current = true;
+  }
+
+  const alertBoxObject = useMemo<AlertBoxObject>(
+    () => ({ alertBox: (options) => setOptions(options) }),
+    []
+  );
+
+  return (
+    <>
+      <AlertProvierContext.Provider value={alertBoxObject}>
+        <FreezeComp>{children}</FreezeComp>
+      </AlertProvierContext.Provider>
+
+      {visibleRef.current ? (
+        <AlertBox options={options} reset={setOptions}></AlertBox>
+      ) : null}
+    </>
+  );
+});
+
+const AlertBox = memo(function AlertBox(props: AlertBoxProps) {
+  return <></>;
+});
+
+export function useAlertBox() {
+  return useContext(AlertProvierContext);
+}
+```
+
+由于是顶层组件，重渲染会影响所有子孙组件，所以需要避免多余的渲染，同时子孙组件也要做好缓存。
+
+### Viewer 全局预览组件
+
+项目里可能会大量用到预览功能，包括图片、PDF 等，于是封装了下面的 Provider（部分代码）：
+
+```tsx
+import { useThemeColor } from '@/hooks/theme/useThemeColor';
+import i18n from '@/locales';
+import { AntDesign } from '@expo/vector-icons';
+import { Zoomable } from '@likashefqet/react-native-image-zoom';
+import type { ListRenderItem } from '@shopify/flash-list';
+import { FlashList } from '@shopify/flash-list';
+import React, {
+  createContext,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FixBottomSheet } from '../base/FixBottomSheet';
+import { FreezeComp } from '../base/FreezeComp';
+import { ScaleImage } from '../base/ScaleImage';
+import { ScalePdf } from '../base/ScalePdf';
+import { ThemedText } from '../base/ThemedText';
+import { WrapPressEffect } from '../base/WrapPressEffect';
+
+export interface UriItem {
+  uri: string;
+  type?: string;
+}
+
+export interface ViewerOptions<T extends UriItem> {
+  data: T[];
+  selectedIndex?: number;
+  onClose?(): any;
+}
+
+export interface ViewerContextType {
+  showViewer<T extends UriItem>(
+    options: Omit<ViewerProps<T>, 'isVisible'>
+  ): void;
+}
+
+interface ViewerProps<T extends UriItem> {
+  isVisible: boolean;
+  data: T[];
+  selectedIndex?: number;
+  onClose?(): void;
+}
+
+interface ViewerProviderProps {
+  children: React.ReactNode;
+}
+
+const ViewerContext = createContext({} as ViewerContextType);
+
+interface ViewerItem {
+  item: UriItem;
+  maxWidth: number;
+  maxHeight: number;
+  setScrollEnable(enable: boolean): void;
+}
+
+function ViewerImage(props: ViewerItem) {
+  return (
+    <Zoomable
+      style={styles.wrapper}
+      minScale={0.6}
+      maxScale={3}
+      doubleTapScale={3}
+      isDoubleTapEnabled
+    >
+      <ScaleImage
+        showErrorText
+        resize={{ maxWidth: props.maxWidth, maxHeight: props.maxHeight }}
+        source={{ uri: props.item.uri }}
+        contentFit="cover"
+      />
+    </Zoomable>
+  );
+}
+
+function ViewerPdf(props: ViewerItem) {
+  const { setScrollEnable } = props;
+
+  const [scale, setScale] = useState(1);
+  const lastTouchRef = useRef({ x: 0, y: 0 });
+
+  return (
+    <View
+      onTouchStart={
+        Platform.OS === 'android'
+          ? (e) => {
+              setScrollEnable(false);
+
+              lastTouchRef.current = {
+                x: e.nativeEvent.pageX,
+                y: e.nativeEvent.pageY
+              };
+            }
+          : void 0
+      }
+      onTouchMove={
+        Platform.OS === 'android'
+          ? (e) => {
+              // 默认在 touch 期间，禁用父滚动容器滚动能力，当达到指定阈值时，允许父滚动容器滚动
+              setScrollEnable(
+                scale === 1 &&
+                  Math.abs(e.nativeEvent.pageX - lastTouchRef.current.x) > 10 &&
+                  Math.abs(e.nativeEvent.pageY - lastTouchRef.current.y) < 12
+              );
+
+              lastTouchRef.current = {
+                x: e.nativeEvent.pageX,
+                y: e.nativeEvent.pageY
+              };
+            }
+          : void 0
+      }
+      onTouchCancel={
+        Platform.OS === 'android'
+          ? () => {
+              setScrollEnable(true);
+            }
+          : void 0
+      }
+      onTouchEnd={
+        Platform.OS === 'android' ? () => setScrollEnable(true) : void 0
+      }
+    >
+      <ScalePdf
+        showErrorText
+        resize={{ maxWidth: props.maxWidth, maxHeight: props.maxHeight }}
+        source={{
+          uri: props.item.uri,
+          cache: true /** 当设置为 true 时，会在底层复用实例，页面快速刷新时可能导致资源已经释放又再次访问资源从而抛出异常 */
+        }}
+        onScaleChanged={(scale) => {
+          setScale(scale);
+        }}
+      />
+    </View>
+  );
+}
+
+function ViewerDefault(props: ViewerItem) {
+  const { primary, warning } = useThemeColor(['primary', 'warning']);
+
+  return (
+    <View
+      style={{
+        width: props.maxWidth,
+        height: props.maxHeight,
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <AntDesign name="unknowfile1" size={54} color={primary} />
+
+      <ThemedText style={{ marginTop: 24, color: warning, fontSize: 18 }}>
+        {i18n.t('viewer.previewNotSupported')}
+      </ThemedText>
+    </View>
+  );
+}
+
+function requestItem(
+  item: UriItem,
+  maxWidth: number,
+  maxHeight: number,
+  setScrollEnable: (enable: boolean) => void
+) {
+  let Constructor: (props: ViewerItem) => React.JSX.Element;
+
+  switch (item.type) {
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'webp':
+    case 'bmp':
+    case 'gif':
+    case 'image': // 兜底类型
+      Constructor = ViewerImage;
+      break;
+    case 'pdf':
+      Constructor = ViewerPdf;
+      break;
+    default:
+      Constructor = ViewerDefault;
+  }
+
+  return (
+    <Constructor
+      item={item}
+      maxWidth={maxWidth}
+      maxHeight={maxHeight}
+      setScrollEnable={setScrollEnable}
+    />
+  );
+}
+
+const Viewer = memo(function Viewer<T extends UriItem>(props: ViewerProps<T>) {
+  const { isVisible, data, selectedIndex = 0, onClose } = props;
+
+  const { top, bottom } = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+
+  const [currentIndex, setCurrentIndex] = useState(selectedIndex);
+  const [showList, setShowList] = useState(false);
+  const [scrollEnable, setScrollEnable] = useState(true);
+
+  const itemWrapWidth = useMemo(() => width - 24, [width]);
+  const itemWrapHeight = useMemo(
+    () => height - top - bottom - 140,
+    [bottom, height, top]
+  );
+
+  const setCanScroll = useCallback((enable: boolean) => {
+    setScrollEnable(enable);
+  }, []);
+
+  const renderItem: ListRenderItem<T> = useCallback(
+    ({ item, index }) => {
+      return (
+        <View
+          key={index}
+          style={[
+            styles.item,
+            { width: itemWrapWidth, height: itemWrapHeight }
+          ]}
+        >
+          {requestItem(item, itemWrapWidth, itemWrapHeight, setCanScroll)}
+        </View>
+      );
+    },
+    [itemWrapHeight, itemWrapWidth, setCanScroll]
+  );
+
+  const onMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+      setCurrentIndex(newIndex);
+    },
+    [width]
+  );
+
+  useEffect(() => {
+    if (isVisible) {
+      setCurrentIndex(selectedIndex);
+
+      requestAnimationFrame(() => setShowList(true));
+    } else {
+      setShowList(false);
+    }
+  }, [isVisible, selectedIndex]);
+
+  return (
+    <FixBottomSheet isVisible={isVisible} fullWrapper onBackdropPress={onClose}>
+      <GestureHandlerRootView>
+        <View style={styles.previewContainer}>
+          <WrapPressEffect
+            style={[styles.close, { marginTop: top }]}
+            onPress={onClose}
+          >
+            <AntDesign name="close" size={28} color="#FFF" />
+          </WrapPressEffect>
+
+          <ThemedText style={styles.index} lightColor="#FFF" darkColor="#FFF">
+            {`${currentIndex + 1} / ${data.length}`}
+          </ThemedText>
+
+          <View style={styles.full}>
+            {showList ? ( // 解决无法滚动问题
+              <FlashList
+                data={data}
+                horizontal
+                pagingEnabled
+                nestedScrollEnabled
+                // 禁用 ios 橡皮筋效果，避免拖动、缩放冲突
+                bounces={false}
+                scrollEnabled={data.length <= 1 ? false : scrollEnable} // 解决嵌套滚动冲突
+                keyExtractor={(_, index) => index.toString()}
+                initialScrollIndex={selectedIndex}
+                onMomentumScrollEnd={onMomentumScrollEnd}
+                showsHorizontalScrollIndicator={false}
+                renderItem={renderItem}
+              />
+            ) : null}
+          </View>
+        </View>
+      </GestureHandlerRootView>
+    </FixBottomSheet>
+  );
+});
+
+export const ViewerProvider = memo(function ViewerProvider(
+  props: ViewerProviderProps
+) {
+  const [showViewer, setShowViewer] = useState(false);
+  const [options, setOptions] = useState<ViewerOptions<UriItem>>({
+    data: [],
+    selectedIndex: 0
+  });
+
+  const onCloseRef = useRef<() => any>(null);
+  const visibleRef = useRef(showViewer);
+
+  if (showViewer && !visibleRef.current) {
+    visibleRef.current = true;
+  }
+
+  const contextValue = useMemo<ViewerContextType>(
+    () => ({
+      showViewer(options) {
+        setOptions(options);
+        setShowViewer(true);
+
+        onCloseRef.current = options.onClose ?? null;
+      }
+    }),
+    []
+  );
+
+  const handleClose = useCallback(() => {
+    setShowViewer(false);
+    setOptions({ data: [], selectedIndex: 0 });
+    onCloseRef.current?.();
+    onCloseRef.current = null;
+  }, []);
+
+  return (
+    <ViewerContext.Provider value={contextValue}>
+      <FreezeComp>{props.children}</FreezeComp>
+
+      {visibleRef.current ? (
+        <Viewer
+          key={'viewer-display'}
+          isVisible={showViewer}
+          data={options.data}
+          selectedIndex={options.selectedIndex}
+          onClose={handleClose}
+        />
+      ) : null}
+    </ViewerContext.Provider>
+  );
+});
+
+export function useViewer() {
+  return useContext(ViewerContext);
+}
+```
+
+整体思路是一个横向全屏的滚动视图，每个预览视图占据一屏，左右滑动切换；这里为了更好的可扩展性，每屏预览视图可能是不同的组件，这取决于文件类型，后续支持新的文件预览类型时只需要添加对应的组件即可。
+
+### 权限处理
+
+应用如果要与用户数据直接交互，就不可避免的需要处理权限，这里对所有权限的处理思路是一致。
+
+先看代码：
+
+```ts
+import { useAlertBox } from '@/components/provider/AlertProvider';
+import i18n from '@/locales';
+import { logInfo } from '@/utils/logger';
+import { useCallback, useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
+import { useCameraPermission as useVisionCameraPermission } from 'react-native-vision-camera';
+import { useAppState } from './useAppState';
+
+export interface CameraPermissionOptions {
+  onAlert?(): void;
+}
+
+export function useCameraPermission(
+  cb: (...args: any[]) => any,
+  options: CameraPermissionOptions = {}
+): (...args: any[]) => Promise<void> {
+  const { onAlert } = options;
+
+  const { isFocus } = useAppState();
+  const { hasPermission, requestPermission } = useVisionCameraPermission();
+  const { alertBox } = useAlertBox();
+
+  const backWithsettings = useRef(false);
+  const callbackRef = useRef(cb);
+  const onAlertRef = useRef(onAlert);
+
+  callbackRef.current = cb;
+  onAlertRef.current = onAlert;
+
+  const alertPermissions = useCallback(() => {
+    onAlertRef.current?.();
+
+    return alertBox({
+      type: 'warning',
+      title: i18n.t('permission.requestPermissions'),
+      message: i18n.t('camera.cameraPermissionsTips'),
+      confirm() {
+        backWithsettings.current = true;
+        Linking.openSettings();
+      }
+    });
+  }, [alertBox]);
+
+  const handleTrigger = useCallback(
+    async (...args: any[]) => {
+      try {
+        if (!hasPermission && !(await requestPermission())) {
+          return alertPermissions();
+        }
+      } catch (err: unknown) {
+        return logInfo('debug-useCameraPermission', err);
+      }
+
+      callbackRef.current(...args);
+    },
+    [hasPermission, alertPermissions, requestPermission]
+  );
+
+  useEffect(() => {
+    if (isFocus) {
+      if (backWithsettings.current && !hasPermission) {
+        requestPermission();
+      }
+
+      backWithsettings.current = false;
+    }
+  }, [isFocus, hasPermission, requestPermission]);
+
+  return handleTrigger;
+}
+```
+
+代码逻辑如下：
+
+1. 调用此 hook，传入一个回调函数
+2. 返回一个 trigger 触发函数
+3. 当 trigger 被调用时，判断是否有权限，如果有，直接调用回调
+4. 没有权限，发起权限请求
+   
+   1. 用户同意，调用回调
+   2. 用户拒绝，弹出弹窗，描述权限的作用，并提示用户前往设置启用权限，当用户点击确认时跳转设置页（用户返回应用时，再次发起权限请求，不管同意或拒绝，不进行后续操作）
+
+这里弹窗是必要的，当用户多次拒绝时，系统不会再询问用户是否同意权限，而是默认拒绝。
+
+### 文件处理
+
+iOS 和 Android 平台读写文件的差异较大，建议分开处理。
+
+- iOS 如果希望读写文件，可被用户查看，设置 `UIFileSharingEnabled=true` 即可，这共享应用沙盒内的 document 目录，可在文件 APP 中看到；由于此目录位于应用沙盒内，所以不需要处理权限。
+
+- Android 这几年对于存储权限的变动较大，在不断的收紧应用读写公共目录的权力；在 SDK 33 及以上使用以往默认的权限请求方法无效，因为以前的权限策略被删除，取代的是图片、视频、音频访问权限，以及所有文件访问权限。
+
+  如果需要访问除媒体文件外的目录，可以使用 Android SAF 接口，或请求所有文件访问权限。
+
+  > 如果应用需要上架 Goole Play, 所有文件访问权限可能不容易过审
+  >
+  > 最好对不同的 Android 版本进行处理。
+
+### 键盘处理
+
+推荐使用 `react-native-keyboard-controller`，提供了一系列强大的组件、hooks 以及一些命令式的 API。
+
+这里主要说明如何解决 Android 系统下，快速聚焦失焦的时候导致的软键盘抖动问题，关于这个问题我之前使用 uniapp 开发应用时也有遇到，感兴趣的可以翻我之前的文章。
+
+这个问题的原因很简单：当软件盘弹出时，页面整体向上移动，这是为了不遮挡视图；如果在软键盘未完全弹出的时候，快速聚焦到另一个输入框，导致软键盘类型切换时（比如普通键盘切换到安全键盘），由于不知名原因，软键盘开始快速在显隐状态下切换，导致页面疯狂抖动。
+
+这里我的原因不同，是由于两个输入框都会弹出 model 层，软键盘在这两次聚焦时切换显隐状态导致的抖动问题，model 层是由状态控制的，所以我的解决方案如下：
+
+```ts
+import { logInfo } from '@/utils/logger';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardController, useKeyboardHandler } from 'react-native-keyboard-controller';
+import { useState } from 'react';
+import { runOnJS } from 'react-native-reanimated';
+
+export type UseKeyboardFixStateResult<T> = [T, (value: T) => void];
+
+export function useKeyboardStablize() {
+  const [isStablize, setStablize] = useState(true);
+
+  const setStablizeJS = (progress: number) => {
+    setStablize(progress === 0 || progress === 1);
+  };
+
+  useKeyboardHandler({
+    onStart() {
+      'worklet';
+      runOnJS(setStablizeJS)(-1);
+    },
+    onMove: (e) => {
+      'worklet';
+      runOnJS(setStablizeJS)(e.progress);
+    },
+    onEnd: (e) => {
+      'worklet';
+      runOnJS(setStablizeJS)(e.progress);
+    }
+  });
+
+  return isStablize;
+}
+
+export interface UseKeyboardFixStateOptions {
+  hideKeyboard?: boolean;
+}
+
+/**
+ * 修复焦点争夺，页面抖动问题
+ *
+ * @param cb
+ * @returns
+ */
+export function useKeyboardFixState<T>(
+  initial: T,
+  options: UseKeyboardFixStateOptions = {}
+): UseKeyboardFixStateResult<T> {
+  const { hideKeyboard = false } = options;
+
+  const [isTriggered, setTriggered] = useState(false);
+  const [value, setValue] = useState(initial);
+  const cacheValueRef = useRef(value);
+
+  const isStablize = useKeyboardStablize();
+
+  const setValueCallback = useCallback((value: T) => {
+    cacheValueRef.current = value;
+    setTriggered(true);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (isStablize) {
+        if (isTriggered) {
+          try {
+            if (hideKeyboard) {
+              await KeyboardController.dismiss();
+            }
+
+            setValue(cacheValueRef.current);
+          } catch (err: unknown) {
+            logInfo('debug-useKeyboardFixState', err);
+          }
+
+          setTriggered(false);
+        }
+      }
+    })();
+  }, [hideKeyboard, isStablize, isTriggered]);
+
+  return [value, setValueCallback];
+}
+```
+
+思路就是二次封装 useState, 当 setValueCallback 触发时，如果当前软键盘还在过渡状态，等待软键盘高度稳定时（完全收起或完全弹出），隐藏软键盘，当软键盘隐藏时才真正触发状态变更。
+
+这个思路时通用的，可以根据这个思路扩展到其他场景。
+
+### 其他
+
+- i18n: expo-localization + i18n-js
+
+- 持久化存储：
+  
+  - 非加密存储：@react-native-async-storage/async-storage
+  - 加密存储：expo-secure-store（有大小限制）
+
+- 图标：Expo Vector Icons
+
+- 扫码：react-native-vision-camera + @mgcrea/vision-camera-barcode-scanner
+
+## 性能 & 应用大小优化
+
+虽然目前主流手机性能都很好了，但还是有可能遇到卡顿的情况，比如使用旧版 Android 手机、低性能的功能机（PDA）时；同时如果你需要为 Android 打包 apk 时，体积可能会出乎意料的大，我们需要做些额外处理来解决这些情况。
+
+### 减小 apk 大小
+
+有三个关键设置可以减小打包后的 Android apk 大小：
+
+- 减少支持的架构
+
+  默认的打包设置将 `reactNativeArchitectures` 设置为 `armeabi-v7a,arm64-v8a,x86,x86_64`，实际场景下其实只需要 `arm64-v8a` 就能支持大部分 Android 手机了。
+
+- 开启混淆与资源压缩
+
+  ```properpies
+  android.enableProguardInReleaseBuilds=true
+  android.enableShrinkResourcesInReleaseBuilds=true
+  ```
+
+  会对原生代码进行混淆，并对资源压缩。
+  
+  > 注意: 开启混淆时，打包后的应用程序在运行时可能找不到指定的类，需要在 `proguard-rules.pro` 文件排除特定类的混淆
+
+- 开启原生 library 的压缩，可以大幅减少应用体积
+
+  ```properpies
+  expo.useLegacyPackaging=true
+  ```
+
+> 注意测试前后性能，有时为了极致压缩应用体积而损耗性能是不值得的。
+
+### 性能优化
+
+主要是针对 Android 低性能设备上的优化，大部分措施在高性能设备上无感。
+
+- 使用 React Compiler 与 React 19；目前还未感知到明显的性能提示，但自动缓存策略可以减少心智负担。
+
+- 延迟渲染不可见的视图，比如 Model 内的内容
+
+- 严格测试基础组件，包括渲染时长、重渲染次数；基础组件被大量使用，积少成多也会导致性能不好的问题。
+
+- 当页面包含大量组件时（比如大型表单），可以使用 requestIdleCallback 延迟加载不重要、不可见的部分，相当于一次大又重的渲染任务拆分为多次小而轻的渲染任务。
+
+- 部分原生、三方组件是可点按元素，不需要再包裹 Pressable 组件。
+
+- 最重要且最显著的，预加载基础组件、大型页面。
+
+  > 由于 expo 使用懒加载路由的方式，在首次进入一个包含大量组件的页面时，会有明细的卡顿感，因为这个页面使用的组件可能是首次加载，需要一定的加载时间，当后续再次进入时，卡顿感会消失。
+  >
+  > 为了解决这个问题，可以在应用启动时预载基础组件，在特定时间预载页面。
+
+## iOS 真机调试 & 打包 & 过审 & 更新
+
+相关文章网上有很多，这里说个大概的：
+
+前提条件：
+
+1. 必须有开发者账号（个人开发者账号也行，只要你的应用体量不大）
+2. macOS（不知道算不算必须，可能有其他方式）
+
+真机调试：
+
+1. xcode 登录开发者账号
+2. 登录苹果开发者平台，前往 [certificate]，添加需要真机调试的设备
+3. 用 xcode 打开 ios 目录，在签名标签栏中，选中自动签名，选择对应的开发 Team
+4. 首次调试 iOS 设备需要进行设置，自行查找
+5. 运行 `npm run ios --device` 选择真机设备即可
+
+打包：
+
+1. 使用 macOS 自带的钥匙串程序，创建证书
+2. 苹果开发者平台创建程序证书并下载（Ad hoc 是测试证书，此证书打包的应用只能安装到指定设备，通常用于创建 release 的测试包）
+3. 下载下来的证书需要双击安装到钥匙串才能被 xcode 访问
+4. xcode 取消自动签名，选择指定证书，Product -> Archive 开始打包应用
+5. 打包完成后会在 Window -> Organizer 中生成一个打包记录
+6. 在 [App Store Connect][App_Store_Connect] 中新建一个应用，填写相关资料（可以存储草稿）
+7. 在 xcode 打包结果中，Distribute App 发布 App 到 App Store Connect 中
+8. 等待一段时间，如果应用测试没有问题，在 App Store Connect 构建版本中可以选择；
+
+   如果应用测试有问题，会发送邮件到开发者账号，根据要求改然后回到步骤 4
+
+9. App Store Connect 中如果一切准备就绪，可以发起审核
+
+审核一般需要一两天，如果审核不通过，可以在 App Store Connect 看到原因并回复，这里我们第一次审核失败，原因是 2.1 应用完整性。
+
+应用情况：公司内部使用，有私有账户、权限控制，需要登录，无法在应用内注册获取账户。
+
+参考网上的回复案例，明确告诉审核团队，企业付费模式，获得超级管理员账户后创建员工账号，并附上管理员创建账户的附件视频，参考：
+
+> Dear review team: After receiving the reason for the rejection you returned, we carefully verified the inside of the app and found that there is no problem you said. In order to avoid unnecessary misunderstandings, we have specially provided relevant qualification certificates and provided the following explanations:
+>
+> 1. Is your app restricted to users who are part of a single company? This may include users of the company's partners, employees, and contractors.
+>
+>    No, our app is provided to employees of Chinese.
+>
+> 2. Is your app designed for use by a limited or specific group of companies?
+>
+>    - If yes, which companies use this app?
+>
+>    - If not, can any company become a client and utilize this app?
+>
+>    No, all functions are open. All Chinese corporate users can use this app. 
+>
+> 3. What features in the app, if any, are intended for use by the general public?
+>
+>    All functions of the app are freely open to corporate employees. 
+>
+> 4. How do users obtain an account?
+>
+>    You need to purchase services on a company basis.
+>
+>    We give the company a super administrator account. The company uses this account to log in to the background to create and manage company employee accounts. (See attachments). 
+>
+> 5. Is there any paid content in the app and if so who pays for it? For example, do users pay for opening an account or using certain features in the app?
+>
+>    The app does not have a paid function. Users need to purchase services on a corporate basis. We give the company a super administrator account, and the company uses this account to log in to the background to create and manage company employee accounts.
+
+回复后应用审核通过。
+
+升级：
+
+1. 更新应用版本号
+2. 在 App Store Connect 原 APP 基础上，新建一个版本
+3. 打包发布
+4. 应用测试通过后选择构建版本发布审核
+
+[expo]: https://docs.expo.dev/
+[expo-start]: https://docs.expo.dev/get-started/set-up-your-environment/
+[metro]: https://metrobundler.dev/
+[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+[rneui]: https://reactnativeelements.com/
+[expo-font]: https://docs.expo.dev/versions/latest/sdk/font/
+[certificate]: https://developer.apple.com/account/ios/certificate/
+[App_Store_Connect]: https://appstoreconnect.apple.com
