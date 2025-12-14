@@ -1,0 +1,111 @@
+---
+title: 静默打印程序实现
+date: 2025-12-14 15:05:15
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/silent_printing_program_implementation.webp
+description: 开发一个静默打印程序，实现静默打印 PDF 功能，暴露接口与 Web 交互。
+keywords: 静默打印程序、PDF、electron、桌面程序
+---
+
+## 背景
+
+需求需要实现一个静默打印插件，辅助 Web 后台系统以实现静默打印标签，提升仓库侧工作效率。原插件稳定性、兼容性差，无源码无法扩展修改，支持多种标签格式，后续所有标签会转移至 PDF 格式，所以新的插件系统只需要支持 PDF 打印即可。
+
+## 技术选型
+
+桌面框架选择 Electron
+
+- 优点：前端友好、快速开发、文档、生态完善、兼容性好
+- 缺点：资源占用高、打包体积大
+
+渲染层选择 React（个人喜好）。
+
+包管理工具使用 npm，由于开发 React Native 时被 pnpm 的各种差异、兼容性搞的头疼，所以在开发非 Web 应用时更倾向于使用 npm。
+
+最终使用开源的 [electron-react-boilerplate] 作为基础框架进行开发。
+
+## 整体架构设计
+
+主进程实现功能：
+
+- 静默打印
+- 对外接口服务
+- 异常重启
+- 日志记录（[electron-log]）
+- 系统通知（electron 内置 `Notification`）
+- 自动更新（[electron-updater]）
+- 数据库交互（[@seald-io/nedb]）
+- 外部程序调用
+
+渲染层实现功能：
+
+- 界面交互
+- 打印设置
+- 数据查询（打印记录查询查看）
+
+主进程（核心层）通过启动本地服务器提供对外接口调用，触发接口调用时主进程调用命令行或外部程序实现打印功能。
+
+Web 开发大家都很熟了，所以下面只说主进程中的静默打印、对外接口服务的功能开发。
+
+## 静默打印
+
+使用 Electron 自带打印功能时，需要通过 `BrowserWindow.webContents.print()` 进行打印，这个方法只能打印当前浏览器窗口的内容，而不能指定文件进行打印。
+
+如果需要打印 PDF 文件，一种解决办法是在渲染层将指定 PDF 文件渲染为图片然后打印，这种方法兼容性好，支持常见的操作系统（Mac/Windows）；缺点也很明显：渲染多页 PDF 文件耗时长，并发打印支持差，并且需要主进程、渲染层合作处理，代码分散。
+
+另一个方法是使用三方库，这些库内部调用系统命令或外部程序以实现打印 PDF 的功能，这种方法性能较好、支持并发，且只需要在主进程处理，缺点就是可定制性差。
+
+这里使用三方库的方式，由于没有找到可靠的通用 PDF 打印库，所以针对 Mac 系统使用 [unix-print]，针对 Windows 系统使用 [pdf-to-printer]。
+
+它们各自的实现原理如下：
+
+- Mac 系统中内置了通用打印系统 CUPS，使用命令行 `ls command` 就可以实现打印 PDF，unix-print 就是对 ls 命令的一层包装
+
+- pdf-to-printer 中内置了 [SumatraPDF] 可执行程序，这是一个开源轻量的阅读器，支持以命令行方式调用以打印 PDF，pdf-to-printer 同样是对这些命令的一层包装。
+
+这两个库虽然整体能够在外部封装统一接口来进行对齐，但还有一些差异是无法抹平的：
+
+- CUPS 支持设定自定义的纸张规格，这在处理非标准尺寸的 PDF 标签时是很有用的，而 SumatraPDF 不支持
+
+  > SumatraPDF 要实现这样的功能只能在 Windows 系统中添加自定义打印规格，并在打印时选择指定规格，这样就多了人工操作的步骤，非常不便。
+
+- CUPS 支持 `lpstat` 命令来查询打印任务，SumatraPDF 不支持
+
+为了增强 Windows 端的打印功能，使用 .Net 8 实现了一个 Windows 控制台应用程序，实现逻辑如下：
+
+1. 启动时，启动一个管道，通过管道实现交互（这样可以避免每次调用程序时创建进程的开销）
+2. 根据入参，调用特定方法
+3. 打印功能：读取 PDF，转换为位图并调用 .Net 内置 SKD 打印，这种方式兼容性好、实现简单，缺点是位图放大时不如 PostScript 生成的清晰，体积也更大，不过在打印标签的场景上通常不会有太大问题
+4. .Net 还内置有其他实用功能，比如获取打印机列表、获取打印队列、自定义纸张规格等。
+
+> 在开发 Windows 控制台程序时，曾考虑过使用三方包集成，这种方式无疑时最好的，但查询到仍在积极开发状态的 PDF 打印 Nuget 包基本采用付费授权，而一些开源的（比如 [PdfiumViewer]）包在很久前都已经停止开发了。
+
+## 对外接口服务
+
+使用 [express] 启动本地 HTTP 服务，进行 cors 设置，定义通用响应结构，为了后续扩展其他功能，这里以不同的路由前缀区分模块，比如：
+
+- `/print/*` 表示打印功能相关 API
+- `/docs/*` 表示文档相关 API
+
+同时，为了检查服务器是否正常工作，提供 `/ping` 端点让外部调用。
+
+考虑相关功能，应该提供以下 API：
+
+- `/print/printer-list`: 获取系统打印机列表
+- `/print/printer-setting`: 设置打印机打印参数
+- `/print/printer-jobs`: 获取指定打印机打印队列
+- `/print/print-urls`: 打印以 URL 格式提供的 PDF 文件
+- `/print/print-base64`: 打印以 base64 格式提供的 PDF 文件
+- `/print/print-formdata`: 打印以 FormData 格式提供的 PDF 文件
+
+> 开发本地服务器供 Web 调用时，需要注意 Chrome 的兼容性，最近 Chrome 142 版本推出了本地网络访问权限提示。本地网络访问权限限制了 Web 访问本地服务器的能力，如果你的网站是以 https 提供服务的，Chrome 会在调用本地服务器时弹出权限提示，同意即可；但如果你的网站是以 http 提供服务的，那访问本地服务器时会静默失败，目前的方法是引导用户关闭 Chrome 对本地网络访问的限制。
+
+[electron-react-boilerplate]: https://github.com/electron-react-boilerplate/electron-react-boilerplate
+[unix-print]: https://www.npmjs.com/package/unix-print
+[pdf-to-printer]: https://github.com/artiebits/pdf-to-printer
+[SumatraPDF]: https://github.com/sumatrapdfreader/sumatrapdf
+[PdfiumViewer]: https://github.com/pvginkel/PdfiumViewer
+[electron-log]: https://github.com/megahertz/electron-log
+[electron-updater]: https://www.npmjs.com/package/electron-updater
+[@seald-io/nedb]: https://github.com/seald/nedb
+[express]: https://github.com/expressjs/express
