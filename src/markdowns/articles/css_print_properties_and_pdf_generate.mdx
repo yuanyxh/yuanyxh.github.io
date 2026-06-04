@@ -2,7 +2,7 @@
 title: CSS 打印属性与 PDF 生成
 date: 2024-11-10 01:14:00
 author: yuanyxh
-imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/css_print_properties_and_pdf_generate_logo.webp
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/css_print_properties_and_pdf_generate_logo.webp
 description: 学习了解 CSS 中与文档打印相关的属性，包括 print media query、@page、page、break-*、文档边距区域、脚注、锚点等知识，通过不同的 CSS 打印属性来实现分页控制、页面控制、内容填充等功能；也介绍了如何通过 HTML 模板 + CSS 打印属性 + 无头浏览器快速实现的 PDF 生成。
 keywords: CSS 打印属性、分页控制、页面控制、PDF 生成、无头浏览器、媒体查询、脚注、锚点
 ---
@@ -218,13 +218,13 @@ CSS 提供了三个用于控制分页逻辑的属性：
 
 效果如下：
 
-![print label](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/css_print_properties_and_pdf_generate_1.webp)
+![print label](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/css_print_properties_and_pdf_generate-01.webp)
 
 上诉 HTML 在遇到包含类名 `container-box` 的元素时认为需要进行分页，由 `break-after: always` 完成；而 `break-inside: avoid` 保证 `container-box` 元素是高度聚合的，不允许内部元素跨页。
 
 我们试试去掉这两个分页控制元素，得到的效果如下：
 
-![print label2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/css_print_properties_and_pdf_generate_2.webp)
+![print label2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/css_print_properties_and_pdf_generate-02.webp)
 
 去掉了分页控制元素后得到的效果很明显不尽人意。
 
@@ -232,7 +232,7 @@ CSS 提供了三个用于控制分页逻辑的属性：
 
 打印分页除了内容区外，还有 16 个围绕在内容区的边距区域，如下图：
 
-![print page marge](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/css_print_properties_and_pdf_generate_3.webp)
+![print page marge](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/css_print_properties_and_pdf_generate-03.webp)
 
 我们可以通过 @ + 指定方位来控制对应区域的内容：
 

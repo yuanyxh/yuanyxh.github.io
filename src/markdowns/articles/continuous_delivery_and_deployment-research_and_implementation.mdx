@@ -2,7 +2,7 @@
 title: 持续交付部署的研究与实操
 date: 2025-06-09 22:12:00
 author: yuanyxh
-imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-logo.webp
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-logo.webp
 description: 持续交付部署的研究，了解自动化集成、Docker registry 私有化部署、监控等，并进行实操，深入理解持续交付部署的概念。
 keywords: ci/cd, deploy, docker, portainer
 ---
@@ -95,19 +95,19 @@ ip 应该是 manager 节点的公网 ip，2377 是 Docker swarm 模式的默认�
 
   1. 基本配置
 
-     ![部署服务-步骤 1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-01.png)
+     ![部署服务-步骤 1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-01.png)
 
   2. 挂载主机目录，实现持久化
 
-     ![部署服务-步骤 2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-02.png)
+     ![部署服务-步骤 2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-02.png)
 
   3. 配置异常策略，这里我们设置任意情况都需要重启，以保证服务可用，同时设置最大重试次数为 0（不限制）
 
-     ![部署服务-步骤 3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-03.png)
+     ![部署服务-步骤 3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-03.png)
 
   4. 配置资源限制与部署策略，这里我们不限制其使用资源，然后只在 manager 节点上部署此服务
 
-     ![部署服务-步骤 4](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-04.png)
+     ![部署服务-步骤 4](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-04.png)
 
 部署服务后我们可以运行 `netstat -tuln | grep 5000` 命令查看 5000 端口是否有服务正在侦听。
 
@@ -134,7 +134,7 @@ docker pull ip:port/image:tag
 
 然后我们可以在 Portaienr 面板中配置自定义镜像：
 
-![配置自定义 Docker registry](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-05.png)
+![配置自定义 Docker registry](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-05.png)
 
 在同一个服务器内可以使用内网 ip。
 
@@ -148,13 +148,13 @@ docker pull ip:port/image:tag
 
 1. 基本配置（WUD 容器默认端口应该是 3000）
 
-   ![WUD 步骤-1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-06.png)
+   ![WUD 步骤-1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-06.png)
 
 2. 持久化、部署策略与 Docker registry 类似（需要挂载主机的 `/var/run/docker.sock` 到 `/var/run/docker.sock` 以获取 Docker 运行环境信息）
 
 3. 我们配置 WUD 专用的环境变量，以控制其内部行为：
 
-   ![WUD 步骤-2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-07.png)
+   ![WUD 步骤-2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-07.png)
 
    解释一下：
 
@@ -165,7 +165,7 @@ docker pull ip:port/image:tag
 
 现在，我们需要给指定容器添加 Labels 以观察它：
 
-![WUD 步骤-3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-08.png)
+![WUD 步骤-3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-08.png)
 
 上图表示 WUD 需要观察这个容器，且每次发现更新时，只触发 docker.yjzt 这个触发器；还有一个相反的用于排除触发器的选项 `wud.trigger.exclude`。
 
@@ -177,7 +177,7 @@ Portainer 未提供任何告警系统，可通过接入 Prometheus & Grafana 监
 
 因为需要部署多个服务，我们使用 Portianer 提供的 stacks 功能，编写 docker-compose.yml 来部署它：
 
-![监控服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-09.png)
+![监控服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-09.png)
 
 下面是 docker-compose.yml 配置与注释：
 
@@ -334,27 +334,27 @@ scrape_configs:
 
 我们现在可以登录 Grafana 面板，设置数据源：
 
-![Grafana 步骤-1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-10.png)
+![Grafana 步骤-1](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-10.png)
 
 设置为 Prometheus：
 
-![Grafana 步骤-2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-11.png)
+![Grafana 步骤-2](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-11.png)
 
 这里需要配置公网 ip，然后进行测试保存，也可以进行更多配置：
 
-![Grafana 步骤-3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-12.png)
+![Grafana 步骤-3](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-12.png)
 
 然后导入面板：
 
-![Grafana 步骤-4](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-13.png)
+![Grafana 步骤-4](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-13.png)
 
 我们导入 cadvisor（容器监控）的面板，id 为 14282（node_exporter（主机资源监控）为 1860）：
 
-![Grafana 步骤-5](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-14.png)
+![Grafana 步骤-5](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-14.png)
 
 现在可以查看各容器实例的资源占用情况：
 
-![Grafana 步骤-6](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-15.png)
+![Grafana 步骤-6](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-15.png)
 
 **可以在 Grafana 面板中设置告警规则与通知方式。**
 
@@ -550,15 +550,15 @@ docker push ip:prot/blog:v1.0
 
 基本配置（容器端口应该是 80）：
 
-![部署测试服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-16.png)
+![部署测试服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-16.png)
 
 添加 Labels 指示 WUD 观察镜像更新与自动升级：
 
-![部署测试服务-02](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-17.png)
+![部署测试服务-02](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-17.png)
 
 现在可以访问 ip +  端口查看效果：
 
-![部署测试服务-03](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-18.png)
+![部署测试服务-03](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-18.png)
 
 我们继续测试自动更新效果，修改 index.html 文件内容：
 
@@ -588,23 +588,23 @@ docker push 8.209.206.255:5000/blog:v1.1
 
 静待一段时间，我们查看 Portaienr 面板，或查看 WUD 的 Web UI，会发现发现了容器已更新为最新镜像，查看网页内容也已变更：
 
-![测试服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-19.png)
+![测试服务](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-19.png)
 
 > 我们可以免去手动编译镜像并推送更新的步骤，可以通过 git hook、webhook 等功能自动构建、测试，并推送更新。
 
 测试通过！现在我们需要部署到正式环境，我们创建一个 Service：
 
-![部署正式环境](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-21.png)
+![部署正式环境](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-21.png)
 
 注意我们添加的 Labels，触发器包含了 `smtp.yjzt`，这是用于 SMTP 邮件服务器通知的，为此我们需要添加 WUD 的环境变量配置：
 
-![修改 WUD 配置](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-20.png)
+![修改 WUD 配置](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-20.png)
 
 首先配置 SMTP 邮箱为 QQ 邮箱的 HOST 和 PORT，接着指定发送人，这里接收人与发送人相同，然后需要指定账号密码（自行获取 QQ 邮箱授权码）。
 
 部署后再次更新镜像并推送，我们会收到 QQ 邮箱的通知（如果没有，可能需要配置 `WUD_TRIGGER_SMTP_YJZT_TLS_ENABLED=true`）。
 
-![QQ 通知](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/continuous_delivery_and_deployment-research_and_implementation-22.png)
+![QQ 通知](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/continuous_delivery_and_deployment-research_and_implementation-22.png)
 
 这时候，运维就需要登录 Portaienr 面板去手动更新生产环境下的服务了。
 

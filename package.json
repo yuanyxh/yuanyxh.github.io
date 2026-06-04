@@ -87,15 +87,5 @@
     "vite-plugin-progress": "^0.0.7",
     "vite-plugin-svg-icons": "^2.0.1",
     "workbox-build": "^7.3.0"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "vite-plugin-prerender@1.0.8": "patches/vite-plugin-prerender@1.0.8.patch",
-      "hypermd@0.3.11": "patches/hypermd@0.3.11.patch"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "puppeteer"
-    ]
   }
 }

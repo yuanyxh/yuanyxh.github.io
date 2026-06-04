@@ -2,7 +2,7 @@
 title: 前端仔的一次运维实践
 date: 2025-10-24 21:22:00
 author: yuanyxh
-imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/8af068b22c8eab2d.webp
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/前端仔的一次运维实践-logo.webp
 description: 排查服务器异常流量原因，过滤日志封禁固定网段 ip，测试并完善多种动态限流策略，实现多级控制与简易人机校验逻辑。
 keywords: nginx, 服务器, 限流, ddos, 人机校验
 ---
@@ -58,7 +58,7 @@ logrotate -f /etc/logrotate.d/nginx  # -f 强制执行
 
 对日志进行管理后，官网访问仍旧缓慢，查看 nginx 日志发现日志增长飞速，且服务器监控面板显示外网出带宽使用率每天 24 小时都在 85% 及以上：
 
-![外网出带宽使用率](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/a_front-end_operation_and_maintenance_practice-01.png)
+![外网出带宽使用率](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/前端仔的一次运维实践-01.png)
 
 猜测可能遭遇流量攻击，在 nginx 配置中添加多项简易的代码，校验请求是否异常，其中下列代码可以拦截大部分异常请求，外网出带宽使用率回落至正常状态：
 

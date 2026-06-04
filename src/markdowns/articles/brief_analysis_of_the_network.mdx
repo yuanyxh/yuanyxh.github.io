@@ -2,7 +2,7 @@
 title: 网络浅析
 date: 2025-01-04 13:54:00
 author: yuanyxh
-imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_1.webp
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-logo.webp
 description: 介绍了网络连接的方式，包括设备直连、集线器、交换机、路由器等，阐述了 IP 地址、子网、子网掩码等概念，以及电脑、交换机、路由器在网络中的作用，最后总结了各组件在数据传输中扮演的角色。
 ---
 
@@ -27,7 +27,7 @@ description: 介绍了网络连接的方式，包括设备直连、集线器、�
 
 网络上的设备通过端口与其他设备端口直接连接，以此进行数据的传输；比如：
 
-![设备直连](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_2.webp)
+![设备直连](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-01.webp)
 
 设备 A、B、C 通过端口进行直接连接，每个接入的设备占用一个端口。
 
@@ -37,7 +37,7 @@ description: 介绍了网络连接的方式，包括设备直连、集线器、�
 
 所有设备连接到集线器的不同端口中，源设备将数据包发送给集线器，集线器再将数据包发送给所有已连接的设备出口。
 
-![集线器连接](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_3.webp)
+![集线器连接](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-02.webp)
 
 ## MAC-地址
 
@@ -70,7 +70,7 @@ MAC 地址为 48 位数字，表示为 6 个十六进制数，格式为 `XX:XX:X
 
 映射 MAC 地址与端口的一张表，通过此表快速找到对应的设备端口。
 
-![MAC 地址表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_4.webp)
+![MAC 地址表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-03.webp)
 
 ## 路由器
 
@@ -78,7 +78,7 @@ MAC 地址为 48 位数字，表示为 6 个十六进制数，格式为 `XX:XX:X
 
 路由器作为一个独立的拥有 MAC 地址的设备，作用是转发数据包；路由器上的每个端口都有独立的 MAC 地址，不同交换机连接到路由器上的不同端口上。
 
-![路由器](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_5.webp)
+![路由器](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-04.webp)
 
 当数据发送双方不在一个交换机中时，数据包交由路由器转发，反之直接由交换机发送给目标设备。
 
@@ -94,7 +94,7 @@ IP 地址为 32 位数字，表示为 4 个十六进制数，格式为 `XXX.XXX.
 
 在同一交换机中的设备通常会分配同一网段范围的 IP 地址，这些设备组成了一张网：子网。
 
-![子网](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_6.webp)
+![子网](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-05.webp)
 
 ## 子网掩码
 
@@ -116,13 +116,13 @@ IP 地址为 32 位数字，表示为 4 个十六进制数，格式为 `XXX.XXX.
 
 网络上的设备内部维护着 ARP 缓存表，记录 IP 地址与 MAC 地址的映射关系；ARP 缓存表初始为空，与 MAC 地址表类似，数据包初始发送给所有连接的设备出口，在此过程中记录 IP 地址与 MAC 地址的映射关系。
 
-![ARP 缓存表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_7.webp)
+![ARP 缓存表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-06.webp)
 
 ## 路由表
 
 存在于路由器中的路由表，记录同一网段的 IP 地址与端口的映射关系，通过 IP 网段找到对应的已连接设备的端口。
 
-![路由表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/brief_analysis_of_the_network_8.webp)
+![路由表](https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/brief_analysis_of_the_network-07.webp)
 
 ## 总结
 
