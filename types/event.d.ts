@@ -1,3 +1,0 @@
-interface EventOptions {
-  signal?: AbortSignal;
-}
