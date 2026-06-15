@@ -1,0 +1,140 @@
+---
+title: Mac 软件推荐
+date: 2026-06-15 23:32:27
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/mac_software_recommendations-logo.jpg
+description: Mac 上开发环境搭建、系统清理、输入法、AI 智能体等实用工具推荐与使用体验
+keywords: mac software, development tools, productivity, orbstack, tart, hermes agent
+---
+
+## OrbStack
+
+轻量 Linux 系统、Docker 容器、K8S 容器，用它的原因是工作/开发环境在系统里拉太多屎了，开个 Linux 虚拟机隔离工作环境，本地代码编辑器 + ssh 远程连接开发，这种模式适合 web 前端/后端。
+
+安装：
+
+```sh
+brew install orbstack
+```
+
+使用: VSCode 安装 RemoteSSH 插件，连接 `host@orb`
+
+除了隔离环境，还可以导入导出镜像，方便打包整体环境；或在后台运行服务。
+
+缺点：Linux 虚拟机有一定内存占用
+
+## Tart
+
+macOS 虚拟机，同样可以用来隔离开发环境，适用于 Electron/Android/Xcode 开发，这些开发环境 OrbStack 给不到。
+
+安装：
+
+```sh
+brew install cirruslabs/cli/tart
+```
+
+拉取 macOS 镜像：
+
+```sh
+tart clone ghcr.m.daocloud.io/cirruslabs/macos-sequoia-vanilla:latest native-dev
+```
+
+1. `ghcr.m.daocloud.io` 是国内加速源
+2. `sequoia` 是 macOS 版本
+3. `vanilla` 是轻量镜像，还有 `base`、`xcode` 这种预装了开发环境的
+4. `native-dev` 设置本地的镜像名
+
+常用命令：
+
+```sh
+# 设置虚拟机参数 cpu 6核 内存 16GB（内存只能大于上次设置的值，避免数据损坏） 磁盘空间 150GB
+tart set native-dev --cpu 6 --memory 16384 --disk-size 150
+
+# --vnc：通过远程登录（屏幕共享）连接，性能更优 --dir 挂载宿主机目录
+tart run --dir=project:/Users/yuanyxh/Projects --vnc native-dev
+# 克隆一个完全一样的镜像
+tart clone native-dev new-dev
+```
+
+除了开发环境隔离，还可以用来测试一下软件、服务，比如测试软件是否安全、不希望搞乱宿主机的时候，同样可以打包环境。
+
+缺点：
+
+1. 可以用来开发 Electron/Android/Xcode，但实际体验有掉帧感，社区更多用于测试
+2. 设置多少内存就会吃掉宿主机多少内存
+
+## Mole
+
+命令行工具，提供清理、卸载、分析、优化和监控功能，集成了 CleanMyMac、AppCleaner、DaisyDisk 和 iStat Menus。
+
+安装：
+
+```sh
+brew install mole
+```
+
+常用命令：
+
+```sh
+# 交互式面板
+mo
+# 深度清理磁盘空间
+mo clean
+# 深度卸载应用
+mo uninstall
+# 清理缓存与服务
+mo optimize
+```
+
+使用体验不错，不会有乱七八遭的东西，最多在 `~/.cache/mole` 会有缓存。
+
+## Squirrel
+
+鼠须管输入法，用来替代微信输入法，微信输入法后台跑流量（可关），且内存占用较高。
+
+Squirrel 需要配置，较为麻烦，可以用现成的配置：[Rime Squirrel 鼠须管输入法配置详解](https://zhuanlan.zhihu.com/p/474994157), UI 可以配置的跟微信输入法类似。
+
+使用将近十天，可用，但需要微调配置，还需要长时间使用让它记住你的常用词。
+
+## Hermes Agent
+
+自学习型 AI 智能体，持续学习你的习惯，与操作系统集成。
+
+最近用它干的事：
+
+1. 系统深度清理
+2. 微调系统网络设置
+3. 读取 Hermes Agent/Ollama/Uniapp/Kuikly 文档生成总结写入文件
+4. 对比 Uniapp & Kuikly，技术选型
+5. 完成需求（读取项目工程，生成大致功能列表）
+6. 帮我跑本地模型，测性能
+7. 跑定时任务（每天读取 RSS 订阅，过滤有价值信息，生成摘要）
+
+模型用的云端 deepseek-v4-flash，纯文本模型，没有视觉功能，云端模型的好处是高智能、可并行（不占用本地资源，可跑多个会话）、快速响应。
+
+同时折腾了几天本地模型，设备 Macbook M2 Pro 32GB+1T，实际体验下来：
+
+- qwen2.5 7b/14b 参数：用处有限，不能理解指令并调用工具，大概只能做一些后台重复工作与简单对话、文字生成
+- qwen3.6 27b 参数：勉强拥有 “智能”，think 思考模式下会消耗大量 token，由于 hermes agent 有大量系统提示词，think 模式下不可用；关闭 think 模式勉强能够理解意图并触发工具调用
+
+再看内存占用（Macbook 使用统一内存）：
+
+- 7b 参数大概占用 6~8GB 内存
+- 14b 参数大概 10~14GB 内存
+- 27b 参数要 20GB+ 内存
+
+然后是速度，Macbook M2 Pro 的内存读写速度是 200GB/s，实际体验 27b 的 tok/s 大概是 8\~12，一个中文大约是 1.5 token，也就是说我的电脑上跑 27b 一秒只能输出 5\~8 个汉字，体验不是很好。
+
+## AList
+
+存储工具，我用来对接百度网盘，搭配 IINA 播放器实现轻量观影功能。
+
+因为是轻量的，只在本地 OrbStack 后台跑 AList，电脑 IINA 看电影，不需要时直接将对应的虚拟机停掉即可。
+
+
+## 其他
+
+- Maccy 轻量剪切板历史管理工具
+- Easy Dict 强大的翻译工具
+- Yoink 拖拽暂存，macOS 的文件操作有点麻烦，平时用它来暂存、移动文件
+- Keka 压缩/解压缩工具，功能齐全
