@@ -1,0 +1,460 @@
+---
+title: macOS 应用 - 纯对话生成
+date: 2026-06-19 12:05:27
+author: yuanyxh
+imageUrl: https://image-gallery-blog.oss-cn-shenzhen.aliyuncs.com/blog/macOS_app_pure_conversation_generation-logo.png
+description: 用 Hermes Agent 搭配 DeepSeek 模型，3.5 天、60 元纯对话生成一个 macOS工具集应用的全流程记录。涵盖大纲规划、功能迭代、Bug调试（功能/内存泄漏/性能三类场景及对应方案）、模型局限性应对、本地 vs云端模型对比，以及实战中总结的 7 条编码协作建议。
+keywords: Hermes Agent, AI 编码, macOS 应用开发, Swift, DeepSeek, 纯对话生成,工具调用, Bug 调试, 火焰图, 内存泄漏, token 缓存, prompt caching,模型精度, 量化, 本地模型, MoE, thinking 模式, 首 token 延迟, AppKit, SPM
+---
+
+## 背景
+
+最近研究 Hermes Agent，有想法自己写一个 macOS 应用替代常用的几个软件，几天前开始动手，搭配 deepseek-v4-flash/deepseek-v4-pro 模型，通过单纯对话实现一个可用的 macOS 工具集应用，不手写一行代码。
+
+模型总花费 60 RMB，耗费 3.5 天。
+
+> 本人有编程经验、思维，懂得如何规划、调试，不会 swift 但大概能理解代码在做什么，这篇文章单纯记录分享。
+
+## 准备
+
+最简单的一步，你需要编写一个大纲。
+
+对于简单应用而言可以不必那么详细，但你想要的基本功能要列出来，必要的要求也要说明；
+
+对于复杂、大型的商用应用来说，底层部分的要求要尽量细述，比如 Web 应用前后端对接协议，方便模型封装 API 请求工具。
+
+这个大纲通过 `/plan` 指令，投喂给模型，它会按要求写一个计划出来给你，你进行微调确认后，它会帮你实现一个基本可运行起来的**框架**。
+
+示例大纲：
+
+```markdown
+我需要写一个自用的 macOS 软件，常用功能：剪切板管理、翻译、拖拽暂存移动（Yoink）、RSS 订阅
+
+硬性要求：小、cpu/内存占用低，高可用、可扩展
+
+**除功能必要的 view  外，不做程序页面**
+
+所有可配置项以 yaml 配置提供，类似鼠须管输入法
+
+以快捷键触发为主，后台运行为辅，注重无感，菜单栏、dock 显示可配置关闭
+
+菜单栏提供重载配置、退出等功能
+
+配置存放在 `~/.config/[APPName]/`
+
+## AI 配置
+
+提供全局 AI 配置，初期主要是 Open AI 兼容格式，保留扩展能力强的接口，供下方内容、未来扩展功能使用
+
+## 剪切板管理
+
+1. 可配置排除敏感应用，默认排除 密码、钥匙串访问
+2. 存储不设限，可配置保留天数，默认 3 天
+3. 自定义快捷键弹出快速粘贴小面板（默认 cmd+shift+c），鼠标上下键选择剪切板条目，回车粘贴并关闭面板，cmd+f 可搜索
+4. 粘贴项移至顶部、复制同项移至顶部
+5. 可复制所有内容（文本、文件、文件夹）
+6. esc 可关闭快速粘贴面板
+
+## 翻译
+
+文本翻译
+
+1. 可配置第一二语言
+
+2. 可配置快捷键弹出翻译窗口，默认 option+d
+
+3. 有选中即自动弹出翻译窗口粘贴翻译
+
+4. 无选中弹出翻译窗口，可输入并翻译（enter 翻译、cmd+enter 换行）
+
+5. esc 关闭翻译窗口，聚焦原窗口，ctrl + enter 粘贴翻译内容到原焦点
+
+6. 翻译面板分上下两部分，上部分可输入，下部分只读
+
+   面板形式：
+
+   上面板：
+
+   左侧文案：原文 右侧选择框：语种选择，默认 Auto，每次面板重置为 Auto
+
+   输入框
+
+   下面板：
+
+   左侧文案：译文 右侧选择框：语种选择，默认 Auto，每次面板重置为 Auto
+
+7. 翻译默认：
+
+   源：自动检测
+
+   目标：源是第一语言即翻译到第二语言，源是第二语言即翻译到第一语言，源时其它语言即翻译到第一语言
+
+8. 每次面板打开清空原内容
+
+ocr 翻译：
+
+调用 macOS 原生 Vision，然后走文本翻译逻辑
+
+翻译 API 使用上述说的 AI 接口，必须配置
+
+## 拖拽暂存
+
+类似 Yoink 那种
+
+## RSS 订阅
+
+功能类似  NetNewsWire，但不提供界面，只提供外部接口，支持配置订阅、更新订阅、已读，主要用于 Hermes Agent/AI 功能，进行筛选过滤信息
+
+## 自定义扩展功能
+
+**仅供参考，现阶段不实现，但初期代码架构需要考虑如何更好的在后期扩展实现！！**
+
+1. 自定义快捷键，针对划词调用脚本或 AI 接口，完成后复制到剪切板或直接粘贴
+2. 可配置轻量后台服务，持久运行/定时运行/事件运行等等，比如定时在后台触发 RSS 信息过滤脚本
+
+```
+
+模型生成的计划书（摘取）：
+
+````markdown
+# Utility — macOS 桌面工具集实现计划
+
+> **Goal:** 构建一个菜单栏常驻的 macOS 桌面工具集：剪切板管理、翻译（含 OCR）、拖拽暂存、RSS 订阅，预留 AI 自定义扩展架构。
+>
+> **Architecture:** 单一菜单栏进程 + 模块化插件架构。主进程（AppDelegate）负责菜单栏、快捷键、配置加载；各功能以独立模块实现，通过 `AppModule` 协议挂接。不做主窗口，功能面板以 NSPanel 呈现。
+>
+> **Tech Stack:** Swift + AppKit，GRDB.swift（SQLite），Yams（YAML 配置），SPM 包管理，macOS 原生框架（NSPasteboard, Vision, CGEvent, Accessibility）
+
+---
+
+## 开发目录
+
+`~/Documents/it/project/utility`
+
+## 阶段 0：项目骨架与基础架构
+
+### Task 0.1：创建 SPM 项目骨架
+
+**Objective:** 初始化 SPM 项目，配置 LSUIElement（无 dock 图标），建立目录结构
+
+**Files:**
+- Create: `~/Documents/it/project/utility/Package.swift`
+- Create: `~/Documents/it/project/utility/Sources/App/main.swift`
+- Create: `~/Documents/it/project/utility/Sources/App/AppDelegate.swift`
+- Create: `~/Documents/it/project/utility/Sources/Core/ConfigManager.swift`
+- Create: `~/Documents/it/project/utility/Sources/Core/ConfigTypes.swift`
+- Create: `~/Documents/it/project/utility/Sources/Core/HotkeyManager.swift`
+- Create: `~/Documents/it/project/utility/Sources/Core/MenuBarManager.swift`
+- Create: `~/Documents/it/project/utility/Sources/Core/Database.swift`
+
+**Step 1: 创建目录结构**
+
+```bash
+mkdir -p ~/Documents/it/project/utility/Sources/{App,Core,Clipboard,Translation,Stage,RSS}
+mkdir -p ~/Documents/it/project/utility/Resources
+```
+
+**Step 2: Package.swift（含 GRDB 依赖）**
+
+....
+
+---
+
+### Task 0.2：实现 ConfigManager（YAML 配置 + 提示词系统）
+
+**Objective:** 从 `~/.config/utility/config.yaml` 读取配置，支持热重载。包含 AI 提示词配置（翻译自定义 prompt + 通用 AI 模板）
+
+**Files:**
+- Create: `~/Documents/it/project/utility/Sources/Core/ConfigTypes.swift`（完整配置类型）
+- Create: `~/Documents/it/project/utility/Sources/Core/ConfigManager.swift`（YAML 加载/重载）
+- Create: `~/Documents/it/project/utility/Sources/Core/PromptManager.swift`（提示词管理）
+- Create: `~/Documents/it/project/utility/Resources/default-config.yaml`
+
+**Step 1: 配置类型（含提示词、26 语言）**
+
+**Step 2: ConfigManager（同原计划，路径改为 `~/.config/utility/`）**
+
+**Step 3: PromptManager（提示词管理）**
+
+**Step 4: 默认配置 YAML**
+
+```yaml
+# ~/.config/utility/config.yaml
+ai:
+  baseURL: "https://api.deepseek.com"
+  apiKey: ""
+  model: "deepseek-v4-flash"
+
+clipboard:
+  maxDays: 3
+  excludeApps: ["SecurityAgent", "KeychainAccess"]
+  hotkey: "cmd+shift+c"
+  maxItems: 1000
+  pollInterval: 0.3
+
+translation:
+  hotkey: "option+d"
+  hotkeyOCR: "option+shift+d"
+  sourceLang: "auto"
+  targetLang: "zh"
+  secondLang: "en"
+  prompt: "你是一个专业的翻译助手。使用{source}到{target}的翻译方向。只返回翻译结果，不要解释。"
+```
+
+**Step 5: 验证构建 + Commit**
+
+---
+
+### Task 0.3：实现 Database（SQLite 层）
+
+....
+
+---
+
+### Task 0.4：MenuBarManager + HotkeyManager
+
+....
+
+---
+
+## 阶段 1：剪切板管理
+
+### Task 1.1：ClipboardWatcher（0.3s 轮询 + SQLite 存储）
+
+....
+
+---
+
+### Task 1.2：快速粘贴面板（ClipboardPanelController）
+
+---
+
+## 阶段 2：翻译功能
+
+### Task 2.1：Translator（支持自定义提示词）
+
+....
+
+### Task 2.2：翻译面板（26 语种支持）
+
+....
+
+---
+
+### Task 2.3：OCR 区域截图翻译
+
+....
+
+---
+
+## 阶段 3：拖拽暂存（自动触发）
+
+### Task 3.1：拖拽自动暂存
+
+....
+
+---
+
+## 阶段 4：RSS 订阅（Headless）
+
+### Task 4.1：RSSParser + RSSManager（GRDB 版）
+
+....
+
+---
+
+## 全部改动的 10 点总览
+
+| # | 改动项 | 改动量 | 涉及文件数 |
+|---|--------|--------|-----------|
+| 1 | 名称/路径 → Utility | 全局替换 | ~15 |
+| 2 | SQLite（GRDB）替代 JSON | +140 行 | 5 |
+| 3 | AI 提示词配置 | +60 行 | 2 |
+| 4 | 26 语种 | +18 行 | 1 |
+| 5 | 0.3s 轮询 | 改 1 数字 | 1 |
+| 6 | 拖拽自动触发 | +60 行 | 2 |
+| 7 | OCR 区域截图 | +120 行 | 2 |
+| 8 | 自定义翻译 prompt | +10 行 | 1 |
+| 9 | PromptManager | +40 行 | 1 |
+| 10 | PromptConfig 类型 | +5 行 | 1 |
+| **合计** | | **~+450 行** | **16 文件** |
+
+---
+
+## 开放问题
+
+1. **应用签名** — 当前基于 Accessibility API（获取选中文本）需要辅助功能权限，建议自签名
+2. **Sandbox** — 不使用 Sandbox 以保持 OCR 和 Accessibility 功能可用
+3. **冲突** — 用户需确保注册的快捷键不与系统或其它 app 冲突
+4. **语言列表** — 26 种语言来自全球使用量前 25 + 中文，如需调整可以改
+````
+
+之所以是个框架，是因为依据工具的调教、模型的智能程度、大纲的详细程度，得到的初版内容可能有功能不完善、Bug、交互体验不友好等等问题，基本上一次完成是不太可能的，需要后续逐步调优。
+
+## 功能完善 & 交互体验优化
+
+这一步需要你手动去测试（或自动化测试），哪些功能不完善、有 Bug、哪个 UI 不好看，要一步步跟模型反馈，让它去修，要描述你看到的现象。
+
+一些注意点：
+
+一、模型类型
+
+deepseek-v4 是纯文本模型，没有多模态（视觉、听觉）功能，这意味着它无法看到你的 UI（截图），分析 UI 相关的问题时，只能靠你用语言描述，进行多轮微调才能达到你想要的效果。
+
+二、上下文混乱
+
+根据我的实际体验，在多轮对话后，达到 300k+ 上下文时，模型会降智，原因是初始的上下文被后续的上下文污染了，就像干净空间堆满了杂物，本来该做什么是很清晰的，后来被杂物挤的动弹不得，这时候你需要重置上下文来应对。
+
+三、缓存问题
+
+为了节省 tokens，默认会进行 token 缓存（不知道是 Hermes 还是 DeepSeek），比如我让它去读取 A 路径的文件，除初始调用工具读取外，之后我修改再让它读，它是直接取缓存内容，而不是再调用工具读取一遍。
+
+四、模型强依赖已训练数据集
+
+在编码场景下，模型极度自信，它会从已训练数据集去生成代码来应对你的问题，在复杂场景下有风险，比如一些与你操作系统有关的功能，它可能选择相信旧的已过时的代码，但你的操作系统已不支持，这时候你要明确告诉它怎么做，比如 “我的操作系统版本是 macOS 26，这段代码过时了”。
+
+## Bug 排查调试
+
+我遇到的场景中，分为三类，针对这三类 Bug 有不同的应对方案：
+
+一、功能 Bug
+
+这类 Bug 通常跟模型描述具体的现象，基本就能解决，但还有一些 Bug 在两三轮对话后依然存在,这时候不能死磕，要让模型懂得依赖事实依据去分析。
+
+这类 Bug 通常与代码流程相关，你需要让模型在关键点输出 Log，让它去分析：
+
+```markdown
+> 在翻译面板粘贴功能相关的代码上输出日志到 ~/.cache/[APPName]/debug.log，停止旧进程，启动新进程，等我操作后，我说可以了，你去分析日志。
+```
+
+二、内存泄露
+
+这个问题就暴露了模型在编码场景下的过度自信，当你描述某个功能导致内存增长时，它不会想到使用调试工具分析现实，而是靠已有训练集数据去猜去改。
+
+这个时候你要明确告诉它懂得使用调试，依赖现实数据，而不是靠猜：
+
+```markdown
+> 现在通过 head 命令，获取 pid 为 xxx 的内存基线数据
+> 我操作了粘贴板滚动功能，再次通过 head 命令，获取 pid 为 xxx 的内存数据，分析两者之间的差异，告诉我可能导致内存泄露的地方。
+```
+
+三、性能问题
+
+这个问题是实时的应用卡顿问题，靠静态分析不太可靠，于是我想到 Chrome 开发者工具的火焰图，通过询问模型，得知 XCode 有自带的 Instruments Time Profiler，那么我们就可以告诉模型：
+
+```markdown
+> 运行 Instruments Time Profiler 20 秒抓取火焰图，我操作应用，为防止 Instruments Time Profiler 初始运行带来的卡顿混淆，你从火焰图的后 10 秒开始分析可能的卡顿点。
+```
+
+## 建议
+
+除了上述的内容，还有一些必要点，这些必要点是我在无数次骂娘后总结的：
+
+1. 在某个功能点、Bug 正常后，让它及时提交代码；在解决一个问题时，可能会改动另一个正常功能的代码，为了避免这种问题要及时提交正常代码，方便后续回退。
+2. 尽量编写命令式 prompt（改做什么，怎么做、不做什么），在日常使用中使用口语化表述没什么问题，但编码场景下它会误解你的意思，所以尽量用命令式表述。
+3. 如前言，模型在编码时极度自信，必要时要让它懂得使用工具，比如使用 Hermes Agent 的 `web extract`、使用调试工具。
+4. 复杂问题，尽量一个一个解决，不要一次让模型解决你发现的多个问题。
+5. 测试要测全面、测多场景。实际经验：在实现剪切板粘贴功能时，普通应用正常，浏览器网页异常
+6. 遇到的问题，记录下来，方便后续全量测试。
+7. 善用 `/plan` 指令，对于大的功能项让模型先出计划
+
+然后建议编写一个相关的 skill，每次重置上下文时加载，比如将下面这段内容投喂给模型，让它帮你生成一个 skill：
+
+```markdown
+1. 在我明确功能正常后，提交代码
+2. 在 2-3 轮对话后如果仍无法解决问题，搜索网络相关资料
+3. 针对疑难 Bug，依赖现实调试信息，禁止靠猜测来修改；要给出明确的方案：如何调试获取必要信息
+4. 代码改动过大时，先询问，确认后再修改
+```
+
+## 模型相关知识
+
+这几天使用 Hermes Agent & 研究本地模型学到的知识，不一定对：
+
+模型参数大小：参数越大，知识量越大，也就越智能，实测 7b/14b 用处有限，只能作为辅助模型，好处可能是隐私、安全、省一定量的 token; 27b 的模型勉强有一定的智能，能够理解意图触发工具调用。
+
+显存：模型参数越大，占用的显存越大。
+
+显存速度：影响每秒输出多少 token，公式:  `tok/s ≈ 显存带宽 / 模型总显存占用 ≈ 显存带宽 / (参数量 × 量化位数（字节）)`，实际值约为该上限的 70-90%。
+
+模型精度理解不深，直接看对话：
+
+```markdown
+> 模型参数精度是什么，为什么会有区分，是为了压缩吗？比如一些数据可能只需要 4 bit，以 8 bit 存储就有点浪费，所以以 4 bit 为单位
+
+
+对，你的理解基本正确。补充完整：
+
+────────────────────────────────────
+
+参数精度 = 每个权重用多少 bit 存储
+
+  精度            每参数字节  比特
+  ──────────────  ──────────  ──────
+  FP32            4 bytes     32 bit
+  FP16 / BF16     2 bytes     16 bit
+  INT8            1 byte      8 bit
+  INT4            0.5 byte    4 bit
+  2 bit (实验性)   0.25 byte   2 bit
+
+────────────────────────────────────
+
+为什么要有区分
+
+两个独立原因：
+
+1. 训练 vs 推理需求不同
+
+训练需要 FP32/BF16 —— 反向传播时梯度回传需要足够精度来更新权重，误差会累积。低精度下梯度误差太大，模型不收敛。
+
+推理只需要 前向计算 —— 权重固定了，可以用低精度做乘加运算，只要精度损失不严重破坏输出质量就行。
+
+2. 量化 = 用带宽换精度（你猜的方向）
+
+你猜得没错，核心动机是 压缩显存占用。
+
+7B 模型：
+
+• FP16（标准训练精度）= 14 GB
+• INT8 = 7 GB
+• INT4 = 3.5 GB
+
+RTX 4090 才 24 GB，一块卡装 FP16 70B 需要 140 GB 直接爆炸。INT4 的 70B 只要 35 GB 就能推理。
+
+────────────────────────────────────
+
+
+"浪费" 是对的——但要看从哪说
+
+│ "一些数据可能只需要 4 bit，以 8 bit 存储就有点浪费"
+
+理论上： 权重的分布有规律——大部分权重集中在均值附近，边缘的 outlier 很少。量化就是用较少的 bit 来表示 同一个分布范围。
+
+具体做法（以 INT4 为例）：
+
+FP16 权重: [0.12, -0.05, 0.98, -1.23, ...]
+                   ↓
+找到最大值 1.5、最小值 -1.5，缩放到 0~15 整数区间：
+INT4 权重: [1, 7, 14, 0, ...]  ← 每个只有 4 bit
+再存一个 scale 因子 (1.5/15) 做反量化
+
+损失： 原来 65536 个精度等级（FP16）压缩到只有 16 个等级（INT4），但你用 scale 把压缩范围对准了该层权重的实际数值范围。
+
+你的直觉是对的——权重分布在有限范围内，高位 bit 大部分是冗余的。量化就是去掉这些冗余。
+```
+
+输入缓存：内容首次输入后，token 被缓存，看具体案例：每次使用 Hermes Agent 在工作区开发应用时，初始上下文增长很快到达 70k~80k，后续经过多轮对话增长变的缓慢，说明有输入缓存。
+
+模型类型：分为多模态、纯文本，deepseek-v4 就是纯文本模型。
+
+工具调用：支持调用预定义的工具/函数，比如文件读写、代码生成、网络搜索，现在常见模型都支持，不过之前研究本地模型时发现 deepseek-r1 不支持工具调用。
+
+thinking 模式：思考模式，可以理解为预热，针对你的输入进行预热思考，最后才明确一个回复；thinking 模式的好处时提高准确率，坏处是不能很快收敛，且有一定 token 消耗。
+
+首 token 回复：模型开始需要针对你的输入全部处理一遍，而不是一输入就可以立刻回复；所以即使一个模型的 tok/s 有 20 tok/s，在 thinking 模式下回复 500 token 的输入也可能需要很久。
+
+本地模型优势：私有化、隐私强、安全、无持续成本；劣势：依赖硬件性能、并发能力弱、能力有限。
+
+云端模型优势：能力强、支持并发任务；劣势：持续成本、安全、隐私问题。
+
+激活参数：一个模型可能总参数量很大，但每次使用时只激活部分参数，以此来提高速度，比如 DeepSeek-V3 等 MoE 模型，每次推理只激活部分。
